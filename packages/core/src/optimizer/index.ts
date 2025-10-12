@@ -1,4 +1,4 @@
-import { GameConfig, OptimizationConditions, OptimizationScaling, SlotGame } from "../.."
+import { GameConfig, OptimizationConditions, OptimizationScaling } from "../.."
 import { GameModeName } from "../GameMode"
 import { OptimizationParameters } from "./OptimizationParameters"
 import { makeMathConfig } from "../utils/math-config"
@@ -8,6 +8,7 @@ import path from "path"
 import { Analysis } from "../analysis"
 import assert from "assert"
 import { isMainThread } from "worker_threads"
+import { SlotGame } from "../SlotGame"
 
 export class Optimizer {
   protected readonly gameConfig: GameConfig["config"]

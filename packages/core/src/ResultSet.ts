@@ -1,5 +1,6 @@
-import { AnyUserData, Board } from ".."
+import { AnyUserData } from ".."
 import { copy, RandomNumberGenerator, shuffle, weightedRandom } from "../utils"
+import { Board } from "./Board"
 import { GameConfig } from "./GameConfig"
 import { AnySimulationContext, Simulation } from "./Simulation"
 

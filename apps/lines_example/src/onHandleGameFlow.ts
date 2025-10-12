@@ -1,4 +1,4 @@
-import { Board, GameConfig, GameSymbol, HookContext, LinesWinType, Reels } from "core"
+import { GameConfig, GameSymbol, HookContext, LinesWinType, Reels } from "core"
 import { weightedRandom } from "core/utils"
 import { GameType } from ".."
 
@@ -12,10 +12,6 @@ export function onHandleGameFlow(ctx: HookContext<GameType>) {
   handleWins(ctx)
   ctx.wallet.confirmSpinWin(ctx.state.currentSpinType)
   checkFreespins(ctx)
-
-  ctx.config.symbols.get("")
-
-  const topReel = new Board(ctx.config)
 }
 
 function drawBoard(ctx: HookContext<GameType>) {

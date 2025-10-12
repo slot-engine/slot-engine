@@ -232,6 +232,32 @@ export class GameState<
     this.state.totalFreespinAmount += amount
     this.state.triggeredFreespins = true
   }
+
+  /**
+   * Ensures the requested number of scatters is valid based on the game configuration.\
+   * Returns a valid number of scatters.
+   */
+  verifyScatterCount(numScatters: number) {
+    const scatterCounts = this.config.scatterToFreespins[this.state.currentSpinType]
+    if (!scatterCounts) {
+      throw new Error(
+        `No scatter counts defined for spin type "${this.state.currentSpinType}". Please check your game configuration.`,
+      )
+    }
+    const validCounts = Object.keys(scatterCounts).map((key) => parseInt(key, 10))
+    if (validCounts.length === 0) {
+      throw new Error(
+        `No scatter counts defined for spin type "${this.state.currentSpinType}". Please check your game configuration.`,
+      )
+    }
+    if (numScatters < Math.min(...validCounts)) {
+      return Math.min(...validCounts)
+    }
+    if (numScatters > Math.max(...validCounts)) {
+      return Math.max(...validCounts)
+    }
+    return numScatters
+  }
 }
 
 interface PendingRecord {

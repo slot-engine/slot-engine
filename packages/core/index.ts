@@ -1,10 +1,10 @@
 import { GameConfig } from "./src/GameConfig"
-import { Simulation, SimulationContext } from "./src/Simulation"
+import { SimulationContext } from "./src/Simulation"
 import { GameMode, GameModeName } from "./src/GameMode"
 import { GameSymbol } from "./src/GameSymbol"
 import { ReelGenerator, Reels } from "./src/ReelGenerator"
 import { ResultSet, EvaluationContext } from "./src/ResultSet"
-import { Board } from "./src/Board"
+import { StandaloneBoard } from "./src/Board"
 import { WinType } from "./src/WinType"
 import { LinesWinType } from "./src/winTypes/LinesWinType"
 import { ClusterWinType } from "./src/winTypes/ClusterWinType"
@@ -15,7 +15,7 @@ import { OptimizationParameters } from "./src/optimizer/OptimizationParameters"
 import { SlotGame } from "./src/SlotGame"
 
 export {
-  Board,
+  StandaloneBoard,
   GameConfig,
   GameMode,
   GameSymbol,

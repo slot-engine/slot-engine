@@ -22,5 +22,6 @@ and is more declarative in nature. With this toolkit, you can define your entire
 - Add auto completion for `gameConfig.symbols.get("symbol")`
 - Improve type-safety dealing with symbols for reel generators
 - Improve overall type-safety for better DX
+- Refactor `StandaloneBoard` and `Board` to reduce code duplication
 
 PR's are welcome!
