@@ -1,0 +1,22 @@
+{
+  "name": "slot-engine",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "turbo": "^2.5.5",
+    "typescript": "5.9.2",
+    "tsx": "^4.20.4",
+    "@types/node": "^24.3.0"
+  },
+  "packageManager": "pnpm@10.13.0",
+  "engines": {
+    "node": ">=20"
+  }
+}

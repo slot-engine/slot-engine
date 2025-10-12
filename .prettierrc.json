@@ -1,0 +1,15 @@
+{
+  "tabWidth": 2,
+  "semi": false,
+  "singleQuote": false,
+  "endOfLine": "lf",
+  "printWidth": 90,
+  "overrides": [
+    {
+      "files": "item-material-properties.ts",
+      "options": {
+        "printWidth": 120
+      }
+    }
+  ]
+}
