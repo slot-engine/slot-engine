@@ -1,20 +1,23 @@
 > [!NOTE]
-> This software **is work in progress** and may currently miss features or contain bugs. Feel free to contribute to help improve this project. Breaking changes may occur at any time.
+> This software **is work in progress** and may currently miss features or contain bugs. Feel free to contribute to help improve this project. Breaking changes may occur at any time during beta.
 
 # Slot Engine
 
-Slot math toolkit in TypeScript compatible with Stake RGS / Carrot RGS.
+TypeScript libraries for building slot games.
 
-## Slot Engine Core vs Stake Math SDK
+## Available Packages
 
-While both solutions allow developers to create highly customizable slot games,
-some people may prefer programming in TypeScript over Python.
+### `@slot-engine/core`
 
-Both APIs are **highly opinionated** and provide a **structured way to define slot games**,
-but the TypeScript API may **feel more natural to JavaScript/TypeScript developers**
-and is more declarative in nature. With this toolkit, you can define your entire game in a single configuration without needing to jump between files. Also no dealing with class overrides.
+Library for configuring and simulating slot games. Produces output compatible with Stake Engine / Stake RGS.
 
-## ... TODO
+[📖 Documentation](https://slot-engine.dev/docs/core)  
+
+### `@slot-engine/lgs`
+
+Local gaming server. Test your game locally and save time during development. No constant upload to Stake Engine required.
+
+[📖 Documentation](https://slot-engine.dev/docs/lgs)
 
 ## To-Do List
 - Add Cluster Win Evaluation Class (`src/winTypes/ClusterWinType.ts`)
