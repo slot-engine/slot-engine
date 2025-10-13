@@ -1,3 +1,4 @@
+import { SlotEngineIcon } from "@/components/SlotEngineIcon"
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared"
 
 /**
@@ -10,7 +11,12 @@ import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared"
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      title: <>Slot Engine</>,
+      title: (
+        <>
+          <SlotEngineIcon />
+          Slot Engine
+        </>
+      ),
     },
     // see https://fumadocs.dev/docs/ui/navigation/links
     links: [],

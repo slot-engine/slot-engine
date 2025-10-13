@@ -1,16 +1,15 @@
+import { Button } from "@/components/Button"
 import Link from "next/link"
 
 export default function HomePage() {
   return (
     <main className="flex flex-1 flex-col justify-center text-center">
-      <h1 className="mb-4 text-2xl font-bold">Hello World</h1>
-      <p className="text-fd-muted-foreground">
-        You can open{" "}
-        <Link href="/docs" className="text-fd-foreground font-semibold underline">
-          /docs
-        </Link>{" "}
-        and see the documentation.
-      </p>
+      <h1 className="mb-8 text-5xl font-bold">Slot Engine</h1>
+      <div >
+        <Link href="/docs/core">
+          <Button>Getting Started</Button>
+        </Link>
+      </div>
     </main>
   )
 }
