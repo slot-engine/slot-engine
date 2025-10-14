@@ -1,4 +1,4 @@
-import { EvaluationContext, GameConfig } from "core"
+import { EvaluationContext, GameConfig } from "@slot-engine/core"
 import { UserStateType } from ".."
 
 export function freeSpinsUpgradeEvaluation(ctx: EvaluationContext<UserStateType>) {

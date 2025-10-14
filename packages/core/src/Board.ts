@@ -484,6 +484,9 @@ export class Board<
         const symCount = this.getCurrentGameMode().symbolsPerReel[reelIdx]!
         finalReelStops[reelIdx] =
           stopPos - Math.round(this.state.rng.randomFloat(0, symCount - 1))
+        if (finalReelStops[reelIdx]! < 0) {
+          finalReelStops[reelIdx] = reels[reelIdx]!.length + finalReelStops[reelIdx]!
+        }
       }
     }
 

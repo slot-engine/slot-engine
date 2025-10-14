@@ -1,6 +1,7 @@
 import { AnyGameModes, AnySymbols, AnyUserData, CommonGameOptions } from "../index"
 import { GameConfig } from "./GameConfig"
 import { Simulation, SimulationConfigOpts, SimulationOpts } from "./Simulation"
+import { Analysis, AnalysisOpts } from "./analysis"
 import { OptimizationOpts, Optimizer, OptimizerOpts } from "./optimizer"
 
 /**
@@ -15,6 +16,7 @@ export class SlotGame<
   private readonly gameConfigOpts: CommonGameOptions<TGameModes, TSymbols, TUserState>
   private simulation?: Simulation
   private optimizer?: Optimizer
+  private analyzer?: Analysis
 
   constructor(config: CommonGameOptions<TGameModes, TSymbols, TUserState>) {
     this.gameConfigOpts = config
@@ -65,17 +67,32 @@ export class SlotGame<
     await this.optimizer.runOptimization(opts)
   }
 
+  /**
+   * Runs the analysis based on the configured settings.
+   */
+  private async runAnalysis(opts: AnalysisOpts) {
+    if (!this.optimizer) {
+      throw new Error(
+        "Optimization must be configured to run analysis. Do so by calling configureOptimization() first.",
+      )
+    }
+    this.analyzer = new Analysis(this.optimizer)
+    await this.analyzer.runAnalysis(opts.gameModes)
+  }
+
   async runTasks(
     opts: {
       debug?: boolean
       doSimulation?: boolean
       doOptimization?: boolean
+      doAnalysis?: boolean
       simulationOpts?: SimulationOpts
       optimizationOpts?: OptimizationOpts
+      analysisOpts?: AnalysisOpts
     } = {},
   ) {
-    if (!opts.doSimulation && !opts.doOptimization) {
-      console.log("No tasks to run. Enable simulation and/or optimization.")
+    if (!opts.doSimulation && !opts.doOptimization && !opts.doAnalysis) {
+      console.log("No tasks to run. Enable either simulation, optimization or analysis.")
     }
 
     if (opts.doSimulation) {
@@ -84,6 +101,10 @@ export class SlotGame<
 
     if (opts.doOptimization) {
       await this.runOptimization(opts.optimizationOpts || { gameModes: [] })
+    }
+
+    if (opts.doAnalysis) {
+      await this.runAnalysis(opts.analysisOpts || { gameModes: [] })
     }
   }
 

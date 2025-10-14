@@ -1,4 +1,4 @@
-import { ReelGenerator } from "core"
+import { ReelGenerator } from "@slot-engine/core"
 
 const SYM_WEIGHTS = {
   base: {

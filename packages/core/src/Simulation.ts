@@ -43,6 +43,10 @@ export class Simulation {
         .every((v) => v === true),
       "Game mode name must match its key in the gameModes object.",
     )
+
+    if (isMainThread) {
+      this.preprocessFiles()
+    }
   }
 
   async runSimulation(opts: SimulationOpts) {
@@ -61,8 +65,6 @@ export class Simulation {
     // Code that runs when the user executes the simulations.
     // This spawns individual processes and merges the results afterwards.
     if (isMainThread) {
-      this.preprocessFiles()
-
       const debugDetails: Record<string, Record<string, any>> = {}
 
       for (const mode of gameModesToSimulate) {
@@ -454,6 +456,8 @@ export class Simulation {
    * Compiles user configured game to JS for use in different Node processes
    */
   private preprocessFiles() {
+    const builtFilePath = path.join(this.gameConfig.config.outputDir, TEMP_FILENAME)
+    fs.rmSync(builtFilePath, { force: true })
     buildSync({
       entryPoints: [process.cwd()],
       bundle: true,

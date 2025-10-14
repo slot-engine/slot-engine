@@ -1,0 +1,22 @@
+name: 'CI setup'
+description: 'Set up the environment for CI runs.'
+runs:
+  using: 'composite'
+  steps:
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+
+    - name: Use Node.js 22.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22.x
+        cache: 'pnpm'
+        registry-url: 'https://registry.npmjs.org'
+
+    - name: Update npm
+      run: npm install -g npm@latest
+      shell: bash
+
+    - name: Install Dependencies
+      run: pnpm install
+      shell: bash

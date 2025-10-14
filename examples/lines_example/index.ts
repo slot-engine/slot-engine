@@ -390,9 +390,13 @@ game.configureOptimization({
 
 game.runTasks({
   debug: false,
-  doSimulation: true,
-  doOptimization: true,
+  doSimulation: false,
+  doOptimization: false,
   optimizationOpts: {
+    gameModes: ["base"],
+  },
+  doAnalysis: true,
+  analysisOpts: {
     gameModes: ["base"],
   },
 })
