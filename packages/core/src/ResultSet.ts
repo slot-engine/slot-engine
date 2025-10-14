@@ -1,4 +1,4 @@
-import { AnyUserData } from ".."
+import { AnyUserData } from "../index"
 import { copy, RandomNumberGenerator, shuffle, weightedRandom } from "../utils"
 import { Board } from "./Board"
 import { GameConfig } from "./GameConfig"

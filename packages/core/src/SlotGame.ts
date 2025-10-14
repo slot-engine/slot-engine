@@ -1,4 +1,4 @@
-import { AnyGameModes, AnySymbols, AnyUserData, CommonGameOptions } from ".."
+import { AnyGameModes, AnySymbols, AnyUserData, CommonGameOptions } from "../index"
 import { GameConfig } from "./GameConfig"
 import { Simulation, SimulationConfigOpts, SimulationOpts } from "./Simulation"
 import { OptimizationOpts, Optimizer, OptimizerOpts } from "./optimizer"

@@ -1,4 +1,4 @@
-import { AnyGameModes, AnySymbols, AnyUserData, CommonGameOptions } from ".."
+import { AnyGameModes, AnySymbols, AnyUserData, CommonGameOptions } from "../index"
 import { randomItem, weightedRandom } from "../utils"
 import { GameState } from "./GameState"
 import { GameSymbol } from "./GameSymbol"

@@ -6,6 +6,6 @@
     "build": "tsx ./index.ts"
   },
   "dependencies": {
-    "core": "workspace:*"
+    "@slot-engine/core": "workspace:*"
   }
 }

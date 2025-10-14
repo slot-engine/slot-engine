@@ -3,7 +3,7 @@ import { Wallet } from "./Wallet"
 import { Book } from "./Book"
 import { ResultSet } from "./ResultSet"
 import { RandomNumberGenerator } from "../utils"
-import { AnyGameModes, AnySymbols, AnyUserData, CommonGameOptions } from ".."
+import { AnyGameModes, AnySymbols, AnyUserData, CommonGameOptions } from "../index"
 
 /**
  * The GameState manages the current state of the game.

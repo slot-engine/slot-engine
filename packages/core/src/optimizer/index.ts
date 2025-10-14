@@ -1,4 +1,4 @@
-import { GameConfig, OptimizationConditions, OptimizationScaling } from "../.."
+import { GameConfig, OptimizationConditions, OptimizationScaling } from "../../index"
 import { GameModeName } from "../GameMode"
 import { OptimizationParameters } from "./OptimizationParameters"
 import { makeMathConfig } from "../utils/math-config"

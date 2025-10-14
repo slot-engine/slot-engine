@@ -1,5 +1,5 @@
 import { GameConfig } from "./src/GameConfig"
-import { SimulationContext } from "./src/Simulation"
+import { type SimulationContext } from "./src/Simulation"
 import { GameMode, GameModeName } from "./src/GameMode"
 import { GameSymbol } from "./src/GameSymbol"
 import { ReelGenerator, Reels } from "./src/ReelGenerator"
@@ -13,6 +13,7 @@ import { OptimizationConditions } from "./src/optimizer/OptimizationConditions"
 import { OptimizationScaling } from "./src/optimizer/OptimizationScaling"
 import { OptimizationParameters } from "./src/optimizer/OptimizationParameters"
 import { SlotGame } from "./src/SlotGame"
+export { weightedRandom } from "./utils"
 
 export {
   StandaloneBoard,

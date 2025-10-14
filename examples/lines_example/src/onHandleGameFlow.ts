@@ -1,5 +1,11 @@
-import { GameConfig, GameSymbol, HookContext, LinesWinType, Reels } from "core"
-import { weightedRandom } from "core/utils"
+import {
+  GameConfig,
+  GameSymbol,
+  HookContext,
+  LinesWinType,
+  Reels,
+  weightedRandom,
+} from "@slot-engine/core"
 import { GameType } from ".."
 
 export function onHandleGameFlow(ctx: HookContext<GameType>) {

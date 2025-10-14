@@ -12,7 +12,7 @@ import { Book } from "./Book"
 import { Worker, isMainThread, parentPort, workerData } from "worker_threads"
 import { RecordItem } from "./GameState"
 import { zstd } from "./utils/zstd"
-import { AnyGameModes, AnySymbols, AnyUserData, CommonGameOptions } from ".."
+import { AnyGameModes, AnySymbols, AnyUserData, CommonGameOptions } from "../index"
 
 let completedSimulations = 0
 const TEMP_FILENAME = "__temp_compiled_src_IGNORE.js"
