@@ -30,7 +30,7 @@ export function makeSetupFile(optimizer: Optimizer, gameMode: string) {
   content += `user_game_build_path;${path.join(process.cwd(), gameConfig.outputDir)}\n`
   content += `pmb_rtp;${params.pmbRtp}\n`
 
-  const outPath = path.join(__dirname, "../../optimizer-rust/src", "setup.txt")
+  const outPath = path.join(__dirname, "./optimizer-rust/src", "setup.txt")
 
   writeFile(outPath, content)
 }

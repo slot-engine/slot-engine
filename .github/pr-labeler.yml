@@ -1,0 +1,6 @@
+'type: feat':
+  - '/^feat/'
+'type: fix':
+  - '/^fix/'
+'type: docs':
+  - '/^docs/'

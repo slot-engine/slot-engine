@@ -1,0 +1,12 @@
+name: 'CI checks'
+description: 'Run CI checks like linting, typechecking, tests, etc.'
+runs:
+  using: 'composite'
+  steps:
+    - name: Build
+      run: pnpm build
+      shell: bash
+
+    - name: Typecheck
+      run: pnpm typecheck
+      shell: bash

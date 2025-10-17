@@ -24,18 +24,20 @@ import { writeJsonFile } from "../../utils"
 export class Analysis {
   protected readonly gameConfig: GameConfig["config"]
   protected readonly optimizerConfig: OptimzierGameModeConfig
-  protected readonly filePaths: Record<string, FilePaths>
+  protected filePaths: Record<string, FilePaths>
 
   constructor(optimizer: Optimizer) {
     this.gameConfig = optimizer.getGameConfig()
     this.optimizerConfig = optimizer.getOptimizerGameModes()
-    this.filePaths = this.getPathsForModes(Object.keys(this.gameConfig.gameModes))
+    this.filePaths = {}
   }
 
   async runAnalysis(gameModes: string[]) {
+    this.filePaths = this.getPathsForModes(gameModes)
     this.getNumberStats(gameModes)
     this.getWinRanges(gameModes)
     //this.getSymbolStats(gameModes)
+    console.log("Analysis complete. Files written to build directory.")
   }
 
   private getPathsForModes(gameModes: string[]) {
@@ -80,7 +82,10 @@ export class Analysis {
       }
 
       for (const p of Object.values(paths[modeStr])) {
-        assert(fs.existsSync(p), `File "${p}" does not exist`)
+        assert(
+          fs.existsSync(p),
+          `File "${p}" does not exist. Run optimization to auto-create it.`,
+        )
       }
     }
 
@@ -162,6 +167,10 @@ export class Analysis {
     assert(config, `Game mode "${mode}" not found in game config`)
     return config
   }
+}
+
+export interface AnalysisOpts {
+  gameModes: string[]
 }
 
 interface FilePaths {

@@ -1,4 +1,4 @@
-import { AnyGameModes, AnySymbols, AnyUserData, CommonGameOptions, GameHooks } from ".."
+import { AnyGameModes, AnySymbols, AnyUserData, CommonGameOptions, GameHooks } from "../index"
 import { GameMode, GameModeName } from "./GameMode"
 import { GameSymbol } from "./GameSymbol"
 

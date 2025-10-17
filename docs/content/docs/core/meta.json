@@ -1,0 +1,19 @@
+{
+  "title": "Slot Engine Core",
+  "root": true,
+  "pages": [
+    "---Introduction---",
+    "index",
+    "what-is-slot-engine",
+    "slot-engine-vs-stake-math-sdk",
+    "core-concepts",
+    "---Game Configuration---",
+    "configuration",
+    "type-safety",
+    "---Game Flow---",
+    "game-implementation",
+    "game-implementation-tips",
+    "---Game Simulation---",
+    "---Game Optimization---"
+  ]
+}

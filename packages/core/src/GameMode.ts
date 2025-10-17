@@ -1,5 +1,5 @@
-import { ReelGenerator } from "./ReelGenerator"
-import { ResultSet } from "./ResultSet"
+import { type ReelGenerator } from "./ReelGenerator"
+import { type ResultSet } from "./ResultSet"
 
 export class GameMode {
   name: GameModeName

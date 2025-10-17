@@ -1,11 +1,11 @@
 {
-  "name": "lines_example",
+  "name": "example-lines",
   "version": "0.1.0",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsx ./index.ts"
   },
   "dependencies": {
-    "core": "workspace:*"
+    "@slot-engine/core": "workspace:*"
   }
 }

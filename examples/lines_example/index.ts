@@ -11,7 +11,7 @@ import {
   defineGameModes,
   defineSymbols,
   defineUserState,
-} from "core"
+} from "@slot-engine/core"
 import { GENERATORS } from "./src/reels"
 import { onHandleGameFlow } from "./src/onHandleGameFlow"
 import {
@@ -390,9 +390,13 @@ game.configureOptimization({
 
 game.runTasks({
   debug: false,
-  doSimulation: true,
-  doOptimization: true,
+  doSimulation: false,
+  doOptimization: false,
   optimizationOpts: {
+    gameModes: ["base"],
+  },
+  doAnalysis: true,
+  analysisOpts: {
     gameModes: ["base"],
   },
 })

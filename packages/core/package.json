@@ -1,20 +1,31 @@
 {
-  "name": "core",
+  "name": "@slot-engine/core",
   "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/slot-engine/slot-engine"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prebuild": "pnpm typecheck && pnpm copy-files",
+    "build": "tsup ./index.ts --dts --format cjs,esm --sourcemap",
+    "copy-files": "tsx ../../scripts/copy-core-files.ts"
   },
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "default": "./index.ts"
-    },
-    "./utils": {
-      "default": "./utils.ts"
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "module": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
   "devDependencies": {
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "tsup": "8.5.0"
   },
   "dependencies": {
     "esbuild": "0.25.9"

@@ -1,6 +1,5 @@
-import fs from "fs"
 import path from "path"
-import { Optimizer } from "../optimizer"
+import { type Optimizer } from "../optimizer"
 import { writeJsonFile } from "../../utils"
 
 export function makeMathConfig(

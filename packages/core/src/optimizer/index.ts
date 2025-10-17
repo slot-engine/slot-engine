@@ -1,4 +1,4 @@
-import { GameConfig, OptimizationConditions, OptimizationScaling, SlotGame } from "../.."
+import { GameConfig, OptimizationConditions, OptimizationScaling } from "../../index"
 import { GameModeName } from "../GameMode"
 import { OptimizationParameters } from "./OptimizationParameters"
 import { makeMathConfig } from "../utils/math-config"
@@ -8,6 +8,7 @@ import path from "path"
 import { Analysis } from "../analysis"
 import assert from "assert"
 import { isMainThread } from "worker_threads"
+import { SlotGame } from "../SlotGame"
 
 export class Optimizer {
   protected readonly gameConfig: GameConfig["config"]
@@ -32,9 +33,6 @@ export class Optimizer {
       const setupFile = makeSetupFile(this, mode)
       await this.runSingleOptimization()
     }
-
-    const analyzer = new Analysis(this)
-    await analyzer.runAnalysis(gameModes)
   }
 
   private async runSingleOptimization() {
@@ -99,7 +97,7 @@ async function rustProgram(...args: string[]) {
   return new Promise((resolve, reject) => {
     const task = spawn("cargo", ["run", "--release", ...args], {
       shell: true,
-      cwd: path.join(__dirname, "../../optimizer-rust"),
+      cwd: path.join(__dirname, "./optimizer-rust"),
       stdio: "pipe",
     })
     task.on("error", (error) => {
