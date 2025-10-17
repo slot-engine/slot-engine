@@ -4,6 +4,7 @@
   "scripts": {
     "build": "turbo run build --filter=\"@slot-engine/*\"",
     "dev": "turbo run dev --filter=\"@slot-engine/*\"",
+    "docs:dev": "turbo run dev --filter=\"docs\"",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "typecheck": "turbo run typecheck"

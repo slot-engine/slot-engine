@@ -1,0 +1,11 @@
+{
+  "mode": "pre",
+  "tag": "next",
+  "initialVersions": {
+    "docs": "0.0.0",
+    "example-lines": "0.1.0",
+    "@slot-engine/core": "0.1.0",
+    "@slot-engine/lgs": "0.1.0"
+  },
+  "changesets": []
+}
