@@ -1,6 +1,7 @@
 {
   "name": "@slot-engine/lgs",
-  "version": "0.0.1",
+  "version": "0.0.0",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/slot-engine/slot-engine"

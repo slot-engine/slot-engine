@@ -1,6 +1,5 @@
 ---
 "@slot-engine/core": patch
-"@slot-engine/lgs": patch
 ---
 
-Testing changesets
+Initial npm release for testing purposes.
