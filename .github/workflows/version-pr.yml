@@ -1,12 +1,9 @@
-name: Release
+name: Version PR
 
 on:
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to release'
-        required: true
-        default: 'main'
+  push:
+    branches:
+      - main
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -18,7 +15,6 @@ jobs:
       contents: write # to create release (changesets/action)
       issues: write # to post issue comments (changesets/action)
       pull-requests: write # to create pull request (changesets/action)
-      id-token: write # to use OpenID Connect token for provenance (changesets/action)
 
     if: github.repository == 'slot-engine/slot-engine'
 
@@ -31,13 +27,10 @@ jobs:
       - uses: ./.github/actions/ci-setup
       - uses: ./.github/actions/ci-checks
 
-      - name: Create Release Pull Request or Publish to npm
+      - name: Create Release PR
         uses: changesets/action@v1
         with:
-          publish: pnpm publish-release
-          commit: 'chore: release new version'
+          commit: "chore: version packages"
+          title: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true

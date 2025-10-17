@@ -7,7 +7,8 @@
     "docs:dev": "turbo run dev --filter=\"docs\"",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "publish-release": "pnpm install --frozen-lockfile=false && pnpm --filter=\"@slot-engine/*\" build && pnpm changeset publish"
   },
   "devDependencies": {
     "dotenv": "17.2.3",
