@@ -8,4 +8,126 @@ icon: "Rocket"
 
 ## Introduction
 
-Slot Engine is a family of TypeScript libraries for building slot games.
+Slot Engine is a family of TypeScript libraries for building, simulating and testing slot games.
+
+<Cards>
+  <Card icon={<CircuitBoard className="text-blue-300" />} title='Slot Engine Core'>
+  Library for configuring and simulating slot games. Produces output compatible with Stake Engine / Stake RGS.
+  </Card>
+  <Card icon={<Server className="text-blue-300" />} title='Slot Engine LGS'>
+  Local gaming server. Test your game locally without uploading to Stake Engine and save time during development.
+  </Card>
+</Cards>
+
+<Callout title="Work in progress / Beta" type="warning">
+  Slot Engine libraries are not yet officially labelled as "production ready", because some features may be missing.
+  The libraries do their job, but expect bugs or changes to the API between versions.
+</Callout>
+
+### Further Reading
+
+To learn more about Slot Engine and it's features, check out ["What is Slot Engine?"](/docs/core/what-is-slot-engine).
+
+["Slot Engine vs Stake Math SDK"](/docs/core/slot-engine-vs-stake-math-sdk) - unsure which one is right for you?
+Head over to this in-depth comparison.
+
+## Installation & Setup
+
+Get started creating your first game using the `@slot-engine/core` library.
+
+<Steps>
+  <Step>
+    ### Install package from npm
+
+    Set up your Node.js (>= 24) project and install `@slot-engine/core`. **Using TypeScript instead of JavaScript is highly recommended.**
+
+    ```bash tab="npm"
+    npm i @slot-engine/core
+    ```
+
+    ```bash tab="pnpm"
+    pnpm i @slot-engine/core
+    ```
+
+    ```bash tab="yarn"
+    yarn add @slot-engine/core
+    ```
+
+    ```bash tab="bun"
+    bun install @slot-engine/core
+    ```
+  </Step>
+  <Step>
+    ### Configure your game
+
+    Be sure to check out the docs for all individual configuration options,
+    since this should only provide you a quick overview of how to get started.
+
+    You can [read more here](/docs/core/configuration).
+
+    ```ts title="index.ts"
+    import {
+      defineUserState,
+      defineSymbols,
+      defineGameModes,
+      InferGameType,
+      createSlotGame,
+    } from "@slot-engine/core"
+
+    export const userState = defineUserState({ /* ... */ })
+    export type UserStateType = typeof userState
+
+    export const symbols = defineSymbols([ /* ... */ ])
+    export type SymbolsType = typeof symbols
+
+    export const gameModes = defineGameModes({ /* ... */ })
+    export type GameModesType = typeof gameModes
+
+    export type GameType = InferGameType<GameModesType, SymbolsType, UserStateType>
+
+    export const game = createSlotGame<GameType>({
+      id: "my-game",
+      name: "My Game",
+      maxWinX: 5000,
+      gameModes,
+      symbols,
+      userState,
+      hooks: {},
+    })
+    ```
+  </Step>
+  <Step>
+    ### Simulate your game
+
+    Configure simulation to see your game's theoretical outcomes, RTP, and other key metrics.
+
+    ```ts title="index.ts"
+    game.configureSimulation({
+      simRunsAmount: {
+        base: 100000,
+        bonus: 100000,
+      },
+      concurrency: 16,
+    })
+
+    game.runTasks({
+      doSimulation: true,
+    })
+    ```
+
+    Upon running your code, this will output JSONL and CSV files containing
+    the results of your n simulated spins.
+
+    **Right now, the output is formatted to be compatible with Stake Engine.**
+    Should other opportunities like Stake Engine arise in the future, Slot Engine might support those too.
+    The output is not customizable at this point.
+
+    [Read more](/docs/core/simulation) about game simulations.
+  </Step>
+</Steps>
+
+<Callout title="Good to know">
+  Before configuring your game, you should get familiar with the [concepts and ideas](/docs/core/core-concepts) of the Core library
+  to learn important terminology and background info. If you've used the Stake Math SDK before,
+  many concepts will feel familiar.
+</Callout>
