@@ -283,9 +283,8 @@ export class Simulation {
     gameMode: string
     library: Map<string, Book>
     gameConfig: GameConfig["config"]
-    fileNameWithoutExtension?: string
   }) {
-    const { gameMode, fileNameWithoutExtension, library, gameConfig } = opts
+    const { gameMode, library, gameConfig } = opts
 
     const rows: string[] = []
 
@@ -295,12 +294,12 @@ export class Simulation {
 
     rows.sort((a, b) => Number(a.split(",")[0]) - Number(b.split(",")[0]))
 
-    const outputFileName = fileNameWithoutExtension
-      ? `${fileNameWithoutExtension}.csv`
-      : `lookUpTable_${gameMode}.csv`
+    let outputFileName = `lookUpTable_${gameMode}.csv`
+    let outputFilePath = path.join(gameConfig.outputDir, outputFileName)
+    writeFile(outputFilePath, rows.join("\n"))
 
-    const outputFilePath = path.join(gameConfig.outputDir, outputFileName)
-
+    outputFileName = `lookUpTable_${gameMode}_0.csv`
+    outputFilePath = path.join(gameConfig.outputDir, outputFileName)
     writeFile(outputFilePath, rows.join("\n"))
 
     return outputFilePath
@@ -313,9 +312,8 @@ export class Simulation {
     gameMode: string
     library: Map<string, Book>
     gameConfig: GameConfig["config"]
-    fileNameWithoutExtension?: string
   }) {
-    const { gameMode, fileNameWithoutExtension, library, gameConfig } = opts
+    const { gameMode, library, gameConfig } = opts
 
     const rows: string[] = []
 
@@ -327,9 +325,7 @@ export class Simulation {
 
     rows.sort((a, b) => Number(a.split(",")[0]) - Number(b.split(",")[0]))
 
-    const outputFileName = fileNameWithoutExtension
-      ? `${fileNameWithoutExtension}.csv`
-      : `lookUpTableSegmented_${gameMode}.csv`
+    const outputFileName = `lookUpTableSegmented_${gameMode}.csv`
 
     const outputFilePath = path.join(gameConfig.outputDir, outputFileName)
     writeFile(outputFilePath, rows.join("\n"))
