@@ -49,10 +49,6 @@ export interface CommonGameOptions<
    */
   name: string
   /**
-   * An arbitrary number to identify the provider of this game.
-   */
-  providerNumber: number
-  /**
    * A GameMode is the core structure of a slot, defining the board,\
    * bet cost, win type, and other properties.
    *
@@ -176,7 +172,6 @@ export interface CreateSlotGameOpts<
 > {
   id: CommonGameOptions["id"]
   name: CommonGameOptions["name"]
-  providerNumber: CommonGameOptions["providerNumber"]
   gameModes: TGameModes
   symbols: TSymbols
   scatterToFreespins: CommonGameOptions["scatterToFreespins"]

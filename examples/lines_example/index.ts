@@ -265,7 +265,6 @@ export type GameType = InferGameType<GameModesType, SymbolsType, UserStateType>
 export const game = createSlotGame<GameType>({
   id: "example-01",
   name: "Example Lines Game",
-  providerNumber: 0,
   maxWinX: 2000,
   gameModes,
   symbols,

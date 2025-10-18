@@ -14,7 +14,6 @@ export class GameConfig<
   readonly config: {
     readonly id: string
     readonly name: string
-    readonly providerNumber: number
     readonly gameModes: Record<GameModeName, GameMode>
     readonly symbols: Map<TSymbols[number]["id"], TSymbols[number]>
     readonly padSymbols?: number
@@ -30,7 +29,6 @@ export class GameConfig<
     this.config = {
       id: opts.id,
       name: opts.name,
-      providerNumber: opts.providerNumber,
       gameModes: opts.gameModes,
       symbols: new Map<string, GameSymbol>(),
       padSymbols: opts.padSymbols || 0,
