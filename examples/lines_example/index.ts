@@ -388,7 +388,6 @@ game.configureOptimization({
 })
 
 game.runTasks({
-  debug: false,
   doSimulation: false,
   doOptimization: false,
   optimizationOpts: {

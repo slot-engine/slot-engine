@@ -82,7 +82,6 @@ export class SlotGame<
 
   async runTasks(
     opts: {
-      debug?: boolean
       doSimulation?: boolean
       doOptimization?: boolean
       doAnalysis?: boolean
@@ -96,7 +95,7 @@ export class SlotGame<
     }
 
     if (opts.doSimulation) {
-      await this.runSimulation({ debug: opts.debug })
+      await this.runSimulation(opts.simulationOpts || {})
     }
 
     if (opts.doOptimization) {
