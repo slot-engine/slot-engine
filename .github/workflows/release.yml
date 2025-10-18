@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to release'
+        description: "Branch to release"
         required: true
-        default: 'main'
+        default: "main"
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
-permissions: 
+permissions:
   contents: write
   issues: write
   pull-requests: write
@@ -35,9 +35,9 @@ jobs:
         uses: changesets/action@v1
         with:
           publish: pnpm publish-release
-          commit: 'chore: release new version'
+          commit: "chore: release new version"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
+          NPM_CONFIG_PROVENANCE: true
