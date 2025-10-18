@@ -5,6 +5,7 @@
     "type": "git",
     "url": "https://github.com/slot-engine/slot-engine"
   },
+  "homepage": "https://slot-engine.dev/docs/core",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "typecheck": "tsc --noEmit",
@@ -12,6 +13,9 @@
     "build": "tsup ./index.ts --dts --format cjs,esm --sourcemap",
     "copy-files": "tsx ../../scripts/copy-core-files.ts"
   },
+  "files": [
+    "dist"
+  ],
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
