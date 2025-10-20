@@ -1,0 +1,9 @@
+{
+  "title": "Configuration Options",
+  "icon": "Settings",
+  "pages": [
+    "index",
+    "symbols",
+    "game-modes"
+  ]
+}
