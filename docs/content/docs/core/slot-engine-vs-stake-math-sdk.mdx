@@ -4,4 +4,70 @@ description: How is Slot Engine different from the Stake Math SDK?
 icon: "GitCompareArrows"
 ---
 
-Comparison
+---
+
+## Slot Engine is inspired by Stake's Math SDK
+
+Slot Engine Core and Stake's Math SDK share many similarities, including comparable APIs.
+Originally conceived as a TypeScript port of the Math SDK, Slot Engine evolved during development
+to deliver an improved developer experience and enhanced code versioning capabilities.
+
+## Challenges & Solutions
+
+Here's how Slot Engine addresses key challenges encountered with the Math SDK:
+
+### Stake Math SDK Challenges
+
+Stake's solution provides a Python codebase that developers can clone and customize.
+However, game development with the Math SDK presents several challenges:
+
+#### Complexity Barriers
+- Requires deep understanding of complex inner workings
+- Features deep class inheritance and functions spanning multiple files
+- Can overwhelm developers, especially those new to programming
+
+#### Type Safety Issues
+- Lacks comprehensive type definitions
+- Results in `any` types throughout the codebase
+- Complicates development and debugging
+
+#### Version Management Problems
+- Not distributed through package managers
+- Upgrading existing games becomes cumbersome and risky
+- Custom code modifications make updates nearly impossible without significant refactoring
+
+Despite these challenges, the Stake Math SDK is battle-tested and widely used by
+industry professionals for creating sophisticated games.
+
+### Slot Engine's Approach
+
+Slot Engine improves the developer experience by reducing some complexity through design choices:
+
+#### Simplified Architecture
+- Consciously avoids exposing all source code during development
+- Provides utility functions, abstractions, and hooks instead
+- Reduces the need to override core functionality
+
+#### Better Developer Experience
+- Lower learning curve for new developers
+- Cleaner, more maintainable code structure
+- Improved type safety
+
+#### Package Distribution
+- Distributed as an npm package for easy installation and updates
+- Semantic versioning ensures predictable upgrade paths
+- No need to clone and modify source code directly
+
+## Fundamental Differences
+
+### "Magic Methods"
+
+Examining Stake's example games reveals that developers must manually invoke methods like `reset_seed()`, `reset_book()`, or `check_repeat()`.
+The purpose of these methods isn't immediately clear—understanding their role in game simulation requires diving deep into the underlying implementation.
+
+Slot Engine eliminates most "magic methods" by incorporating their functionality directly into the core logic,
+reducing developer confusion and improving code clarity for developers.
+
+### There is no One Size Fits All
+
+...

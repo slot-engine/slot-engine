@@ -1,3 +1,27 @@
 @import "tailwindcss";
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
+
+h1, h2, h3, h4 {
+  color: var(--color-gray-300);
+}
+
+p {
+  color: var(--color-gray-200);
+}
+
+strong {
+  text-decoration: underline;
+  text-decoration-color: var(--color-blue-300);
+  text-decoration-thickness: 2px;
+}
+
+p a {
+  color: var(--color-blue-300);
+  text-decoration-color: var(--color-blue-300);
+  text-decoration-thickness: 2px;
+}
+
+ul li::marker {
+  color: var(--color-blue-300);
+}

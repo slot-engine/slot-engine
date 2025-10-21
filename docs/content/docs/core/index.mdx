@@ -19,17 +19,18 @@ Slot Engine is a family of TypeScript libraries for building, simulating and tes
   </Card>
 </Cards>
 
-<Callout title="Work in progress / Beta" type="warning">
+<Callout title="Work in progress" type="warning">
   Slot Engine libraries are not yet officially labelled as "production ready", because some features may be missing.
   The libraries do their job, but expect bugs or changes to the API between versions.
 </Callout>
 
 ### Further Reading
 
-To learn more about Slot Engine and it's features, check out ["What is Slot Engine?"](/docs/core/what-is-slot-engine).
+For a more in-depth introduction to Slot Engine and its features,
+check out ["What is Slot Engine?"](/docs/core/what-is-slot-engine).
 
-["Slot Engine vs Stake Math SDK"](/docs/core/slot-engine-vs-stake-math-sdk) - unsure which one is right for you?
-Head over to this in-depth comparison.
+Unsure which is right for you? ["Slot Engine vs Stake Math SDK"](/docs/core/slot-engine-vs-stake-math-sdk)
+provides an in-depth comparison to help you decide.
 
 ## Installation & Setup
 
@@ -39,7 +40,9 @@ Get started creating your first game using the `@slot-engine/core` library.
   <Step>
     ### Install package from npm
 
-    Set up your Node.js (>= 24) project and install `@slot-engine/core`. **Using TypeScript instead of JavaScript is highly recommended.**
+    Set up your Node.js project and install `@slot-engine/core`. **Using TypeScript instead of JavaScript is highly recommended.**
+
+    Slot Engine works with Node v24. While older Node versions (>= 20) will most likely work too, it hasn't been tested.
 
     ```bash tab="npm"
     npm i @slot-engine/core
@@ -60,10 +63,8 @@ Get started creating your first game using the `@slot-engine/core` library.
   <Step>
     ### Configure your game
 
-    Be sure to check out the docs for all individual configuration options,
-    since this should only provide you a quick overview of how to get started.
-
-    You can [read more here](/docs/core/config).
+    This example provides a quick overview to get you started.
+    For detailed configuration options, see the [configuration guide](/docs/core/config).
 
     ```ts title="index.ts"
     import {
@@ -99,8 +100,6 @@ Get started creating your first game using the `@slot-engine/core` library.
   <Step>
     ### Simulate your game
 
-    Configure simulation to see your game's theoretical outcomes, RTP, and other key metrics.
-
     ```ts title="index.ts"
     game.configureSimulation({
       simRunsAmount: {
@@ -115,18 +114,18 @@ Get started creating your first game using the `@slot-engine/core` library.
     })
     ```
 
-    Upon running your code, this will output JSONL and CSV files containing
-    the results of your n simulated spins.
+    Upon running your code, this will generate JSONL and CSV files containing
+    the results of your simulated spins.
 
-    **Right now, the output is formatted to be compatible with Stake Engine.**
-    Should other opportunities like Stake Engine arise in the future, Slot Engine might support those too.
-    The output is not customizable at this point.
+    **Currently, the output format is designed for compatibility with Stake Engine.**
+    Future versions may support additional platforms as they emerge.
+    Output customization is not available at this time.
 
-    [Read more](/docs/core/simulation) about game simulations.
+    [Learn more](/docs/core/simulation) about game simulations.
   </Step>
 </Steps>
 
 <Callout title="Important">
-  Before configuring your game, it's worth to get familiar with the [concepts and ideas](/docs/core/core-concepts) of the Core library
-  to learn important terminology and background info. If you've used the Stake Math SDK before, many concepts will feel familiar.
+  Before configuring your game, familiarize yourself with the [concepts and ideas](/docs/core/core-concepts) of the Core library
+  to understand important terminology and background information. If you've used the Stake Math SDK before, many concepts will be familiar.
 </Callout>

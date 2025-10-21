@@ -12,6 +12,7 @@
     "config/symbols",
     "config/game-modes",
     "config/custom-state",
+    "hooks",
     "type-safety",
     "---Game Flow---",
     "game-implementation",
