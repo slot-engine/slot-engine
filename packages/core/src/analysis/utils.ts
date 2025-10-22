@@ -56,8 +56,11 @@ export function getPayoutWeights(
 
 export function getNonZeroHitrate(payoutWeights: PayoutWeights) {
   const totalWeight = getTotalWeight(payoutWeights)
-  const nonZeroWeight = totalWeight - (payoutWeights[0] ?? 0) * totalWeight
-  return nonZeroWeight / totalWeight
+  if (Math.min(...Object.keys(payoutWeights).map(Number)) == 0) {
+    return totalWeight / (totalWeight - (payoutWeights[0] ?? 0) / totalWeight)
+  } else {
+    return 1
+  }
 }
 
 export function getNullHitrate(payoutWeights: PayoutWeights) {
