@@ -459,7 +459,7 @@ export class Simulation {
       bundle: true,
       platform: "node",
       outfile: path.join(this.gameConfig.config.outputDir, TEMP_FILENAME),
-      external: ["esbuild", "@mongodb-js/zstd"],
+      external: ["esbuild"],
     })
   }
 
