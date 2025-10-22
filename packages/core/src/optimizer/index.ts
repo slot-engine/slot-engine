@@ -33,6 +33,7 @@ export class Optimizer {
       const setupFile = makeSetupFile(this, mode)
       await this.runSingleOptimization()
     }
+    console.log("Optimization complete. Files written to build directory.")
   }
 
   private async runSingleOptimization() {

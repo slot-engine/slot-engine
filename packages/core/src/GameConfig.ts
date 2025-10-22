@@ -7,7 +7,6 @@ import {
   GameHooks,
 } from "../index"
 import { GameMode, GameModeName } from "./GameMode"
-import { GameSymbol } from "./GameSymbol"
 
 /**
  * Static configuration for a slot game.\
@@ -59,6 +58,7 @@ export class GameConfig<
         value.id === key,
         `Symbol key "${key}" does not match symbol id "${value.id}"`,
       )
+      this.config.symbols.set(key, value as TSymbols[keyof TSymbols])
     }
 
     function getAnticipationTrigger(spinType: string) {

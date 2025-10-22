@@ -20,6 +20,7 @@ import {
   parseLookupTable,
 } from "./utils"
 import { writeJsonFile } from "../../utils"
+import { isMainThread } from "worker_threads"
 
 export class Analysis {
   protected readonly gameConfig: GameConfig["config"]
@@ -33,6 +34,8 @@ export class Analysis {
   }
 
   async runAnalysis(gameModes: string[]) {
+    if (!isMainThread) return // IMPORTANT: Prevent workers from kicking off (multiple) analysis runs
+
     this.filePaths = this.getPathsForModes(gameModes)
     this.getNumberStats(gameModes)
     this.getWinRanges(gameModes)
