@@ -1,4 +1,11 @@
-import { AnyGameModes, AnySymbols, AnyUserData, CommonGameOptions, GameHooks } from "../index"
+import assert from "assert"
+import {
+  AnyGameModes,
+  AnySymbols,
+  AnyUserData,
+  CommonGameOptions,
+  GameHooks,
+} from "../index"
 import { GameMode, GameModeName } from "./GameMode"
 import { GameSymbol } from "./GameSymbol"
 
@@ -15,7 +22,7 @@ export class GameConfig<
     readonly id: string
     readonly name: string
     readonly gameModes: Record<GameModeName, GameMode>
-    readonly symbols: Map<TSymbols[number]["id"], TSymbols[number]>
+    readonly symbols: Map<keyof TSymbols & string, TSymbols[keyof TSymbols]>
     readonly padSymbols?: number
     readonly scatterToFreespins: Record<string, Record<number, number>>
     readonly anticipationTriggers: Record<SpinType, number>
@@ -30,7 +37,7 @@ export class GameConfig<
       id: opts.id,
       name: opts.name,
       gameModes: opts.gameModes,
-      symbols: new Map<string, GameSymbol>(),
+      symbols: new Map(),
       padSymbols: opts.padSymbols || 0,
       scatterToFreespins: opts.scatterToFreespins,
       anticipationTriggers: {
@@ -47,14 +54,11 @@ export class GameConfig<
       outputDir: "__build__",
     }
 
-    for (const symbol of opts.symbols) {
-      if (!this.config.symbols.has(symbol.id)) {
-        this.config.symbols.set(symbol.id, symbol)
-      } else {
-        console.warn(
-          `Symbol with id "${symbol.id}" already exists in the game config. Skipping duplicate. This is probably not intentional.`,
-        )
-      }
+    for (const [key, value] of Object.entries(opts.symbols)) {
+      assert(
+        value.id === key,
+        `Symbol key "${key}" does not match symbol id "${value.id}"`,
+      )
     }
 
     function getAnticipationTrigger(spinType: string) {

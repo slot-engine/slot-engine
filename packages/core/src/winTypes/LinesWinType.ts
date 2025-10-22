@@ -1,11 +1,11 @@
 import { GameSymbol } from "../GameSymbol"
-import { AnySimulationContext } from "../Simulation"
+import { SimulationContext } from "../Simulation"
 import { WinCombination, WinType, WinTypeOpts } from "../WinType"
 
 export class LinesWinType extends WinType {
   protected lines: Record<number, number[]>
   declare protected winCombinations: LineWinCombination[]
-  declare context: (ctx: AnySimulationContext) => LinesWinType
+  declare context: (ctx: SimulationContext<any, any, any>) => LinesWinType
   declare getWins: () => {
     payout: number
     winCombinations: LineWinCombination[]

@@ -579,7 +579,7 @@ export class SimulationContext<
       }
     }
 
-    this.wallet.confirmWins(this)
+    this.wallet.confirmWins(this as SimulationContext<any, any, any>)
     this.confirmRecords()
 
     parentPort?.postMessage({

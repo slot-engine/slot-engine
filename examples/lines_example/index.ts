@@ -28,27 +28,27 @@ export const userState = defineUserState({
 
 export type UserStateType = typeof userState
 
-export const symbols = defineSymbols([
-  new GameSymbol({
+export const symbols = defineSymbols({
+  S: new GameSymbol({
     id: "S",
     properties: {
       isScatter: true,
     },
   }),
-  new GameSymbol({
+  SS: new GameSymbol({
     id: "SS",
     properties: {
       isScatter: true,
       isSuperScatter: true,
     },
   }),
-  new GameSymbol({
+  W: new GameSymbol({
     id: "W",
     properties: {
       isWild: true,
     },
   }),
-  new GameSymbol({
+  H1: new GameSymbol({
     id: "H1",
     pays: {
       3: 10,
@@ -56,7 +56,7 @@ export const symbols = defineSymbols([
       5: 250,
     },
   }),
-  new GameSymbol({
+  H2: new GameSymbol({
     id: "H2",
     pays: {
       3: 7,
@@ -64,7 +64,7 @@ export const symbols = defineSymbols([
       5: 150,
     },
   }),
-  new GameSymbol({
+  H3: new GameSymbol({
     id: "H3",
     pays: {
       3: 4,
@@ -72,7 +72,7 @@ export const symbols = defineSymbols([
       5: 50,
     },
   }),
-  new GameSymbol({
+  H4: new GameSymbol({
     id: "H4",
     pays: {
       3: 3,
@@ -80,7 +80,7 @@ export const symbols = defineSymbols([
       5: 10,
     },
   }),
-  new GameSymbol({
+  L1: new GameSymbol({
     id: "L1",
     pays: {
       3: 1,
@@ -88,7 +88,7 @@ export const symbols = defineSymbols([
       5: 4,
     },
   }),
-  new GameSymbol({
+  L2: new GameSymbol({
     id: "L2",
     pays: {
       3: 0.8,
@@ -96,7 +96,7 @@ export const symbols = defineSymbols([
       5: 2,
     },
   }),
-  new GameSymbol({
+  L3: new GameSymbol({
     id: "L3",
     pays: {
       3: 0.6,
@@ -104,7 +104,7 @@ export const symbols = defineSymbols([
       5: 1.5,
     },
   }),
-  new GameSymbol({
+  L4: new GameSymbol({
     id: "L4",
     pays: {
       3: 0.5,
@@ -112,7 +112,7 @@ export const symbols = defineSymbols([
       5: 1,
     },
   }),
-  new GameSymbol({
+  L5: new GameSymbol({
     id: "L5",
     pays: {
       3: 0.2,
@@ -120,7 +120,7 @@ export const symbols = defineSymbols([
       5: 0.8,
     },
   }),
-])
+})
 
 export type SymbolsType = typeof symbols
 

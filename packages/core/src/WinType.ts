@@ -1,5 +1,5 @@
 import { GameSymbol } from "./GameSymbol"
-import { AnySimulationContext } from "./Simulation"
+import { AnySimulationContext, SimulationContext } from "./Simulation"
 
 export class WinType {
   protected payout: number
@@ -18,7 +18,7 @@ export class WinType {
    * 
    * This gives the WinType access to the current board.
    */
-  context(ctx: AnySimulationContext): WinType {
+  context(ctx: SimulationContext<any, any, any>): WinType {
     this.ctx = ctx
     return this
   }

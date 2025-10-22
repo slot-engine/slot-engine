@@ -59,7 +59,7 @@ export interface CommonGameOptions<
   /**
    * A list of all symbols that will appear on the reels.
    */
-  symbols: GameSymbol[]
+  symbols: TSymbols
   /**
    * A mapping from spin type to scatter counts to the number of free spins awarded.
    *
@@ -115,7 +115,7 @@ export type AnyGameModes = Record<string, GameMode>
 /**
  * @internal
  */
-export type AnySymbols = GameSymbol[]
+export type AnySymbols = Record<string, GameSymbol>
 
 /**
  * @internal
@@ -191,7 +191,7 @@ export function createSlotGame<TGame>(
 
 export const defineUserState = <TUserState extends AnyUserData>(data: TUserState) => data
 
-export const defineSymbols = <TSymbol extends GameSymbol>(symbols: TSymbol[]) => symbols
+export const defineSymbols = <TSymbols extends AnySymbols>(symbols: TSymbols) => symbols
 
 export const defineGameModes = <TGameModes extends AnyGameModes>(gameModes: TGameModes) =>
   gameModes

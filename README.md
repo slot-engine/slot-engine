@@ -22,9 +22,9 @@ Local gaming server. Test your game locally without uploading to Stake Engine an
 ## To-Do List
 - Add Cluster Win Evaluation Class (`src/winTypes/ClusterWinType.ts`)
 - Add "ManyWays" Win Evaluation Class (`src/winTypes/ManywaysWinType.ts`)
-- Add auto completion for `gameConfig.symbols.get("symbol")`
 - Improve type-safety dealing with symbols for reel generators
 - Improve overall type-safety for better DX
 - Refactor `StandaloneBoard` and `Board` to reduce code duplication
+- Add tests with Vitest
 
 PR's are welcome!
