@@ -13,7 +13,11 @@ export default async function Page(props: PageProps<"/docs/[...slug]">) {
   const MDX = page.data.body
 
   return (
-    <DocsPage toc={page.data.toc} full={page.data.full}>
+    <DocsPage
+      toc={page.data.toc}
+      full={page.data.full}
+      tableOfContent={{ style: "clerk" }}
+    >
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>
@@ -24,6 +28,13 @@ export default async function Page(props: PageProps<"/docs/[...slug]">) {
           })}
         />
       </DocsBody>
+      <div className="mt-8 py-6 border-y">
+        <p className="text-sm text-fd-muted-foreground">
+          Use of AI on this page: Most texts were initially written by hand and were later
+          revised by AI for improved flow. All AI generated revisions were carefully
+          reviewed and edited as needed.
+        </p>
+      </div>
     </DocsPage>
   )
 }

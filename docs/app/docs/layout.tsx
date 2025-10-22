@@ -14,13 +14,13 @@ export default function Layout({ children }: LayoutProps<"/docs">) {
             title: "Slot Engine Core",
             description: "Game logic and simulations",
             url: "/docs/core",
-            icon: <CircuitBoard size={20} />,
+            icon: <CircuitBoard size={20} className="text-fd-primary" />,
           },
           {
             title: "Slot Engine LGS",
             description: "Local gaming server for testing",
             url: "/docs/lgs",
-            icon: <Server size={20} />,
+            icon: <Server size={20} className="text-fd-primary" />,
           },
         ],
       }}

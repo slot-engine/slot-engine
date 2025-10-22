@@ -7,10 +7,15 @@ export default function Layout({ children }: LayoutProps<"/">) {
       {...baseOptions()}
       links={[
         {
-          text: "Docs",
+          text: "Documentation",
           url: "/docs/core",
         },
+        {
+          text: "AI Docs",
+          url: "/llms-full.txt",
+        },
       ]}
+      githubUrl="https://github.com/slot-engine/slot-engine"
     >
       {children}
     </HomeLayout>
