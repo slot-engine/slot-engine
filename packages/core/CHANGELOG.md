@@ -1,5 +1,17 @@
 # @slot-engine/core
 
+## 0.0.3
+
+### Patch Changes
+
+- Fix bugs causing crashes - Thanks @nordowl
+
+- Improved type safety for `config.symbols.get()` - Thanks @nordowl
+
+- Fix analysis of non zero wins hit rate - Thanks @nordowl
+
+- Set minimum Node version to 23.8.0 to support native zstd compression - Thanks @nordowl
+
 ## 0.0.2
 
 ### Patch Changes
