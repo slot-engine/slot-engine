@@ -22,8 +22,6 @@ function main() {
   fs.rmSync(distDir, { recursive: true, force: true })
   fs.mkdirSync(distDir, { recursive: true })
 
-  copyRecursive("lib", path.join(distDir, "lib"))
-
   copyRecursive("optimizer-rust", path.join(distDir, "optimizer-rust"), [
     path.join("optimizer-rust", "target"),
   ])

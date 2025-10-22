@@ -1,6 +1,7 @@
 import fs from "fs"
 import path from "path"
 import assert from "assert"
+import zlib from "zlib"
 import { buildSync } from "esbuild"
 import { createDirIfNotExists, JSONL, printBoard, writeFile } from "../utils"
 import { Board } from "./Board"
@@ -11,7 +12,6 @@ import { Wallet } from "./Wallet"
 import { Book } from "./Book"
 import { Worker, isMainThread, parentPort, workerData } from "worker_threads"
 import { RecordItem } from "./GameState"
-import { zstd } from "./utils/zstd"
 import { AnyGameModes, AnySymbols, AnyUserData, CommonGameOptions } from "../index"
 
 let completedSimulations = 0
@@ -413,7 +413,8 @@ export class Simulation {
 
     fs.rmSync(compressedFilePath, { force: true })
 
-    await zstd("-f", outputFilePath, "-o", compressedFilePath)
+    const compressed = zlib.zstdCompressSync(Buffer.from(contents))
+    fs.writeFileSync(compressedFilePath, compressed)
   }
 
   private static logSymbolOccurrences(records: RecordItem[]) {
