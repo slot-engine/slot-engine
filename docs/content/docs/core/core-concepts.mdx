@@ -4,7 +4,74 @@ description: Understand the gist of Slot Engine before diving deeper.
 icon: "Lightbulb"
 ---
 
-- Game modes
-- ResultSets
-- Simulation
+---
+
+## How Slot Engine Works
+
+<Callout title="Built for Stake Engine">
+  Slot Engine's Core library is designed specifically for Stake Engine integration,
+  following similar principles to Stake's Math SDK.
+</Callout>
+
+When the [RGS](#rgs-remote-gaming-server) determines a game round outcome,
+it randomly selects an entry from a weighted list of pre-calculated results.
+**All possible game outcomes are predetermined during the build process**
+and stored in JSON and CSV files. Slot Engine generates these files,
+allowing you to upload them directly to Stake Engine.
+
+Games are configured using [game modes](#game-mode).
+For example, you might configure a "base" game mode (normal bet) and a "bonus" game mode (a.k.a. bonus buy).
+A single game flow implementation handles all simulations, regardless of the active game mode.
+
+[Result sets](#result-set) are configured for each game mode to determine
+whether a [simulation](#simulation) result is accepted or retried until specific acceptance criteria are met.
+Multiple result sets ensure diverse and exceptional outcomes across simulations.
+
+## Terminology
+
+### RGS (Remote Gaming Server)
+
+A remote gaming server that communicates with the client application, accepting bets and returning results to players.
+
+### Game Mode
+
+A game mode defines a **purchasable** game behavior, similar to "bet modes" in the Stake Math SDK.
+Game modes can vary in cost, outcomes, symbols, and mechanics.
+
+Common game mode patterns include:
+
+* **Base game** - The standard gameplay at 1x bet multiplier
+* **Bonus game** - e.g. 100x bet for instant free spins
+* **Super bonus** - e.g. 500x bet for instant super free spins
+
+Players can bet on the base game or purchase bonus features directly.
+A "base" mode can still include free spins triggered naturally, while a dedicated "bonus" mode
+allows immediate access for an extra cost.
+
+[Further reading](/docs/core/config/game-modes)
+
+### Simulation
+
+A simulation executes the game flow implementation—equivalent to **pressing the spin button on a slot**.
+Each simulation result is stored temporarily until it's either accepted or rejected.
+When accepted, the result is stored permanently, the state resets, and a new simulation begins.
+When rejected, the simulation retries until acceptance criteria are met.
+
+[Further reading](/docs/core/simulation)
+
+### Result Set
+
+Defining result sets (similar to "distributions" in the Math SDK) is crucial for **simulating very rare scenarios**.
+Even if you configure a simulation to run 1.000.000 spins of a game mode, a max win could be rare enough that it never occurs naturally.
+Result sets allow you to **enforce specific outcome quotas**, ensuring simulations retry until the defined criteria are met.
+
+Further reading:
+
+* [Configuration / Result Sets](/docs/core/config/game-modes/result-sets)
+* [Simulation / Result Sets](/docs/core/simulation)
+
+
+
+
+TODO
 - Optimization
