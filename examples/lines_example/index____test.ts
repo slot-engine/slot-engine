@@ -260,7 +260,7 @@ export const gameModes = defineGameModes({
 
 export type GameModesType = typeof gameModes
 
-export type GameType = InferGameType<any, any, any>
+export type GameType = InferGameType<GameModesType, SymbolsType, UserStateType>
 
 export const game = createSlotGame<GameType>({
   id: "example-01",

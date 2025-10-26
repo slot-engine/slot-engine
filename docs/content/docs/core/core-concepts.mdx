@@ -14,8 +14,8 @@ icon: "Lightbulb"
 </Callout>
 
 When the [RGS](#rgs-remote-gaming-server) determines a game round outcome,
-it randomly selects an entry from a weighted list of pre-calculated results.
-**All possible game outcomes are predetermined during the build process**
+it randomly selects an entry from a **weighted list of pre-calculated results**.
+All possible game outcomes are **predetermined during the build process**
 and stored in JSON and CSV files. Slot Engine generates these files,
 allowing you to upload them directly to Stake Engine.
 
@@ -26,6 +26,9 @@ A single game flow implementation handles all simulations, regardless of the act
 [Result sets](#result-set) are configured for each game mode to determine
 whether a [simulation](#simulation) result is accepted or retried until specific acceptance criteria are met.
 Multiple result sets ensure diverse and exceptional outcomes across simulations.
+
+Simulation results may produce a suboptimal [RTP](#rtp). This is acceptable,
+as an [optimization](#optimization) process typically follows to adjust the values accordingly.
 
 ## Terminology
 
@@ -70,8 +73,13 @@ Further reading:
 * [Configuration / Result Sets](/docs/core/config/game-modes/result-sets)
 * [Simulation / Result Sets](/docs/core/simulation)
 
+### Optimization
 
+The process of recalculating weights for all outcomes to achieve a specific target [RTP](#rtp).
 
+[Further reading](/docs/core/optimization)
 
-TODO
-- Optimization
+### RTP
+
+Return to Player (RTP) is a percentage that represents the
+theoretical amount of money a player can expect to win back over an extended period of gameplay.

@@ -40,65 +40,14 @@ export interface CommonGameOptions<
   TSymbols extends AnySymbols = AnySymbols,
   TUserState extends AnyUserData = AnyUserData,
 > {
-  /**
-   * The unique identifier of the game, used for configuration and identification.
-   */
   id: string
-  /**
-   * The name of the game, used for display purposes.
-   */
   name: string
-  /**
-   * A GameMode is the core structure of a slot, defining the board,\
-   * bet cost, win type, and other properties.
-   *
-   * One-off mechanisms can also be injected into the core game logic from here.
-   */
   gameModes: Record<GameModeName, GameMode>
-
-  /**
-   * A list of all symbols that will appear on the reels.
-   */
   symbols: TSymbols
-  /**
-   * A mapping from spin type to scatter counts to the number of free spins awarded.
-   *
-   * @example
-   * ```ts
-   * scatterToFreespins: {
-   *   [GameConfig.CONSTANTS.BASE_GAME]: {
-   *     3: 10,
-   *     4: 12,
-   *     5: 15,
-   *   },
-   *   [GameConfig.CONSTANTS.FREE_SPINS]: {
-   *     3: 6,
-   *     4: 8,
-   *     5: 10,
-   *   },
-   * },
-   * ```
-   */
   scatterToFreespins: Record<string, Record<number, number>>
-  /**
-   * If set, this will pad the board with symbols on the top and bottom of the reels.\
-   * Useful for teasing symbols right above or below the active board.
-   *
-   * Default: 1
-   */
   padSymbols?: number
-  /**
-   * The maximum win multiplier of the game, e.g. 5000 for a 5000x max win.
-   */
   maxWinX: number
-  /**
-   * Hooks are used to inject custom logic at specific points in the game flow.\
-   * Some required hooks must be implemented for certain features to work.
-   */
   hooks: GameHooks<TGameModes, TSymbols, TUserState>
-  /**
-   * Custom additional state that can be used in game flow logic.
-   */
   userState?: TUserState
 }
 
@@ -170,14 +119,62 @@ export interface CreateSlotGameOpts<
   TSymbols extends AnySymbols = AnySymbols,
   TUserState extends AnyUserData = AnyUserData,
 > {
+  /**
+   * The unique identifier of the game, used for configuration and identification.
+   */
   id: CommonGameOptions["id"]
+  /**
+   * The name of the game, used for display purposes.
+   */
   name: CommonGameOptions["name"]
+  /**
+   * A GameMode is the core structure of a slot, defining the board,\
+   * bet cost, win type, and other properties.
+   */
   gameModes: TGameModes
+  /**
+   * A list of all symbols that will appear on the reels.
+   */
   symbols: TSymbols
+  /**
+   * A mapping from spin type to scatter counts to the number of free spins awarded.
+   *
+   * @example
+   * ```ts
+   * scatterToFreespins: {
+   *   [GameConfig.SPIN_TYPE.BASE_GAME]: {
+   *     3: 10,
+   *     4: 12,
+   *     5: 15,
+   *   },
+   *   [GameConfig.SPIN_TYPE.FREE_SPINS]: {
+   *     3: 6,
+   *     4: 8,
+   *     5: 10,
+   *   },
+   * },
+   * ```
+   */
   scatterToFreespins: CommonGameOptions["scatterToFreespins"]
+  /**
+   * If set, this will pad the board with symbols on the top and bottom of the reels.\
+   * Useful for teasing symbols right above or below the active board.
+   *
+   * Default: 1
+   */
   padSymbols?: CommonGameOptions["padSymbols"]
+  /**
+   * The maximum win multiplier of the game, e.g. 5000 for a 5000x max win.
+   */
   maxWinX: CommonGameOptions["maxWinX"]
+  /**
+   * Custom additional state that can be used in game flow logic.
+   */
   userState?: TUserState
+  /**
+   * Hooks are used to inject custom logic at specific points in the game flow.\
+   * Some required hooks must be implemented for certain features to work.
+   */
   hooks: CommonGameOptions<TGameModes, TSymbols, TUserState>["hooks"]
 }
 

@@ -4,4 +4,141 @@ description: Learn the key components to defining your game.
 icon: BookOpenText
 ---
 
-Configuration Overview
+---
+
+## Setting up your game
+
+Create a game by calling `createSlotGame()` and passing a configuration object.
+Begin by defining basic game details, then explore the comprehensive [configuration options](#options) detailed below.
+
+```ts lineNumbers
+import { createSlotGame, GameConfig } from "@slot-engine/core"
+
+export const game = createSlotGame({
+  id: "my-game",
+  name: "My Game",
+  maxWinX: 5000,
+  padSymbols: 1,
+  scatterToFreespins: {
+    [GameConfig.SPIN_TYPE.BASE_GAME]: {
+      3: 10,
+      4: 12,
+      5: 15,
+    },
+    [GameConfig.SPIN_TYPE.FREE_SPINS]: {
+      3: 6,
+      4: 8,
+      5: 10,
+    },
+  },
+  symbols: {},
+  gameModes: {},
+  userState: {},
+  hooks: {
+    onHandleGameFlow: () => {}
+  },
+})
+```
+
+When using TypeScript, you will encounter a type error.
+This is expected because `createSlotGame` requires a type argument. Let's create a type for your game.
+
+```ts lineNumbers
+import { createSlotGame, GameConfig } from "@slot-engine/core" // [!code --]
+import { createSlotGame, GameConfig, InferGameType } from "@slot-engine/core" // [!code ++]
+
+export type GameType = InferGameType<any, any, any> // [!code ++]
+
+export const game = createSlotGame({ // [!code --]
+export const game = createSlotGame<GameType>({ // [!code ++]
+  /* your configuration */
+})
+```
+
+The utility type `InferGameType` requires three type arguments: game modes, symbols, and state.
+Since we haven't configured these yet, you can use `any` for now.
+
+You can now prepare the rest of the configuration.
+
+```ts lineNumbers
+import { createSlotGame, GameConfig, InferGameType } from "@slot-engine/core" // [!code --]
+import { // [!code ++]
+  createSlotGame, // [!code ++]
+  GameConfig, // [!code ++]
+  InferGameType, // [!code ++]
+  defineGameModes, // [!code ++]
+  defineSymbols, // [!code ++]
+  defineUserState, // [!code ++]
+} from "@slot-engine/core" // [!code ++]
+
+export const gameModes = defineGameModes({}) // [!code ++]
+export type GameModesType = typeof gameModes // [!code ++]
+
+export const symbols = defineSymbols({}) // [!code ++]
+export type SymbolsType = typeof symbols // [!code ++]
+
+export const userState = defineUserState({}) // [!code ++]
+export type UserStateType = typeof userState // [!code ++]
+
+export type GameType = InferGameType<any, any, any> // [!code --]
+export type GameType = InferGameType<GameModesType, SymbolsType, UserStateType> // [!code ++]
+
+export const game = createSlotGame<GameType>({
+  /* the rest of your configuration */
+  symbols: {}, // [!code --]
+  gameModes: {}, // [!code --]
+  userState: {}, // [!code --]
+  symbols, // [!code ++]
+  gameModes, // [!code ++]
+  userState, // [!code ++]
+})
+```
+
+You have now completed the basic game setup.
+Continue by configuring [symbols](/docs/core/config/symbols),
+[game modes](/docs/core/config/game-modes),and [state](/docs/core/config/custom-state).
+
+At the heart of your game lies the actual [implementation](/docs/core/game-flow).
+
+Finally, [simulate](/docs/core/simulation) your game, tweak settings to improve the feel of it,
+and [optimize](/docs/core/optimization) results to achieve your desired RTP.
+
+## `createSlotGame()` Options
+
+### `id`: string
+
+A unique identifier for your game.
+
+### `name`: string
+
+The name of your game.
+
+### `maxWinX`: number
+
+The maximum bet multiplier payout. Wins exceeding this number will be capped.
+
+### `gameModes`: Record\<string, GameMode\>
+
+The configured game modes for the game.
+
+### `symbols`: Record\<string, GameSymbol\>
+
+The configured symbols for the game.
+
+### `padSymbols`: number
+
+Amount of padding symbol rows above and below the active board.
+Used to display partially visible symbols in the frontend at the top and bottom of the board.
+**Defaults to 1**
+
+### `scatterToFreespins`: Record\<string, Record\<number, number>>
+
+A mapping from spin type to scatter counts to the number of free spins awarded.
+
+### `userState`: Record\<string, any>
+
+Custom additional state that can be used in game flow logic.
+
+### `hooks`: Record\<string, (ctx) => unknown>
+
+See: [Game Configuration: Hooks](/docs/core/config/hooks)
