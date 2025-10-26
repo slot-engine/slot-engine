@@ -103,7 +103,7 @@ At the heart of your game lies the actual [implementation](/docs/core/game-flow)
 Finally, [simulate](/docs/core/simulation) your game, tweak settings to improve the feel of it,
 and [optimize](/docs/core/optimization) results to achieve your desired RTP.
 
-## `createSlotGame()` Options
+## `createSlotGame()` Options [#options]
 
 ### `id`: string
 
@@ -119,11 +119,11 @@ The maximum bet multiplier payout. Wins exceeding this number will be capped.
 
 ### `gameModes`: Record\<string, GameMode\>
 
-The configured game modes for the game.
+See: [Game Configuration: Game Modes](/docs/core/config/game-modes)
 
 ### `symbols`: Record\<string, GameSymbol\>
 
-The configured symbols for the game.
+See: [Game Configuration: Symbols](/docs/core/config/symbols)
 
 ### `padSymbols`: number
 
@@ -137,7 +137,7 @@ A mapping from spin type to scatter counts to the number of free spins awarded.
 
 ### `userState`: Record\<string, any>
 
-Custom additional state that can be used in game flow logic.
+See: [Game Configuration: User State](/docs/core/config/custom-state)
 
 ### `hooks`: Record\<string, (ctx) => unknown>
 

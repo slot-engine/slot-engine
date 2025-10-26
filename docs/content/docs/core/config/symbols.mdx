@@ -4,4 +4,131 @@ description: How to define your game symbols
 icon: Clover
 ---
 
-Symbols
+---
+
+## Defining Symbols for your Game
+
+Use the `defineSymbols` function to configure symbols. The function expects a configuration object
+where each key serves as the unique identifier for a symbol. Symbols are constructed using the `GameSymbol` class.
+
+You can define as many symbols as needed, provided each has a unique key and ID.
+
+```ts lineNumbers
+import { defineSymbols, GameSymbol } from "@slot-engine/core"
+
+export const symbols = defineSymbols({
+  S: new GameSymbol({
+    id: "S",
+    properties: {
+      isScatter: true,
+    },
+  }),
+  W: new GameSymbol({
+    id: "W",
+    properties: {
+      isWild: true,
+    },
+  }),
+  H1: new GameSymbol({
+    id: "H1",
+    pays: {
+      3: 10,
+      4: 75,
+      5: 250,
+    },
+  }),
+})
+```
+
+## Paying Symbols
+
+To define payout amounts for symbols, set the `pays` property where the key is the number
+of matching symbols and the value is the bet multiplier to be paid out.
+
+```ts lineNumbers
+export const symbols = defineSymbols({
+  H1: new GameSymbol({
+    id: "H1",
+    pays: {
+      3: 10,
+      4: 75,
+      5: 250,
+    },
+  }),
+  L5: new GameSymbol({
+    id: "L5",
+    pays: {
+      3: 0.2,
+      4: 0.4,
+      5: 0.8,
+    },
+  }),
+})
+```
+
+<Callout title="Decimal places">
+  Payouts with **two or more decimal places are not recommended**, as this could result in payouts less than a cent.<br/>
+  **E.g. 0.10 bet × 0.75 multiplier = 0.075 payout**<br/>
+  Ensure the minimum bet will be 0.2 €/$ if you want to go this route.
+</Callout>
+
+## Special Symbols
+
+To define scatters, wilds, or other special symbols, set custom `properties` for your symbol.
+Multiple symbols can share the same properties. This is useful when you need multiple types
+of the same symbol category, such as different scatter variants.
+
+Properties help identify and count specific symbols on the board during gameplay.
+
+```ts lineNumbers
+export const symbols = defineSymbols({
+  S: new GameSymbol({
+    id: "S",
+    properties: {
+      isScatter: true,
+    },
+  }),
+  SS: new GameSymbol({
+    id: "SS",
+    properties: {
+      isScatter: true,
+      isSuperScatter: true,
+    },
+  }),
+  W: new GameSymbol({
+    id: "W",
+    properties: {
+      isWild: true,
+    },
+  }),
+  EW: new GameSymbol({
+    id: "EW",
+    properties: {
+      isWild: true,
+      isExpandingWild: true,
+    },
+  }),
+})
+```
+
+## Multipliers
+
+Symbol properties can hold any value, not just booleans. For example, you could specify a multiplier for a symbol.
+
+```ts lineNumbers
+export const symbols = defineSymbols({
+  W: new GameSymbol({
+    id: "W",
+    properties: {
+      isWild: true,
+      multiplier: 10,
+    },
+  }),
+})
+```
+However, in this case, the wild symbol will always have the specified multiplier when placed on the board.
+It's better to set `multiplier: 0` or **omit it** entirely.
+Symbol properties like multipliers **should be modified during game flow** for greater flexibility and clarity.
+
+If your game only requires static multipliers (e.g., a consistent 2x wild multiplier),
+the above approach is perfectly acceptable.
