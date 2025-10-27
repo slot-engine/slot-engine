@@ -14,8 +14,8 @@
     "config/custom-state",
     "config/hooks",
     "type-safety",
-    "---Game Flow---",
-    "game-flow/index",
+    "---Game Implementation---",
+    "game-flow",
     "game-flow/tips",
     "---Game Simulation---",
     "---Game Optimization---"

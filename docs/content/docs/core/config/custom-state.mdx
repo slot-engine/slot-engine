@@ -4,4 +4,55 @@ description: How to define custom game state
 icon: HardDrive
 ---
 
-State
+---
+
+## State in Slot Engine
+
+The game state holds information about the current simulation,
+such as the current simulation ID or whether free spins were triggered.
+By design, the game state includes only essential game flow properties to reduce bloat.
+When developers need to track additional information—such as whether a specific feature was triggered—
+they should define custom state properties.
+
+## Defining custom State
+
+To define additional state, use the `defineUserState` function and pass the resulting object to your game configuration.
+
+For example:
+
+```ts lineNumbers
+import { defineUserState, createSlotGame, InferGameType } from "@slot-engine/core"
+
+export const userState = defineUserState({
+  triggeredSuperFreespins: false,
+  freespinsUpgradedToSuper: false,
+  globalMultiplier: 1
+})
+
+export type UserStateType = typeof userState
+
+export type GameType = InferGameType<any, any, UserStateType>
+
+export const game = createSlotGame<GameType>({
+  /* the rest of your configuration */
+  userState,
+})
+```
+
+The values defined here will be set as the initial values for each state property on every new simulation.
+
+## Using custom State
+
+In your [game implementation](/docs/core/game-flow), you will have access to the underlying state via the context.
+From there you can access your custom state.
+
+```ts lineNumbers
+export function onHandleGameFlow(ctx: HookContext<GameType>) {
+  /* the rest of your game flow */
+
+  // Example usage
+  if (ctx.state.userData.triggeredSuperFreespins) {
+    ctx.state.userData.globalMultiplier = 10
+  }
+}
+```
