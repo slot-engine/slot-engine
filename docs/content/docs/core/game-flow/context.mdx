@@ -5,4 +5,26 @@ description: Useful functions and state available in the core
 
 ---
 
-## Title
+## Introduction
+
+The context (or simulation context) provides access to the underlying hierarchical class structure,
+including the board and state, among other things. The context is typically accessed
+via the `ctx` parameter in [hooks](/docs/core/config/hooks).
+
+It provides **useful utility functions** to manage state and streamline game development. For example:
+
+```ts lineNumbers
+export function onHandleGameFlow(ctx: HookContext<GameType>) {
+  const reels = ctx.getRandomReelset()
+  ctx.drawBoardWithRandomStops(reels)
+  //                           type safe! ⤵
+  const scatter = ctx.config.symbols.get("S")!
+  const [count] = ctx.countSymbolsOnBoard(scatter)
+}
+```
+
+Below is a comprehensive list of context methods and properties available in your game implementation.
+
+## Context Methods
+
+## Context Properties
