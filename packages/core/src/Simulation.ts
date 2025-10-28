@@ -561,11 +561,12 @@ export class SimulationContext<
     this.state.currentSimulationId = simId
     this.state.isCriteriaMet = false
 
+    const resultSet = this.getGameModeCriteria(this.state.currentGameMode, criteria)
+
     while (!this.state.isCriteriaMet) {
       this.actualSims++
       this.resetSimulation()
 
-      const resultSet = this.getGameModeCriteria(this.state.currentGameMode, criteria)
       this.state.currentResultSet = resultSet
       this.state.book.criteria = resultSet.criteria
 
@@ -573,14 +574,21 @@ export class SimulationContext<
 
       if (resultSet.meetsCriteria(this)) {
         this.state.isCriteriaMet = true
-        this.config.hooks.onSimulationAccepted?.(this)
-        this.record({
-          criteria: resultSet.criteria,
-        })
       }
     }
 
     this.wallet.confirmWins(this as SimulationContext<any, any, any>)
+
+    if (this.state.book.getPayout() >= this.config.maxWinX) {
+      this.state.triggeredMaxWin = true
+    }
+
+    this.record({
+      criteria: resultSet.criteria,
+    })
+
+    this.config.hooks.onSimulationAccepted?.(this)
+
     this.confirmRecords()
 
     parentPort?.postMessage({

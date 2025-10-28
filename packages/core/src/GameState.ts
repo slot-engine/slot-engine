@@ -134,13 +134,6 @@ export class GameState<
   }
 
   /**
-   * Checks if a max win is reached by comparing `wallet.currentWin` to `config.maxWin`.
-   *
-   * Should be called after `wallet.confirmSpinWin()`.
-   */
-  isMaxWinTriggered() {}
-
-  /**
    * Empties the list of pending records in the recorder.
    */
   clearPendingRecords() {

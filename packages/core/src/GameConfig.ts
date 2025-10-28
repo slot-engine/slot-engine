@@ -97,7 +97,7 @@ export class GameConfig<
         ]!.reelSets.map((rs) => rs.id).join(", ")}`,
       )
     }
-    return reelSet
+    return reelSet.reels
   }
 
   /**

@@ -434,7 +434,7 @@ export class Board<
   }
 
   /**
-   * Selects a random reelset based on the configured weights for the current game mode.\
+   * Selects a random reel set based on the configured weights of the current result set.\
    * Returns the reels as arrays of GameSymbols.
    */
   getRandomReelset() {
@@ -452,7 +452,7 @@ export class Board<
     }
 
     const reelSet = this.getReelsetById(this.state.currentGameMode, reelSetId)
-    return reelSet.reels
+    return reelSet
   }
 
   /**
