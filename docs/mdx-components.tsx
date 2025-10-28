@@ -1,6 +1,7 @@
 import defaultMdxComponents from "fumadocs-ui/mdx"
 import * as TabsComponents from "fumadocs-ui/components/tabs"
 import { Accordion, Accordions } from "fumadocs-ui/components/accordion"
+import { TypeTable } from "fumadocs-ui/components/type-table"
 import { Step, Steps } from "fumadocs-ui/components/steps"
 import type { MDXComponents } from "mdx/types"
 import * as icons from "lucide-react"
@@ -15,6 +16,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     Accordions,
     Step,
     Steps,
+    TypeTable,
     ...components,
   } satisfies MDXComponents
 }

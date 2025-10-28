@@ -25,6 +25,426 @@ export function onHandleGameFlow(ctx: HookContext<GameType>) {
 
 Below is a comprehensive list of context methods and properties available in your game implementation.
 
-## Context Methods
+## Context Reference
 
-## Context Properties
+All methods and properties listed below are accessible via `ctx` parameter of the `onHandleGameFlow` hook.
+
+<Callout title="Good to know">
+  You might encounter some "mysterious" methods not listed here. Anything not in this doc
+  is most likely only intended for internal use and you should better ignore it. It might
+  get cleaned up in the future.
+</Callout>
+
+### config
+
+| Property     | Type                  |
+| ------------ | --------------------- |
+| `ctx.config` | `readonly GameConfig` |
+
+[Further reading](/docs/core/config)
+
+### book
+
+| Property         | Type   |
+| ---------------- | ------ |
+| `ctx.state.book` | `Book` |
+
+[Further reading](/docs/core/game-flow/book-events)
+
+### rng
+
+| Property        | Type                    |
+| --------------- | ----------------------- |
+| `ctx.state.rng` | `RandomNumberGenerator` |
+
+[Further reading](/docs/core/game-flow/rng)
+
+### userData
+
+| Property             | Type                  |
+| -------------------- | --------------------- |
+| `ctx.state.userData` | `Record<string, any>` |
+
+[Further reading](/docs/core/config/custom-state)
+
+### wallet
+
+| Property     | Type     |
+| ------------ | -------- |
+| `ctx.wallet` | `Wallet` |
+
+[Further reading](/docs/core/game-flow/wallet)
+
+### symbols
+
+| Property             | Type                      |
+| -------------------- | ------------------------- |
+| `ctx.config.symbols` | `Map<string, GameSymbol>` |
+
+#### Usage [!toc]
+
+```ts
+const wild = config.symbols.get("W")!
+```
+
+[Further reading](/docs/core/config/symbols)
+
+### getSymbolArray()
+
+| Method                 | Type                 |
+| ---------------------- | -------------------- |
+| `ctx.getSymbolArray()` | `() => GameSymbol[]` |
+
+Returns all symbols as an array.
+
+### anticipation
+
+| Property                 | Type       |
+| ------------------------ | ---------- |
+| `ctx.board.anticipation` | `number[]` |
+
+Array of numbers representing anticipation for reels. Anticipation is a visual effect
+that usually teases potential free spins when more scatter is needed to trigger it.
+
+For example, an anticipation array of `[0, 0, 0, 1, 1]` can instruct the client
+to apply anticipation effects to reels 4 and 5.
+
+### resetBoard()
+
+| Method             | Type         |
+| ------------------ | ------------ |
+| `ctx.resetBoard()` | `() => void` |
+
+Resets and clears the board.
+
+### countSymbolsOnReel()
+
+| Method                     | Type                                        |
+| -------------------------- | ------------------------------------------- |
+| `ctx.countSymbolsOnReel()` | `(symbolOrProperties, reelIndex) => number` |
+
+#### Parameters [!toc]
+
+| Parameter            | Type                                |
+| -------------------- | ----------------------------------- |
+| `symbolOrProperties` | `GameSymbol \| Record<string, any>` |
+| `reelIndex`          | `number`                            |
+
+Counts the symbols on the specified reel.
+
+### countSymbolsOnBoard()
+
+| Method                      | Type                                                       |
+| --------------------------- | ---------------------------------------------------------- |
+| `ctx.countSymbolsOnBoard()` | `(symbolOrProperties) => [number, Record<number, number>]` |
+
+#### Parameters [!toc]
+
+| Parameter            | Type                                |
+| -------------------- | ----------------------------------- |
+| `symbolOrProperties` | `GameSymbol \| Record<string, any>` |
+
+Counts how many symbols matching the criteria are on the board.
+
+Returns a tuple where the first element is the total count, and the second element is a record of counts per reel index.
+
+### isSymbolOnAnyReelMultipleTimes()
+
+| Method                                 | Type                  |
+| -------------------------------------- | --------------------- |
+| `ctx.isSymbolOnAnyReelMultipleTimes()` | `(symbol) => boolean` |
+
+#### Parameters [!toc]
+
+| Parameter | Type         |
+| --------- | ------------ |
+| `symbol`  | `GameSymbol` |
+
+Checks if the given symbol occurrs multiple times on any reel.
+
+### getReelStopsForSymbol()
+
+| Method                        | Type                            |
+| ----------------------------- | ------------------------------- |
+| `ctx.getReelStopsForSymbol()` | `(reels, symbol) => number[][]` |
+
+#### Parameters [!toc]
+
+| Parameter | Type         |
+| --------- | ------------ |
+| `reels`   | `Reels`      |
+| `symbol`  | `GameSymbol` |
+
+Returns all positions of a symbol in a reel set.
+Useful to retrieve all possible scatter positions, for example.
+
+### combineReelStops()
+
+| Method                   | Type                           |
+| ------------------------ | ------------------------------ |
+| `ctx.combineReelStops()` | `(...reelStops) => number[][]` |
+
+#### Parameters [!toc]
+
+| Parameter   | Type           |
+| ----------- | -------------- |
+| `reelStops` | `number[][][]` |
+
+Combines multiple arrays of reel stops into a single array of reel stops.
+If you had multiple scatter variants, you could use this to get a single array
+of all scatter positions in a reel set.
+
+#### Usage [!toc]
+
+```ts
+const reels = ctx.getRandomReelset()
+const scatter = config.symbols.get("S")!
+const superScatter = config.symbols.get("SS")!
+
+const reelStops = ctx.combineReelStops(
+  ctx.getReelStopsForSymbol(reels, scatter),
+  ctx.getReelStopsForSymbol(reels, superScatter),
+)
+```
+
+### getRandomReelStops()
+
+| Method                     | Type                                                   |
+| -------------------------- | ------------------------------------------------------ |
+| `ctx.getRandomReelStops()` | `(reels, reelStops, amount) => Record<string, number>` |
+
+#### Parameters [!toc]
+
+| Parameter   | Type         |
+| ----------- | ------------ |
+| `reels`     | `Reels`      |
+| `reelStops` | `number[][]` |
+| `amount`    | `number`     |
+
+From a list of reel stops on reels, selects a random stop for `amount` number of reels.
+This is mostly useful to forcibly place scatters on the board.
+
+#### Usage [!toc]
+
+```ts
+const reels = ctx.getRandomReelset()
+const scatter = config.symbols.get("S")!
+
+const reelStops = ctx.getReelStopsForSymbol(reels, scatter)
+const scatterReelStops = ctx.getRandomReelStops(reels, reelStops, 3)
+
+ctx.drawBoardWithForcedStops(reels, scatterReelStops)
+```
+
+### getRandomReelset()
+
+| Method                   | Type          |
+| ------------------------ | ------------- |
+| `ctx.getRandomReelset()` | `() => Reels` |
+
+Selects a random reel set based on the configured weights of the current result set.
+
+### getReelsetById()
+
+| Method                 | Type                      |
+| ---------------------- | ------------------------- |
+| `ctx.getReelsetById()` | `(gameMode, id) => Reels` |
+
+#### Parameters [!toc]
+
+| Parameter  | Type     |
+| ---------- | -------- |
+| `gameMode` | `string` |
+| `id`       | `string` |
+
+Retrieves a reel set by its ID within a specific game mode.
+
+### drawBoardWithForcedStops()
+
+| Method                           | Type                           |
+| -------------------------------- | ------------------------------ |
+| `ctx.drawBoardWithForcedStops()` | `(reels, forcedStops) => void` |
+
+#### Parameters [!toc]
+
+| Parameter     | Type                     |
+| ------------- | ------------------------ |
+| `reels`       | `Reels`                  |
+| `forcedStops` | `Record<string, number>` |
+
+Draws a board using specified reel stops.
+
+#### Usage [!toc]
+
+```ts
+const reels = ctx.getRandomReelset()
+const scatter = config.symbols.get("S")!
+
+const reelStops = ctx.getReelStopsForSymbol(reels, scatter)
+const scatterReelStops = ctx.getRandomReelStops(reels, reelStops, 3)
+
+ctx.drawBoardWithForcedStops(reels, scatterReelStops)
+```
+
+### drawBoardWithRandomStops()
+
+| Method                           | Type              |
+| -------------------------------- | ----------------- |
+| `ctx.drawBoardWithRandomStops()` | `(reels) => void` |
+
+#### Parameters [!toc]
+
+| Parameter | Type    |
+| --------- | ------- |
+| `reels`   | `Reels` |
+
+Draws a board using random reel stops.
+
+### currentGameMode
+
+| Property                    | Type     |
+| --------------------------- | -------- |
+| `ctx.state.currentGameMode` | `string` |
+
+The name of the current game mode.
+
+### currentSpinType
+
+| Property                    | Type       |
+| --------------------------- | ---------- |
+| `ctx.state.currentSpinType` | `SpinType` |
+
+The name of the current spin type.
+
+A list of all spin types is available through the static property `SPIN_TYPE` of the `GameConfig` class.
+
+### currentResultSet
+
+| Property                     | Type        |
+| ---------------------------- | ----------- |
+| `ctx.state.currentResultSet` | `ResultSet` |
+
+The current [ResultSet](/docs/core/config/game-modes/result-sets) for the active simulation.
+
+### currentFreespinAmount
+
+| Property                          | Type     |
+| --------------------------------- | -------- |
+| `ctx.state.currentFreespinAmount` | `number` |
+
+Number of remaining free spins.
+
+### totalFreespinAmount
+
+| Property                        | Type     |
+| ------------------------------- | -------- |
+| `ctx.state.totalFreespinAmount` | `number` |
+
+Total amount of free spins awarded during the active simulation.
+
+### triggeredMaxWin
+
+| Property                    | Type      |
+| --------------------------- | --------- |
+| `ctx.state.triggeredMaxWin` | `boolean` |
+
+Whether a max win was triggered. This is set automatically when a max win is reached.
+
+### triggeredFreespins
+
+| Property                       | Type      |
+| ------------------------------ | --------- |
+| `ctx.state.triggeredFreespins` | `boolean` |
+
+Whether free spins were triggered. This is set automatically when `ctx.awardFreespins()` is called.
+
+### awardFreespins()
+
+| Method                 | Type               |
+| ---------------------- | ------------------ |
+| `ctx.awardFreespins()` | `(amount) => void` |
+
+#### Parameters [!toc]
+
+| Parameter | Type     |
+| --------- | -------- |
+| `amount`  | `number` |
+
+Adds the given number of free spins to the state.
+
+### getFreeSpinsForScatters()
+
+| Method                          | Type                                 |
+| ------------------------------- | ------------------------------------ |
+| `ctx.getFreeSpinsForScatters()` | `(spinType, scatterCount) => number` |
+
+#### Parameters [!toc]
+
+| Parameter      | Type       |
+| -------------- | ---------- |
+| `spinType`     | `SpinType` |
+| `scatterCount` | `number`   |
+
+Retrieves the number of free spins awarded for a given spin type and scatter count
+based on the `scatterToFreespins` configuration.
+
+### getCurrentGameMode()
+
+| Method                     | Type             |
+| -------------------------- | ---------------- |
+| `ctx.getCurrentGameMode()` | `() => GameMode` |
+
+Gets the configuration for the current [game mode](/docs/core/config/game-modes).
+
+### getCurrentGameMode()
+
+| Method                     | Type             |
+| -------------------------- | ---------------- |
+| `ctx.getCurrentGameMode()` | `() => GameMode` |
+
+Gets the configuration for the current [game mode](/docs/core/config/game-modes).
+
+### record()
+
+| Method         | Type             |
+| -------------- | ---------------- |
+| `ctx.record()` | `(data) => void` |
+
+#### Parameters [!toc]
+
+| Parameter | Type                                          |
+| --------- | --------------------------------------------- |
+| `data`    | `Record<string, string \| number \| boolean>` |
+
+Record data for statistical analysis.
+
+[Further reading](/docs/core/game-flow/recorder)
+
+### recordSymbolOccurrence()
+
+| Method                         | Type             |
+| ------------------------------ | ---------------- |
+| `ctx.recordSymbolOccurrence()` | `(data) => void` |
+
+#### Parameters [!toc]
+
+| Parameter | Type                                                                          |
+| --------- | ----------------------------------------------------------------------------- |
+| `data`    | `{ kind: number; symbolId: string; spinType: SpinType; [key: string]: any; }` |
+
+A wrapper around `ctx.record()` to record symbol occurrences.
+
+### verifyScatterCount()
+
+| Method                     | Type                      |
+| -------------------------- | ------------------------- |
+| `ctx.verifyScatterCount()` | `(numScatters) => number` |
+
+#### Parameters [!toc]
+
+| Parameter     | Type     |
+| ------------- | -------- |
+| `numScatters` | `number` |
+
+Ensures the requested number of scatters is valid based on the game configuration.
+Returns a valid number of scatters.

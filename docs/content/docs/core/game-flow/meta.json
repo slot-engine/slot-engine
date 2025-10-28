@@ -2,6 +2,8 @@
   "pages": [
     "context",
     "book-events",
+    "recorder",
+    "rng",
     "wallet"
   ]
 }
