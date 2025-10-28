@@ -1,5 +1,11 @@
 # @slot-engine/core
 
+## 0.0.4
+
+### Patch Changes
+
+- Minor internal polishing - Thanks @nordowl
+
 ## 0.0.3
 
 ### Patch Changes
