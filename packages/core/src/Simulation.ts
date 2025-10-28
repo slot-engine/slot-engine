@@ -561,7 +561,7 @@ export class SimulationContext<
     this.state.currentSimulationId = simId
     this.state.isCriteriaMet = false
 
-    const resultSet = this.getGameModeCriteria(this.state.currentGameMode, criteria)
+    const resultSet = this.getResultSetByCriteria(this.state.currentGameMode, criteria)
 
     while (!this.state.isCriteriaMet) {
       this.actualSims++

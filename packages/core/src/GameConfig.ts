@@ -116,7 +116,7 @@ export class GameConfig<
   /**
    * Retrieves a result set by its criteria within a specific game mode.
    */
-  getGameModeCriteria(mode: string, criteria: string) {
+  getResultSetByCriteria(mode: string, criteria: string) {
     const gameMode = this.config.gameModes[mode]
     if (!gameMode) {
       throw new Error(`Game mode "${mode}" not found in game config.`)
