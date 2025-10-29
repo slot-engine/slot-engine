@@ -452,6 +452,17 @@ export class ReelGenerator {
         reels[ridx]!.push(symbol)
       })
     })
+
+    const reelLengths = reels.map((r) => r.length)
+    const uniqueLengths = new Set(reelLengths)
+    if (uniqueLengths.size > 1) {
+      throw new Error(
+        `Inconsistent reel lengths in reelset CSV at ${reelSetPath}: ${[
+          ...uniqueLengths,
+        ].join(", ")}`,
+      )
+    }
+
     return reels
   }
 }
