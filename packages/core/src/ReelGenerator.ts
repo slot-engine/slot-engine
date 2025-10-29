@@ -33,7 +33,6 @@ export class ReelGenerator {
     }
   >
   protected readonly symbolQuotas?: Record<string, number | Record<string, number>>
-  outputDir: string = ""
   csvPath: string = ""
   overrideExisting: boolean
   rng: RandomNumberGenerator
@@ -42,7 +41,6 @@ export class ReelGenerator {
     this.id = opts.id
     this.symbolWeights = new Map(Object.entries(opts.symbolWeights))
     this.rowsAmount = opts.rowsAmount || 250
-    this.outputDir = opts.outputDir
 
     if (opts.limitSymbolsToReels) this.limitSymbolsToReels = opts.limitSymbolsToReels
 
@@ -112,10 +110,6 @@ export class ReelGenerator {
 
     if (this.limitSymbolsToReels && Object.keys(this.limitSymbolsToReels).length == 0) {
       this.limitSymbolsToReels = undefined
-    }
-
-    if (this.outputDir === "") {
-      throw new Error("Output directory must be specified for the ReelGenerator.")
     }
   }
 
@@ -430,7 +424,6 @@ export class ReelGenerator {
     const csvString = csvRows.map((row) => row.join(",")).join("\n")
 
     if (isMainThread) {
-      createDirIfNotExists(this.outputDir)
       fs.writeFileSync(filePath, csvString)
 
       this.reels = this.parseReelsetCSV(filePath, gameConf)
@@ -486,11 +479,6 @@ interface ReelGeneratorOpts {
    * Default is 250, but can be adjusted as needed.
    */
   rowsAmount?: number
-  /**
-   * The directory where the generated reelset files will be saved.\
-   * **It's recommended to just use `__dirname`**!
-   */
-  outputDir: string
   /**
    * Prevent the same symbol from appearing directly above or below itself.\
    * This can be a single number for all symbols, or a mapping of symbol IDs to

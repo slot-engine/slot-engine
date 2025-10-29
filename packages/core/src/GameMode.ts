@@ -22,7 +22,7 @@ export class GameMode {
     this.resultSets = opts.resultSets
     this.isBonusBuy = opts.isBonusBuy
 
-    assert(this.rtp >= 90 && this.rtp <= 99, "RTP must be between 90 and 99.")
+    assert(this.rtp >= 0.9 && this.rtp <= 0.99, "RTP must be between 0.9 and 0.99")
 
     assert(
       this.symbolsPerReel.length === this.reelsAmount,

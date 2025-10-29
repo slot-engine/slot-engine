@@ -74,7 +74,6 @@ export class GameConfig<
       if (mode.reelSets && mode.reelSets.length > 0) {
         for (const reelGenerator of Object.values(mode.reelSets)) {
           reelGenerator.associatedGameModeName = mode.name
-          reelGenerator.outputDir = this.config.outputDir
           reelGenerator.generateReels(this)
         }
       } else {
