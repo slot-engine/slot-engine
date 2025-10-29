@@ -1,3 +1,4 @@
+import assert from "assert"
 import { AnyUserData } from "../index"
 import { copy, RandomNumberGenerator, shuffle, weightedRandom } from "../utils"
 import { Board } from "./Board"
@@ -23,19 +24,13 @@ export class ResultSet<TUserState extends AnyUserData> {
     this.forceMaxWin = opts.forceMaxWin
     this.forceFreespins = opts.forceFreespins
     this.evaluate = opts.evaluate
-
-    if (this.quota < 0 || this.quota > 1) {
-      throw new Error(`Quota must be a float between 0 and 1, got ${this.quota}.`)
-    }
   }
 
   static assignCriteriaToSimulations(ctx: Simulation, gameModeName: string) {
     const rng = new RandomNumberGenerator()
     rng.setSeed(0)
 
-    if (!ctx.simRunsAmount) {
-      throw new Error("Simulation configuration is not set.")
-    }
+    assert(ctx.simRunsAmount, "Simulation configuration is not set.")
 
     const simNums = ctx.simRunsAmount[gameModeName]
     const resultSets = ctx.gameConfig.config.gameModes[gameModeName]?.resultSets
@@ -48,8 +43,13 @@ export class ResultSet<TUserState extends AnyUserData> {
       throw new Error(`No simulations configured for game mode "${gameModeName}".`)
     }
 
+    const totalQuota = resultSets.reduce((sum, rs) => sum + rs.quota, 0)
+
     const numberOfSimsForCriteria: Record<string, number> = Object.fromEntries(
-      resultSets.map((rs) => [rs.criteria, Math.max(Math.floor(rs.quota * simNums), 1)]),
+      resultSets.map((rs) => {
+        const normalizedQuota = totalQuota > 0 ? rs.quota / totalQuota : 0
+        return [rs.criteria, Math.max(Math.floor(normalizedQuota * simNums), 1)]
+      }),
     )
 
     let totalSims = Object.values(numberOfSimsForCriteria).reduce(

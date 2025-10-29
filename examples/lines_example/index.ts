@@ -185,7 +185,7 @@ export const gameModes = defineGameModes({
       }),
       new ResultSet({
         criteria: "freespinsUpgradeToSuperMaxwin",
-        quota: 0.0004,
+        quota: 0.0005,
         forceMaxWin: true,
         forceFreespins: true,
         reelWeights: {
@@ -198,7 +198,7 @@ export const gameModes = defineGameModes({
       }),
       new ResultSet({
         criteria: "maxwin",
-        quota: 0.0006,
+        quota: 0.0005,
         forceMaxWin: true,
         forceFreespins: true,
         reelWeights: {
@@ -221,7 +221,7 @@ export const gameModes = defineGameModes({
     resultSets: [
       new ResultSet({
         criteria: "freespins",
-        quota: 0.905,
+        quota: 0.9,
         forceFreespins: true,
         reelWeights: {
           [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
