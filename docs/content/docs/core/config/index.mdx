@@ -49,10 +49,8 @@ import { createSlotGame, GameConfig, InferGameType } from "@slot-engine/core" //
 
 export type GameType = InferGameType<any, any, any> // [!code ++]
 
-export const game = createSlotGame({ // [!code --]
-export const game = createSlotGame<GameType>({ // [!code ++]
-  /* your configuration */
-})
+export const game = createSlotGame({}) // [!code --]
+export const game = createSlotGame<GameType>({}) // [!code ++]
 ```
 
 The utility type `InferGameType` requires three type arguments: game modes, symbols, and state.
@@ -63,7 +61,6 @@ You can now prepare the rest of the configuration.
 ```ts lineNumbers
 import { createSlotGame, GameConfig, InferGameType } from "@slot-engine/core" // [!code --]
 import {
-  // [!code ++]
   createSlotGame, // [!code ++]
   GameConfig, // [!code ++]
   InferGameType, // [!code ++]

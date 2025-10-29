@@ -7,3 +7,241 @@ icon: Grid3x3
 ---
 
 ## What is a Reel Set
+
+A reel set is a list of reel strips, where each reel strip defines the symbols
+that can land on the board for that specific reel.
+
+Having a well-designed and balanced reel set is **crucial for achieving the desired gameplay experience**
+and feel of your slot game. For example, the last reel could hold less valuable symbols to make it even
+more exciting if you do hit a full line.
+
+Designing a balanced reel set can be hard without mathematical background knowledge
+and is usually done by professional mathematicians.
+
+## Automatic Generation of Reel Sets
+
+Slot Engine simplifies reel set creation by providing a `ReelGenerator` class that builds a CSV file containing a reel set.
+Developers simply need to define weights for the symbols that should appear on the reels,
+and the generator will randomly distribute symbols according to those weights.
+
+**This is not a replacement for professional mathematicians** and should be considered a starting point.
+You will need to playtest your game to evaluate the gameplay experience and adjust your reel generator configuration accordingly
+or edit the generated reels manually.
+
+Add one or more reel generators to your game mode configuration. **Each game mode must specify at least one reel set**.
+
+```ts lineNumbers
+import { defineGameModes, GameMode, ReelGenerator } from "@slot-engine/core"
+
+export const gameModes = defineGameModes({
+  base: new GameMode({
+    /* the rest of your configuration */
+    reelSets: [
+      new ReelGenerator({
+        id: "base",
+        overrideExisting: false,
+        symbolWeights: {},
+      }),
+    ],
+  }),
+})
+```
+
+## ReelGenerator Options
+
+### General Options
+
+| Property           | Type                     | Description                                            | Required |
+| ------------------ | ------------------------ | ------------------------------------------------------ | -------- |
+| `id`               | `string`                 | The unique identifier of the reel set / generator.     | yes      |
+| `symbolWeights`    | `Record<string, number>` | Mapping of symbol ID's to weights.                     | yes      |
+| `overrideExisting` | `boolean`                | If true, existing reels CSV files will be overwritten. |
+| `rowsAmount`       | `number`                 | The number of rows in the reelset.<br/>Default: 250    |
+| `seed`             | `number`                 | Seed to change the RNG.                                |
+
+### Advanced Options
+
+All advanced options are optional.
+
+#### spaceBetweenSameSymbols [!toc]
+
+```ts
+number | Record<string, number>
+```
+
+Prevent the same symbol from appearing directly above or below itself.\
+This can be a single number to affect all symbols, or a mapping of symbol IDs to their respective spacing values.
+
+Must be 1 or higher, if set.
+
+```ts
+new ReelGenerator({
+  id: "example",
+  symbolWeights: {},
+  spaceBetweenSameSymbols: 4,
+  // or
+  spaceBetweenSameSymbols: {
+    S: 5,
+    W: 3,
+  },
+})
+```
+
+#### spaceBetweenSymbols [!toc]
+
+```ts
+Record<string, Record<string, number>>
+```
+
+Prevents specific symbols from appearing within a certain distance of each other.
+
+```ts
+new ReelGenerator({
+  id: "example",
+  symbolWeights: {},
+  spaceBetweenSymbols: {
+    S: { SS: 3, W: 1 },
+    // ^ Scatter is at least 3 away from super scatter and 1 away from wild
+  },
+})
+```
+
+#### preferStackedSymbols [!toc]
+
+```ts
+number
+```
+
+A percentage value 0-100 that indicates the likelihood of a symbol being stacked.
+A value of 0 means no stacked symbols, while 100 means all symbols are stacked.
+This is only a preference. Symbols may still not be stacked if
+other restrictions (like `spaceBetweenSameSymbols`) prevent it.
+
+This setting is overridden by `symbolStacks`.
+
+```ts
+new ReelGenerator({
+  id: "example",
+  symbolWeights: {},
+  preferStackedSymbols: 50,
+})
+```
+
+#### symbolStacks [!toc]
+
+```ts
+Record<
+  string,
+  {
+    chance: number | Record<string, number>
+    min?: number | Record<string, number>
+    max?: number | Record<string, number>
+  }
+>
+```
+
+A mapping of symbols to their respective advanced stacking configuration.
+
+```ts
+new ReelGenerator({
+  id: "example",
+  symbolWeights: {},
+  symbolStacks: {
+    W: {
+      chance: { "1": 20, "2": 20, "3": 20, "4": 20 }, // 20% chance to be stacked on reels 2-5
+      min: 2, // At least 2 wilds in a stack
+      max: 4, // At most 4 wilds in a stack
+    },
+  },
+})
+```
+
+#### limitSymbolsToReels [!toc]
+
+```ts
+Record<string, number[]>
+```
+
+Configures symbols to only appear on specific reels.
+
+```ts
+new ReelGenerator({
+  id: "example",
+  symbolWeights: {},
+  limitSymbolsToReels: {
+    S: [0, 2, 4], // Scatter only on reels 1, 3, 5.
+  },
+})
+```
+
+#### symbolQuotas [!toc]
+
+```ts
+Record<string, number | Record<string, number>>
+```
+
+Defines minimum symbol quotas on reels.
+The quota (1-100%) defines how often a symbol should appear in the reelset, or in a specific reel.
+This is particularly useful for controlling the frequency of special symbols like scatters or wilds.
+
+Reels not provided for a symbol will use the weights from `symbolWeights`.
+_Any_ small quota will ensure that the symbol appears at least once on the reel.
+
+```ts
+new ReelGenerator({
+  id: "example",
+  symbolWeights: {},
+  symbolQuotas: {
+    S: 3, // 3% of symbols on each reel will be scatters
+    W: { "1": 10, "2": 5, "3": 3, "4": 1 }, // Wilds will appear with different quotas on selected reels
+  },
+})
+```
+
+## Manual Reel Set Creation
+
+You can define reel sets manually, but they must follow a specific naming schema.
+For the program to identify your reel sets it's required to define a reel generator for each reel set,
+even if you do not use its automatic generation features.
+
+### Naming
+
+The name of reel set files follows this schema:
+
+`reels_{gameModeName}-{reelsId}.csv`
+
+For example: `reels_base-maxwin.csv`.\
+It must be placed in the `__build__` folder, which is automatically
+created when you start a simulation run.
+
+### Format
+
+A reel set file must be in `.csv` format.
+
+For a game mode with 5 reels, the content of a reel set file must have a structure like below.
+
+```csv
+L4,L5,L1,L5,L4
+L2,L4,L4,L3,L3
+L4,H2,W,L4,L1
+L3,L3,H4,H4,H1
+H1,H4,H1,L5,H2
+L5,L4,L3,S,S
+...
+```
+
+### Connect with Game Mode
+
+It **needs** a corresponding `ReelGenerator` to be identified.
+
+For a custom reel set called `myCustomReels`, specify a reel generator like so:
+
+```ts
+new ReelGenerator({
+  id: "myCustomReels",
+  overrideExisting: false,
+  symbolWeights: {},
+})
+```
+
+**Remember to add this reel generator to every game mode you need to use these reels in.**
