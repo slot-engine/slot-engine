@@ -6,4 +6,95 @@ icon: Crosshair
 
 ---
 
-## What is a Result Set
+## Introduction
+
+Slot games have thousands if not millions of possible outcomes—each spin is different.
+A player shouldn't see the exact same outcome twice. With result sets you **ensure diverse simulation results**.
+You want to ensure there are plenty of zero-win scenarios as well as many different max win simulations—
+and everything in between.
+
+Before a simulation run starts, each simulation is assigned one of the specified result sets
+based on the total quota of all result sets for a game mode, and must fulfill its criteria.
+Only when a **simulation meets the expected result set criteria** does the program proceed to the next simulation.
+
+Result sets commonly cover the following scenarios:
+
+* Zero-win spins
+* Win spins
+* Free spins
+* Maximum wins
+
+But developers can also specify very detailed and rare criteria:
+
+* Free spins upgraded to super bonus resulting in max win
+
+**Result sets are a crucial part** of simulating a game. Depending on the configuration and implementation of a game,
+outcomes like max wins may be extremely rare and possibly don't occur naturally during, for example, 1,000,000 simulations.
+With result sets, the program forces such outcomes and retries until the given criteria are met.
+
+<Callout title="Keep this in mind">
+  The more unlikely a scenario is to happen, the longer a simulation run may take.
+</Callout>
+
+## Defining Result Sets for a Game Mode
+
+The following example shows the definition of 4 common result sets.
+This setup ensures that a large portion of all simulations are either zero-win spins or normal base game hits.
+A smaller quota is dedicated to generating free spins simulations
+and a very small portion ensures enough max win simulations.
+
+```ts lineNumbers
+export const gameModes = defineGameModes({
+  base: new GameMode({
+    name: "base",
+    cost: 1,
+    rtp: 0.96,
+    /* the rest of the configuration */
+    resultSets: [
+      new ResultSet({
+        criteria: "0",
+        quota: 0.4,
+        multiplier: 0,
+        reelWeights: {
+          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 1 },
+        },
+      }),
+      new ResultSet({
+        criteria: "basegame",
+        quota: 0.4,
+        reelWeights: {
+          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 1 },
+        },
+      }),
+      new ResultSet({
+        criteria: "freespins",
+        quota: 0.1,
+        forceFreespins: true,
+        reelWeights: {
+          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
+        },
+      }),
+      new ResultSet({
+        criteria: "maxwin",
+        quota: 0.005,
+        forceMaxWin: true,
+        forceFreespins: true,
+        reelWeights: {
+          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 1, bonus2: 3 },
+          evaluate: maxwinReelsEvaluation,
+        },
+      }),
+    ],
+  }),
+})
+```
+
+<Callout title="Small quotas">
+  Keep in mind that you'll simulate at least 100.000 spins.
+  If you have a max win quota of 0.005 and `(quota / totalQuota) * simsAmount` = `(0.005 / 1) * 100.000` = `500`,
+  that's perfectly enough variety in max win simulations.
+</Callout>
