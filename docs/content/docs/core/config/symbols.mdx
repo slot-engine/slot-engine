@@ -132,3 +132,30 @@ Symbol properties like multipliers **should be modified during game flow** for g
 
 If your game only requires static multipliers (e.g., a consistent 2x wild multiplier),
 the above approach is perfectly acceptable.
+
+## Comparing Symbols
+
+Sometimes you might need to compare two symbols.
+Each `GameSymbol` instance has a `compare()` method for this purpose.
+
+### Compare by Symbol
+
+When passing a `GameSymbol` to the `compare` function, only the symbol ID's are compared.
+
+```ts
+const wild = ctx.config.symbols.get("W")!
+const scatter = ctx.config.symbols.get("S")!
+
+console.log(scatter.compare(wild)) // false
+```
+
+### Compare by Symbol Properties
+
+When comparing by properties, the result is `true` **when all properties and their values match**.
+
+```ts
+const result = someSymbol.compare({
+  someProperty: true,
+  anotherProperty: 10
+})
+```
