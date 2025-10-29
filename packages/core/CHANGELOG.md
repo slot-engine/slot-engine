@@ -1,5 +1,19 @@
 # @slot-engine/core
 
+## 0.0.5
+
+### Patch Changes
+
+- Add check for reel set lengths - Thanks @nordowl
+
+- Removed ReelGenerator outputDir option, as it was unused - Thanks @nordowl
+
+- Ensure ReelGenerator can be run without specifying symbolWeights keys - Thanks @nordowl
+
+- Fix ResultSet to accept any quota - Thanks @nordowl
+
+- Add additional check to GameMode constructor - Thanks @nordowl
+
 ## 0.0.4
 
 ### Patch Changes
