@@ -158,7 +158,6 @@ export const gameModes = defineGameModes({
         reelWeights: {
           [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
           [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
-          evaluate: superFreespinsReelsEvaluation,
         },
       }),
       new ResultSet({

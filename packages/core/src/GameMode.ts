@@ -1,3 +1,4 @@
+import assert from "assert"
 import { type ReelGenerator } from "./ReelGenerator"
 import { type ResultSet } from "./ResultSet"
 
@@ -21,15 +22,14 @@ export class GameMode {
     this.resultSets = opts.resultSets
     this.isBonusBuy = opts.isBonusBuy
 
-    if (this.symbolsPerReel.length !== this.reelsAmount) {
-      throw new Error(
-        `symbolsPerReel length (${this.symbolsPerReel.length}) must match reelsAmount (${this.reelsAmount}).`,
-      )
-    }
+    assert(this.rtp >= 90 && this.rtp <= 99, "RTP must be between 90 and 99.")
 
-    if (this.resultSets.length == 0) {
-      throw new Error("GameMode must have at least one ResultSet defined.")
-    }
+    assert(
+      this.symbolsPerReel.length === this.reelsAmount,
+      "symbolsPerReel length must match reelsAmount.",
+    )
+
+    assert(this.reelSets.length > 0, "GameMode must have at least one ReelSet defined.")
   }
 }
 
