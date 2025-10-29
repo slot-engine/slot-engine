@@ -2,7 +2,7 @@ import fs from "fs"
 import path from "path"
 import { AnyGameConfig, GameConfig } from "./GameConfig"
 import { GameSymbol } from "./GameSymbol"
-import { createDirIfNotExists, RandomNumberGenerator, weightedRandom } from "../utils"
+import { RandomNumberGenerator, weightedRandom } from "../utils"
 import { isMainThread } from "worker_threads"
 
 /**
@@ -86,27 +86,13 @@ export class ReelGenerator {
   }
 
   private validateConfig({ config }: GameConfig) {
-    config.symbols.forEach((symbol) => {
-      if (!this.symbolWeights.has(symbol.id)) {
+    this.symbolWeights.forEach((_, symbol) => {
+      if (!config.symbols.has(symbol)) {
         throw new Error(
-          [
-            `Symbol "${symbol.id}" is not defined in the symbol weights of the reel generator ${this.id} for mode ${this.associatedGameModeName}.`,
-            `Please ensure all symbols have weights defined.\n`,
-          ].join(" "),
+          `Symbol "${symbol}" of the reel generator ${this.id} for mode ${this.associatedGameModeName} is not defined in the game config`,
         )
       }
     })
-
-    for (const [symbolId, weight] of this.symbolWeights.entries()) {
-      if (!config.symbols.has(symbolId)) {
-        throw new Error(
-          [
-            `Symbol "${symbolId}" is defined in the reel generator's symbol weights, but does not exist in the game config.`,
-            `Please ensure all symbols in the reel generator are defined in the game config.\n`,
-          ].join(" "),
-        )
-      }
-    }
 
     if (this.limitSymbolsToReels && Object.keys(this.limitSymbolsToReels).length == 0) {
       this.limitSymbolsToReels = undefined
@@ -228,6 +214,17 @@ export class ReelGenerator {
     this.csvPath = filePath
 
     const exists = fs.existsSync(filePath)
+
+    if (exists && !this.overrideExisting) {
+      this.reels = this.parseReelsetCSV(filePath, gameConf)
+      return
+    }
+
+    if (!exists && this.symbolWeights.size === 0) {
+      throw new Error(
+        `Cannot generate reels for generator "${this.id}" of mode "${this.associatedGameModeName}" because the symbol weights are empty.`,
+      )
+    }
 
     const reelsAmount = gameMode.reelsAmount
     const weightsObj = Object.fromEntries(this.symbolWeights)
@@ -430,10 +427,6 @@ export class ReelGenerator {
       console.log(
         `Generated reelset ${this.id} for game mode ${this.associatedGameModeName}`,
       )
-    }
-
-    if (exists) {
-      this.reels = this.parseReelsetCSV(filePath, gameConf)
     }
   }
 
