@@ -19,14 +19,14 @@ Only when a **simulation meets the expected result set criteria** does the progr
 
 Result sets commonly cover the following scenarios:
 
-* Zero-win spins
-* Win spins
-* Free spins
-* Maximum wins
+- Zero-win spins
+- Win spins
+- Free spins
+- Max wins
 
 But developers can also specify very detailed and rare criteria:
 
-* Free spins upgraded to super bonus resulting in max win
+- Free spins upgraded to super bonus resulting in max win
 
 **Result sets are a crucial part** of simulating a game. Depending on the configuration and implementation of a game,
 outcomes like max wins may be extremely rare and possibly don't occur naturally during, for example, 1,000,000 simulations.
@@ -94,7 +94,38 @@ export const gameModes = defineGameModes({
 ```
 
 <Callout title="Small quotas">
-  Keep in mind that you'll simulate at least 100.000 spins.
-  If you have a max win quota of 0.005 and `(quota / totalQuota) * simsAmount` = `(0.005 / 1) * 100.000` = `500`,
-  that's perfectly enough variety in max win simulations.
+  Keep in mind that you'll simulate at least 100.000 spins. If you have a max win quota of
+  0.005 and `(quota / totalQuota) * simsAmount` = `(0.005 / 1) * 100.000` = `500`, that's
+  perfectly enough variety in max win simulations.
 </Callout>
+
+## ResultSet Options
+
+### criteria [!toc]
+
+| Property   | Type     | Required |
+| ---------- | -------- | -------- |
+| `criteria` | `string` | yes      |
+
+A unique descriptive identifier for the result set.
+
+### quota [!toc]
+
+| Property | Type     | Required |
+| -------- | -------- | -------- |
+| `quota`  | `number` | yes      |
+
+The quota of simulations that should fall under this result set.
+
+#### Example [!toc]
+
+Let's say you have these 3 result sets:
+
+* "basegame": 90 quota
+* "freespins": 9 quota
+* "maxwin": 1 quota
+
+The total quota here is 100 (but can be any number, doesn't have to be 100).
+This means that, for example, every 100th simulation will result in a max win.
+
+When using [optimization](/docs/core/optimization), the quota **does not define the actual frequency** of specific outcomes when playing.
