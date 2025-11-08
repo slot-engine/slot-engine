@@ -121,11 +121,149 @@ The quota of simulations that should fall under this result set.
 
 Let's say you have these 3 result sets:
 
-* "basegame": 90 quota
-* "freespins": 9 quota
-* "maxwin": 1 quota
+- "basegame": 90 quota
+- "freespins": 9 quota
+- "maxwin": 1 quota
 
 The total quota here is 100 (but can be any number, doesn't have to be 100).
 This means that, for example, every 100th simulation will result in a max win.
 
-When using [optimization](/docs/core/optimization), the quota **does not define the actual frequency** of specific outcomes when playing.
+**When using** [optimization](/docs/core/optimization), the quota **does not define the actual frequency** of specific outcomes when playing,
+because the optimizer will redistribute the weights of all simulations.
+
+### multiplier [!toc]
+
+| Property     | Type     | Required |
+| ------------ | -------- | -------- |
+| `multiplier` | `number` |          |
+
+The exact payout multiplier to be hit.
+
+### forceMaxWin [!toc]
+
+| Property      | Type      | Required |
+| ------------- | --------- | -------- |
+| `forceMaxWin` | `boolean` |          |
+
+Whether a max win should be simulated.
+
+### forceFreespins [!toc]
+
+| Property         | Type      | Required |
+| ---------------- | --------- | -------- |
+| `forceFreespins` | `boolean` |          |
+
+Whether free spins should be simulated.
+
+<Callout title="Information">
+  Setting `forceFreespins` alone won't do anything. It's up to you to include logic in
+  your game implementation to check whether `ctx.state.currentResultSet.forceFreespins` is
+  `true` and draw the board accordingly.
+</Callout>
+
+### userData [!toc]
+
+| Property   | Type                  | Required |
+| ---------- | --------------------- | -------- |
+| `userData` | `Record<string, any>` |          |
+
+Additional data that can be used in a custom evaluation function or in your game loop.
+
+### evaluate [!toc]
+
+| Property   | Type                                              | Required |
+| ---------- | ------------------------------------------------- | -------- |
+| `evaluate` | `(ctx: EvaluationContext<TUserState>) => boolean` |          |
+
+Inject custom checks into the simulation evaluation logic.
+Use this to check for free spins that upgraded to super free spins
+or any other arbitrary simulation criteria not supported in the core.
+
+For example, you can use the `userData` from the result set to handle different game behavior.
+Then in your game implementation, set the state accordingly to ensure the simulation passes the criteria.
+
+```ts lineNumbers tab="ResultSet"
+new ResultSet({
+  criteria: "freespinsUpgradeToSuper",
+  quota: 0.01,
+  forceFreespins: true,
+  reelWeights: { /* ... */ },
+  userData: { upgradeFreespins: true }, // [!code highlight]
+  evaluate: freeSpinsUpgradeEvaluation, // [!code highlight]
+}),
+```
+
+```ts lineNumbers tab="Evaluation Function"
+export function freeSpinsUpgradeEvaluation(ctx: EvaluationContext<UserStateType>) {
+  if (ctx.state.currentSpinType === GameConfig.SPIN_TYPE.BASE_GAME) return false
+  return ctx.state.userData.freespinsUpgradedToSuper
+}
+```
+
+```ts lineNumbers tab="Game Implementation"
+// Somewhere in your game implementation...
+// ResultSet `userData` can be used to achieve desired outcome.
+if (
+  ctx.state.currentSpinType == GameConfig.SPIN_TYPE.FREE_SPINS &&
+  ctx.state.currentResultSet.userData?.upgradeFreespins &&
+  !ctx.state.userData.freespinsUpgradedToSuper
+) {
+  // Upgrade FS here
+  ctx.state.userData.freespinsUpgradedToSuper = true
+}
+```
+
+### reelWeights [!toc]
+
+| Property      | Type                    | Required |
+| ------------- | ----------------------- | -------- |
+| `reelWeights` | `Record<string, mixed>` | yes      |
+
+Configure the weights of the reels in this ResultSet.
+
+If you need to support dynamic / special reel weights based on the simulation context,
+you can provide an `evaluate` function that returns the desired weights.
+
+If the `evaluate` function returns a falsy value, the usual spin type based weights will be used.
+
+#### Example 1 [!toc]
+During the first spin of a "freespins" simulation (when scatters trigger FS),
+the reels with the ID `base1` will always be used to draw the board.
+
+During free spins, one of two possible reels will be picked by doing a weighted draw
+(`bonus1`: 75%, `bonus2`: 25%).
+
+```ts lineNumbers
+new ResultSet({
+  criteria: "freespins",
+  quota: 1,
+  forceFreespins: true,
+  reelWeights: {
+    [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
+    [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
+  },
+}),
+```
+
+#### Example 2 [!toc]
+
+Similar to the first example, but the `evaluate` function runs first and tells the program to use the `superbonus` reels
+after super free spins have been triggered.
+
+```ts lineNumbers
+new ResultSet<UserStateType>({ // Add your custom state as a type parameter ...
+  criteria: "superFreespins",
+  quota: 0.01,
+  forceFreespins: true,
+  reelWeights: {
+    [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
+    [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
+    evaluate: (ctx) => {
+      if (ctx.state.userData.triggeredSuperFreespins) { // ... for type-safety!
+        return { superbonus: 1 }
+      }
+    },
+  },
+  userData: { forceSuperFreespins: true },
+}),
+```
