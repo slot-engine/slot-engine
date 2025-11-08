@@ -13,7 +13,6 @@
     "config/game-modes",
     "config/custom-state",
     "config/hooks",
-    "type-safety",
     "---Game Implementation---",
     "game-flow",
     "game-flow/tips",
