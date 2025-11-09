@@ -189,12 +189,9 @@ export function copy<T>(obj: T): T {
 /**
  * Prints the board to the console in a readable format.
  */
-export function printBoard({ board, config }: Board<any, any, any>) {
+export function printBoard({ board }: Board<any, any, any>) {
   const fullBoard = board.reels.map((reel, ridx) => {
-    if (config.padSymbols && config.padSymbols > 0) {
-      return [...board.paddingTop[ridx]!, ...reel, ...board.paddingBottom[ridx]!]
-    }
-    return reel
+    return [...board.paddingTop[ridx]!, ...reel, ...board.paddingBottom[ridx]!]
   })
 
   const rows = Math.max(...fullBoard.map((reel) => reel.length))
@@ -246,7 +243,10 @@ export function weightedAverage(dist: Record<number, number>) {
   const keys = Object.keys(dist).map(Number)
   const values = Object.values(dist)
 
-  const totalWeight = round(values.reduce((a, b) => a + b, 0), 6)
+  const totalWeight = round(
+    values.reduce((a, b) => a + b, 0),
+    6,
+  )
   const weightedSum = keys.reduce((sum, key, i) => sum + key * values[i]!, 0)
 
   return weightedSum / totalWeight

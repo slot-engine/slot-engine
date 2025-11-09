@@ -7,7 +7,7 @@
   },
   "homepage": "https://slot-engine.dev/docs/core",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest",
     "typecheck": "tsc --noEmit",
     "prebuild": "pnpm typecheck && pnpm copy-files",
     "build": "tsup ./index.ts --dts --format cjs,esm --sourcemap",
@@ -29,7 +29,8 @@
   },
   "devDependencies": {
     "typescript": "5.9.3",
-    "tsup": "8.5.0"
+    "tsup": "8.5.0",
+    "vitest":"4.0.8"
   },
   "dependencies": {
     "esbuild": "0.25.9"
