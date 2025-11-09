@@ -1,5 +1,5 @@
 import fs from "fs"
-import { Board } from "./src/Board"
+import { Board } from "./_src_old/Board"
 
 export function weightedRandom<T extends Record<string, number>>(
   weights: T,

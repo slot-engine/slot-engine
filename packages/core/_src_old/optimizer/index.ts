@@ -1,22 +1,23 @@
-import path from "path"
-import assert from "assert"
-import { spawn } from "child_process"
-import { isMainThread } from "worker_threads"
+import { GameConfig, OptimizationConditions, OptimizationScaling } from "../../index"
+import { GameModeName } from "../GameMode"
+import { OptimizationParameters } from "./OptimizationParameters"
 import { makeMathConfig } from "../utils/math-config"
 import { makeSetupFile } from "../utils/setup-file"
-import { OptimizationParameters } from "./OptimizationParameters"
-import { OptimizationConditions } from "./OptimizationConditions"
-import { OptimizationScaling } from "./OptimizationScaling"
-import { SlotGame } from "../slot-game"
-import { GameConfig } from "../game-config"
+import { spawn } from "child_process"
+import path from "path"
+import { Analysis } from "../analysis"
+import assert from "assert"
+import { isMainThread } from "worker_threads"
+import { SlotGame } from "../SlotGame"
 
 export class Optimizer {
-  protected readonly gameConfig: GameConfig
+  protected readonly gameConfig: GameConfig["config"]
   protected readonly gameModes: OptimzierGameModeConfig
 
   constructor(opts: OptimizerOpts) {
-    this.gameConfig = opts.game.getConfig()
+    this.gameConfig = opts.game.getConfig().config
     this.gameModes = opts.gameModes
+
     this.verifyConfig()
   }
 
@@ -133,7 +134,7 @@ export interface OptimizerOpts {
 }
 
 export type OptimzierGameModeConfig = Record<
-  string,
+  GameModeName,
   {
     conditions: Record<string, OptimizationConditions>
     scaling: OptimizationScaling
