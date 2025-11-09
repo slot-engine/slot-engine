@@ -1,6 +1,5 @@
-
 import { RandomNumberGenerator } from "../../utils"
-import { AnyGameModes, AnySymbols, AnyUserData, SpinType } from "../types"
+import { AnyUserData, SpinType } from "../types"
 import { SPIN_TYPE } from "../constants"
 
 export interface GameStateOptions<TUserState extends AnyUserData> {
@@ -55,21 +54,8 @@ export interface GameStateOptions<TUserState extends AnyUserData> {
   triggeredFreespins: boolean
 }
 
-class GameState<TUserState extends AnyUserData = AnyUserData> {
-  constructor(opts: GameStateOptions<TUserState>) {
-
-  }
-
-  get currentSimulationId() {
-    return 0
-  }
-}
-
-const wterwt = new GameState({})
-wterwt.currentSimulationId = 1
-
 export function createGameState<TUserState extends AnyUserData = AnyUserData>(
-  opts?: GameStateOptions<TUserState>,
+  opts?: Partial<GameStateOptions<TUserState>>,
 ) {
   return {
     currentSimulationId: opts?.currentSimulationId || 0,
@@ -96,3 +82,7 @@ export function createGameState<TUserState extends AnyUserData = AnyUserData>(
     triggeredFreespins: opts?.triggeredFreespins || false,
   }
 }
+
+export type GameState<TUserState extends AnyUserData = AnyUserData> = ReturnType<
+  typeof createGameState<TUserState>
+>

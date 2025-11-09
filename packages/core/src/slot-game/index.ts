@@ -27,6 +27,7 @@ export class SlotGame<
    * Must be called before `runTasks()`.
    */
   configureSimulation(opts: SimulationConfigOpts) {
+    // @ts-ignore TODO: Fix type errors with AnyTypes
     this.simulation = new Simulation(opts, this.configOpts)
   }
 

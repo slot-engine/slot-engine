@@ -1,4 +1,5 @@
 import { SPIN_TYPE } from "./constants"
+import { GameContext } from "./game-context"
 import { GameMode } from "./game-mode"
 import { GameSymbol } from "./game-symbol"
 import { SlotGame } from "./slot-game"
@@ -52,13 +53,11 @@ export interface GameHooks<
    * The game flow is not built into the core, because it can vary greatly between different games.\
    * This hook provides the flexibility to implement any game flow you need.
    */
-  onHandleGameFlow: (ctx: SimulationContext<TGameModes, TSymbols, TUserState>) => void
+  onHandleGameFlow: (ctx: GameContext<TGameModes, TSymbols, TUserState>) => void
   /**
    * This hook is called whenever a simulation is accepted, i.e. when the criteria of the current ResultSet is met.
    */
-  onSimulationAccepted?: (
-    ctx: SimulationContext<TGameModes, TSymbols, TUserState>,
-  ) => void
+  onSimulationAccepted?: (ctx: GameContext<TGameModes, TSymbols, TUserState>) => void
 }
 
 /**
