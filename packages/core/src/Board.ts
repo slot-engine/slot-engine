@@ -1,3 +1,4 @@
+import assert from "assert"
 import { AnyGameModes, AnySymbols, AnyUserData, CommonGameOptions } from "../index"
 import { randomItem, weightedRandom } from "../utils"
 import { GameState } from "./GameState"
@@ -52,10 +53,8 @@ export class StandaloneBoard {
       { length: this.ctx.getCurrentGameMode().reelsAmount },
       () => 0,
     )
-    if (this.ctx.config.padSymbols && this.ctx.config.padSymbols > 0) {
-      this.paddingTop = this.makeEmptyReels()
-      this.paddingBottom = this.makeEmptyReels()
-    }
+    this.paddingTop = this.makeEmptyReels()
+    this.paddingBottom = this.makeEmptyReels()
   }
 
   /**
@@ -193,15 +192,13 @@ export class StandaloneBoard {
     for (let ridx = 0; ridx < this.ctx.getCurrentGameMode().reelsAmount; ridx++) {
       const reelPos = finalReelStops[ridx]!
 
-      if (this.ctx.config.padSymbols && this.ctx.config.padSymbols > 0) {
-        for (let p = this.ctx.config.padSymbols - 1; p >= 0; p--) {
-          const topPos = (reelPos - (p + 1)) % reels[ridx]!.length
-          this.paddingTop[ridx]!.push(reels[ridx]![topPos]!)
-          const bottomPos =
-            (reelPos + this.ctx.getCurrentGameMode().symbolsPerReel[ridx]! + p) %
-            reels[ridx]!.length
-          this.paddingBottom[ridx]!.unshift(reels[ridx]![bottomPos]!)
-        }
+      for (let p = this.ctx.config.padSymbols - 1; p >= 0; p--) {
+        const topPos = (reelPos - (p + 1)) % reels[ridx]!.length
+        this.paddingTop[ridx]!.push(reels[ridx]![topPos]!)
+        const bottomPos =
+          (reelPos + this.ctx.getCurrentGameMode().symbolsPerReel[ridx]! + p) %
+          reels[ridx]!.length
+        this.paddingBottom[ridx]!.unshift(reels[ridx]![bottomPos]!)
       }
 
       for (
@@ -238,6 +235,8 @@ export class Board<
     paddingTop: Reels
     paddingBottom: Reels
     anticipation: number[]
+    lastDrawnReelStops: number[]
+    lastUsedReels: Reels
   }
 
   constructor(opts: CommonGameOptions<TGameModes, TSymbols, TUserState>) {
@@ -248,6 +247,8 @@ export class Board<
       paddingTop: [],
       paddingBottom: [],
       anticipation: [],
+      lastDrawnReelStops: [],
+      lastUsedReels: [],
     }
   }
 
@@ -257,6 +258,7 @@ export class Board<
    */
   resetBoard() {
     this.resetReels()
+    this.board.lastDrawnReelStops = []
   }
 
   private makeEmptyReels() {
@@ -269,10 +271,8 @@ export class Board<
       { length: this.getCurrentGameMode().reelsAmount },
       () => 0,
     )
-    if (this.config.padSymbols && this.config.padSymbols > 0) {
-      this.board.paddingTop = this.makeEmptyReels()
-      this.board.paddingBottom = this.makeEmptyReels()
-    }
+    this.board.paddingTop = this.makeEmptyReels()
+    this.board.paddingBottom = this.makeEmptyReels()
   }
 
   /**
@@ -499,18 +499,19 @@ export class Board<
       }
     }
 
+    this.board.lastDrawnReelStops = finalReelStops.map((pos) => pos!) as number[]
+    this.board.lastUsedReels = reels
+
     for (let ridx = 0; ridx < this.getCurrentGameMode().reelsAmount; ridx++) {
       const reelPos = finalReelStops[ridx]!
 
-      if (this.config.padSymbols && this.config.padSymbols > 0) {
-        for (let p = this.config.padSymbols - 1; p >= 0; p--) {
-          const topPos = (reelPos - (p + 1)) % reels[ridx]!.length
-          this.board.paddingTop[ridx]!.push(reels[ridx]![topPos]!)
-          const bottomPos =
-            (reelPos + this.getCurrentGameMode().symbolsPerReel[ridx]! + p) %
-            reels[ridx]!.length
-          this.board.paddingBottom[ridx]!.unshift(reels[ridx]![bottomPos]!)
-        }
+      for (let p = this.config.padSymbols - 1; p >= 0; p--) {
+        const topPos = (reelPos - (p + 1)) % reels[ridx]!.length
+        this.board.paddingTop[ridx]!.push(reels[ridx]![topPos]!)
+        const bottomPos =
+          (reelPos + this.getCurrentGameMode().symbolsPerReel[ridx]! + p) %
+          reels[ridx]!.length
+        this.board.paddingBottom[ridx]!.unshift(reels[ridx]![bottomPos]!)
       }
 
       for (let row = 0; row < this.getCurrentGameMode().symbolsPerReel[ridx]!; row++) {
@@ -521,6 +522,65 @@ export class Board<
         }
 
         this.board.reels[ridx]![row] = symbol
+      }
+    }
+  }
+
+  /**
+   * Tumbles the board. All given symbols will be deleted and new symbols will fall from the top.
+   */
+  tumbleBoard(symbolsToDelete: Array<{ reelIdx: number; rowIdx: number }>) {
+    assert(
+      this.board.lastDrawnReelStops.length > 0,
+      "Cannot tumble board before drawing it.",
+    )
+
+    const reelsAmount = this.getCurrentGameMode().reelsAmount
+    const symbolsPerReel = this.getCurrentGameMode().symbolsPerReel
+    const reels = this.board.lastUsedReels
+
+    symbolsToDelete.forEach(({ reelIdx, rowIdx }) => {
+      this.board.reels[reelIdx]!.splice(rowIdx, 1)
+    })
+
+    const newFirstSymbolPositions: Record<number, number> = {}
+
+    for (let ridx = 0; ridx < reelsAmount; ridx++) {
+      // Drop down padding symbols from top
+      while (this.board.reels[ridx]!.length < symbolsPerReel[ridx]!) {
+        const padSymbol = this.board.paddingTop[ridx]!.pop()
+        if (padSymbol) {
+          this.board.reels[ridx]!.unshift(padSymbol)
+        } else {
+          break
+        }
+      }
+
+      const previousStop = this.board.lastDrawnReelStops[ridx]!
+      const stopBeforePad = previousStop - this.config.padSymbols - 1
+      const symbolsNeeded = symbolsPerReel[ridx]! - this.board.reels[ridx]!.length
+      // Drop rest of symbols
+      for (let s = 0; s < symbolsNeeded; s++) {
+        const symbolPos = (stopBeforePad - s + reels[ridx]!.length) % reels[ridx]!.length
+        const newSymbol = reels[ridx]![symbolPos]
+
+        assert(newSymbol, "Failed to get new symbol for tumbling.")
+
+        this.board.reels[ridx]!.unshift(newSymbol)
+        newFirstSymbolPositions[ridx] = symbolPos
+      }
+    }
+
+    // Add new padding top symbols
+    for (let ridx = 0; ridx < reelsAmount; ridx++) {
+      const firstSymbolPos = newFirstSymbolPositions[ridx]!
+      for (let p = 1; p <= this.config.padSymbols; p++) {
+        const topPos = (firstSymbolPos - p + reels[ridx]!.length) % reels[ridx]!.length
+        const padSymbol = reels[ridx]![topPos]
+
+        assert(padSymbol, "Failed to get new padding symbol for tumbling.")
+
+        this.board.paddingTop[ridx]!.unshift(padSymbol)
       }
     }
   }

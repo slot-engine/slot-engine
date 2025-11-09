@@ -22,7 +22,7 @@ export class GameConfig<
     readonly name: string
     readonly gameModes: Record<GameModeName, GameMode>
     readonly symbols: Map<keyof TSymbols & string, TSymbols[keyof TSymbols]>
-    readonly padSymbols?: number
+    readonly padSymbols: number
     readonly scatterToFreespins: Record<string, Record<number, number>>
     readonly anticipationTriggers: Record<SpinType, number>
     readonly maxWinX: number
@@ -37,7 +37,7 @@ export class GameConfig<
       name: opts.name,
       gameModes: opts.gameModes,
       symbols: new Map(),
-      padSymbols: opts.padSymbols || 0,
+      padSymbols: opts.padSymbols || 1,
       scatterToFreespins: opts.scatterToFreespins,
       anticipationTriggers: {
         [GameConfig.SPIN_TYPE.BASE_GAME]: getAnticipationTrigger(
