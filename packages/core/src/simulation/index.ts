@@ -3,30 +3,28 @@ import path from "path"
 import assert from "assert"
 import zlib from "zlib"
 import { buildSync } from "esbuild"
-import { createDirIfNotExists, JSONL, printBoard, writeFile } from "../../utils"
-import { Board } from "./Board"
+import { createDirIfNotExists, JSONL, writeFile } from "../../utils"
 import { GameConfig } from "../game-config"
-import { ResultSet } from "./ResultSet"
-import { Wallet } from "./Wallet"
-import { Book } from "./Book"
 import { Worker, isMainThread, parentPort, workerData } from "worker_threads"
-import { AnyGameModes, AnySymbols, AnyUserData, RecordItem } from "../types"
+import { RecordItem } from "../types"
 import { createGameConfig, GameConfigOptions } from "../game-config"
+import { createGameContext, GameContext } from "../game-context"
 
 let completedSimulations = 0
 const TEMP_FILENAME = "__temp_compiled_src_IGNORE.js"
 
 export class Simulation {
   protected readonly gameConfigOpts: GameConfigOptions
-  readonly gameConfig: GameConfig
-  readonly simRunsAmount: Partial<Record<string, number>>
-  private readonly concurrency: number
+  protected readonly gameConfig: GameConfig
+  protected readonly simRunsAmount: Partial<Record<string, number>>
+  protected readonly concurrency: number
+  protected debug = false
+  private actualSims = 0
   private wallet: Wallet
   private library: Map<string, Book>
   readonly records: RecordItem[]
-  protected debug = false
 
-  constructor(opts: SimulationConfigOpts, gameConfigOpts: GameConfigOptions) {
+  constructor(opts: SimulationOptions, gameConfigOpts: GameConfigOptions) {
     this.gameConfig = createGameConfig(gameConfigOpts)
     this.gameConfigOpts = gameConfigOpts
     this.simRunsAmount = opts.simRunsAmount || {}
@@ -48,7 +46,7 @@ export class Simulation {
     }
   }
 
-  async runSimulation(opts: SimulationOpts) {
+  async runSimulation(opts: SimulationConfigOptions) {
     const debug = opts.debug || false
     this.debug = debug
 
@@ -59,7 +57,7 @@ export class Simulation {
       throw new Error("No game modes configured for simulation.")
     }
 
-    this.gameConfig.generateReelsetFiles()
+    this.generateReelsetFiles()
 
     // Code that runs when the user executes the simulations.
     // This spawns individual processes and merges the results afterwards.
@@ -91,11 +89,7 @@ export class Simulation {
         await this.spawnWorkersForGameMode({ mode, simNumsToCriteria })
 
         createDirIfNotExists(
-          path.join(
-            process.cwd(),
-            this.gameConfig.outputDir,
-            "optimization_files",
-          ),
+          path.join(process.cwd(), this.gameConfig.outputDir, "optimization_files"),
         )
         createDirIfNotExists(
           path.join(process.cwd(), this.gameConfig.outputDir, "publish_files"),
@@ -127,8 +121,7 @@ export class Simulation {
         })
 
         debugDetails[mode].rtp =
-          this.wallet.getCumulativeWins() /
-          (runs * this.gameConfig.gameModes[mode]!.cost)
+          this.wallet.getCumulativeWins() / (runs * this.gameConfig.gameModes[mode]!.cost)
 
         debugDetails[mode].wins = this.wallet.getCumulativeWins()
         debugDetails[mode].winsPerSpinType = this.wallet.getCumulativeWinsPerSpinType()
@@ -155,17 +148,16 @@ export class Simulation {
         if (this.debug) desiredSims++
 
         const criteria = simNumsToCriteria[simId] || "N/A"
-        const ctx = new SimulationContext(this.gameConfigOpts)
 
         if (!criteriaToRetries[criteria]) {
           criteriaToRetries[criteria] = 0
         }
 
-        ctx.runSingleSimulation({ simId, mode, criteria, index })
+        this.runSingleSimulation({ simId, mode, criteria, index })
 
         if (this.debug) {
-          criteriaToRetries[criteria] += ctx.actualSims - 1
-          actualSims += ctx.actualSims
+          criteriaToRetries[criteria] += this.actualSims - 1
+          actualSims += this.actualSims
         }
       }
 
@@ -271,6 +263,88 @@ export class Simulation {
         }
       })
     })
+  }
+
+  /**
+   * Will run a single simulation until the specified criteria is met.
+   */
+  runSingleSimulation(opts: {
+    simId: number
+    mode: string
+    criteria: string
+    index: number
+  }) {
+    const { simId, mode, criteria } = opts
+
+    const ctx = createGameContext({
+      config: this.gameConfig,
+    })
+
+    ctx.state.currentGameMode = mode
+    ctx.state.currentSimulationId = simId
+    ctx.state.isCriteriaMet = false
+
+    const resultSet = this.getResultSetByCriteria(ctx.state.currentGameMode, criteria)
+
+    while (!ctx.state.isCriteriaMet) {
+      this.actualSims++
+      this.resetSimulation(ctx)
+
+      ctx.state.currentResultSet = resultSet
+      ctx.state.book.criteria = resultSet.criteria
+
+      this.handleGameFlow()
+
+      if (resultSet.meetsCriteria(this)) {
+        ctx.state.isCriteriaMet = true
+      }
+    }
+
+    this.wallet.confirmWins(this as SimulationContext<any, any, any>)
+
+    if (ctx.state.book.getPayout() >= ctx.config.maxWinX) {
+      ctx.state.triggeredMaxWin = true
+    }
+
+    ctx.record({
+      criteria: resultSet.criteria,
+    })
+
+    ctx.config.hooks.onSimulationAccepted?.(this)
+
+    ctx.confirmRecords()
+
+    parentPort?.postMessage({
+      type: "complete",
+      simId,
+      book: ctx.state.book.serialize(),
+      wallet: ctx.wallet.serialize(),
+      records: ctx.getRecords(),
+    })
+  }
+
+  /**
+   * If a simulation does not meet the required criteria, reset the state to run it again.
+   *
+   * This also runs once before each simulation to ensure a clean state.
+   */
+  protected resetSimulation(ctx: GameContext) {
+    ctx.resetState()
+    ctx.resetBoard()
+  }
+
+  /**
+   * Contains and executes the entire game logic:
+   * - Drawing the board
+   * - Evaluating wins
+   * - Updating wallet
+   * - Handling free spins
+   * - Recording events
+   *
+   * You can customize the game flow by implementing the `onHandleGameFlow` hook in the game configuration.
+   */
+  protected handleGameFlow() {
+    this.gameConfig.hooks.onHandleGameFlow(this)
   }
 
   /**
@@ -507,9 +581,27 @@ export class Simulation {
       }
     }
   }
+
+  /**
+   * Generates reelset CSV files for all game modes.
+   */
+  generateReelsetFiles() {
+    for (const mode of Object.values(this.gameConfig.gameModes)) {
+      if (mode.reelSets && mode.reelSets.length > 0) {
+        for (const reelGenerator of Object.values(mode.reelSets)) {
+          reelGenerator.associatedGameModeName = mode.name
+          reelGenerator.generateReels(this)
+        }
+      } else {
+        throw new Error(
+          `Game mode "${mode.name}" has no reel sets defined. Cannot generate reelset files.`,
+        )
+      }
+    }
+  }
 }
 
-export type SimulationConfigOpts = {
+export type SimulationOptions = {
   /**
    * Object containing the game modes and their respective simulation runs amount.
    */
@@ -522,108 +614,6 @@ export type SimulationConfigOpts = {
   concurrency?: number
 }
 
-/**
- * @internal
- */
-export type AnySimulationContext<
-  TGameModes extends AnyGameModes = AnyGameModes,
-  TSymbols extends AnySymbols = AnySymbols,
-  TUserState extends AnyUserData = AnyUserData,
-> = SimulationContext<TGameModes, TSymbols, TUserState>
-
-/**
- * @internal
- */
-export class SimulationContext<
-  TGameModes extends AnyGameModes,
-  TSymbols extends AnySymbols,
-  TUserState extends AnyUserData,
-> extends Board<TGameModes, TSymbols, TUserState> {
-  constructor(opts: CommonGameOptions<any, any, TUserState>) {
-    super(opts)
-  }
-
-  actualSims = 0
-
-  /**
-   * Will run a single simulation until the specified criteria is met.
-   */
-  runSingleSimulation(opts: {
-    simId: number
-    mode: string
-    criteria: string
-    index: number
-  }) {
-    const { simId, mode, criteria, index } = opts
-
-    this.state.currentGameMode = mode
-    this.state.currentSimulationId = simId
-    this.state.isCriteriaMet = false
-
-    const resultSet = this.getResultSetByCriteria(this.state.currentGameMode, criteria)
-
-    while (!this.state.isCriteriaMet) {
-      this.actualSims++
-      this.resetSimulation()
-
-      this.state.currentResultSet = resultSet
-      this.state.book.criteria = resultSet.criteria
-
-      this.handleGameFlow()
-
-      if (resultSet.meetsCriteria(this)) {
-        this.state.isCriteriaMet = true
-      }
-    }
-
-    this.wallet.confirmWins(this as SimulationContext<any, any, any>)
-
-    if (this.state.book.getPayout() >= this.config.maxWinX) {
-      this.state.triggeredMaxWin = true
-    }
-
-    this.record({
-      criteria: resultSet.criteria,
-    })
-
-    this.config.hooks.onSimulationAccepted?.(this)
-
-    this.confirmRecords()
-
-    parentPort?.postMessage({
-      type: "complete",
-      simId,
-      book: this.state.book.serialize(),
-      wallet: this.wallet.serialize(),
-      records: this.getRecords(),
-    })
-  }
-
-  /**
-   * If a simulation does not meet the required criteria, reset the state to run it again.
-   *
-   * This also runs once before each simulation to ensure a clean state.
-   */
-  protected resetSimulation() {
-    this.resetState()
-    this.resetBoard()
-  }
-
-  /**
-   * Contains and executes the entire game logic:
-   * - Drawing the board
-   * - Evaluating wins
-   * - Updating wallet
-   * - Handling free spins
-   * - Recording events
-   *
-   * You can customize the game flow by implementing the `onHandleGameFlow` hook in the game configuration.
-   */
-  protected handleGameFlow() {
-    this.config.hooks.onHandleGameFlow(this)
-  }
-}
-
-export interface SimulationOpts {
+export type SimulationConfigOptions = {
   debug?: boolean
 }
