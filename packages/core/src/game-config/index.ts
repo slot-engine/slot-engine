@@ -83,6 +83,8 @@ export function createGameConfig<
   }
 
   return {
+    padSymbols: opts.padSymbols || 1,
+    userState: opts.userState || ({} as TUserState),
     ...opts,
     symbols,
     anticipationTriggers: {
@@ -97,7 +99,7 @@ export type GameConfig<
   TGameModes extends AnyGameModes = AnyGameModes,
   TSymbols extends AnySymbols = AnySymbols,
   TUserState extends AnyUserData = AnyUserData,
-> = Omit<GameConfigOptions<TGameModes, TSymbols, TUserState>, "symbols"> & {
+> = Required<Omit<GameConfigOptions<TGameModes, TSymbols, TUserState>, "symbols">> & {
   symbols: Map<keyof TSymbols & string, TSymbols[keyof TSymbols]>
   outputDir: string
   anticipationTriggers: Record<(typeof SPIN_TYPE)[keyof typeof SPIN_TYPE], number>

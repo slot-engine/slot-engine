@@ -78,3 +78,5 @@ export interface RecordItem {
 }
 
 export type SpinType = (typeof SPIN_TYPE)[keyof typeof SPIN_TYPE]
+
+export type Reels = GameSymbol[][]

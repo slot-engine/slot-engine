@@ -3,12 +3,13 @@ import path from "path"
 import assert from "assert"
 import zlib from "zlib"
 import { buildSync } from "esbuild"
-import { createDirIfNotExists, JSONL, writeFile } from "../../utils"
-import { GameConfig } from "../game-config"
 import { Worker, isMainThread, parentPort, workerData } from "worker_threads"
-import { RecordItem } from "../types"
-import { createGameConfig, GameConfigOptions } from "../game-config"
+import { createGameConfig, GameConfigOptions, GameConfig } from "../game-config"
 import { createGameContext, GameContext } from "../game-context"
+import { createDirIfNotExists, JSONL, writeFile } from "../../utils"
+import { SPIN_TYPE } from "../constants"
+import { RecordItem } from "../types"
+import { Book } from "../book"
 
 let completedSimulations = 0
 const TEMP_FILENAME = "__temp_compiled_src_IGNORE.js"
@@ -20,18 +21,12 @@ export class Simulation {
   protected readonly concurrency: number
   protected debug = false
   private actualSims = 0
-  private wallet: Wallet
-  private library: Map<string, Book>
-  readonly records: RecordItem[]
 
   constructor(opts: SimulationOptions, gameConfigOpts: GameConfigOptions) {
     this.gameConfig = createGameConfig(gameConfigOpts)
     this.gameConfigOpts = gameConfigOpts
     this.simRunsAmount = opts.simRunsAmount || {}
     this.concurrency = (opts.concurrency || 6) >= 2 ? opts.concurrency || 6 : 2
-    this.wallet = new Wallet()
-    this.library = new Map()
-    this.records = []
 
     const gameModeKeys = Object.keys(this.gameConfig.gameModes)
     assert(
@@ -291,9 +286,9 @@ export class Simulation {
       this.resetSimulation(ctx)
 
       ctx.state.currentResultSet = resultSet
-      ctx.state.book.criteria = resultSet.criteria
+      ctx.services.data.book.setCriteria(resultSet.criteria)
 
-      this.handleGameFlow()
+      this.handleGameFlow(ctx)
 
       if (resultSet.meetsCriteria(this)) {
         ctx.state.isCriteriaMet = true
@@ -302,24 +297,24 @@ export class Simulation {
 
     this.wallet.confirmWins(this as SimulationContext<any, any, any>)
 
-    if (ctx.state.book.getPayout() >= ctx.config.maxWinX) {
+    if (ctx.services.data.book.getPayout() >= ctx.config.maxWinX) {
       ctx.state.triggeredMaxWin = true
     }
 
-    ctx.record({
+    ctx.services.data.record({
       criteria: resultSet.criteria,
     })
 
-    ctx.config.hooks.onSimulationAccepted?.(this)
+    ctx.config.hooks.onSimulationAccepted?.(ctx)
 
-    ctx.confirmRecords()
+    this.confirmRecords(ctx)
 
     parentPort?.postMessage({
       type: "complete",
       simId,
-      book: ctx.state.book.serialize(),
+      book: ctx.services.data.book.serialize(),
       wallet: ctx.wallet.serialize(),
-      records: ctx.getRecords(),
+      records: ctx.services.data.getRecords(),
     })
   }
 
@@ -329,8 +324,21 @@ export class Simulation {
    * This also runs once before each simulation to ensure a clean state.
    */
   protected resetSimulation(ctx: GameContext) {
-    ctx.resetState()
-    ctx.resetBoard()
+    this.resetState(ctx)
+    ctx.services.board.resetBoard()
+  }
+
+  protected resetState(ctx: GameContext) {
+    ctx.services.rng.setSeedIfDifferent(ctx.state.currentSimulationId)
+    ctx.services.data.book = new Book({ id: ctx.state.currentSimulationId })
+    ctx.state.currentSpinType = SPIN_TYPE.BASE_GAME
+    ctx.state.currentFreespinAmount = 0
+    ctx.state.totalFreespinAmount = 0
+    ctx.state.triggeredMaxWin = false
+    ctx.state.triggeredFreespins = false
+    ctx.wallet.resetCurrentWin()
+    ctx.clearPendingRecords()
+    ctx.state.userData = ctx.config.userState || {}
   }
 
   /**
@@ -343,8 +351,8 @@ export class Simulation {
    *
    * You can customize the game flow by implementing the `onHandleGameFlow` hook in the game configuration.
    */
-  protected handleGameFlow() {
-    this.gameConfig.hooks.onHandleGameFlow(this)
+  protected handleGameFlow(ctx: GameContext) {
+    this.gameConfig.hooks.onHandleGameFlow(ctx)
   }
 
   /**
@@ -598,6 +606,48 @@ export class Simulation {
         )
       }
     }
+  }
+
+  /**
+   * Confirms all pending records and adds them to the main records list.
+   */
+  confirmRecords(ctx: GameContext) {
+    for (const pendingRecord of this.recorder.pendingRecords) {
+      const search = Object.entries(pendingRecord.properties)
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+
+      let record = this.recorder.records.find((r) => {
+        if (r.search.length !== search.length) return false
+        for (let i = 0; i < r.search.length; i++) {
+          if (r.search[i]!.name !== search[i]!.name) return false
+          if (r.search[i]!.value !== search[i]!.value) return false
+        }
+        return true
+      })
+      if (!record) {
+        record = {
+          search,
+          timesTriggered: 0,
+          bookIds: [],
+        }
+        ctx.services.data.recorder.records.push(record)
+      }
+      record.timesTriggered++
+      if (!record.bookIds.includes(pendingRecord.bookId)) {
+        record.bookIds.push(pendingRecord.bookId)
+      }
+    }
+
+    ctx.services.data.recorder.pendingRecords = []
+  }
+
+  /**
+   * Moves the current book to the library and resets the current book.
+   */
+  moveBookToLibrary() {
+    this.state.library.set(this.state.book.id.toString(), this.state.book)
+    this.state.book = new Book({ id: 0 })
   }
 }
 

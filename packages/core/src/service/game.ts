@@ -67,4 +67,49 @@ export class GameService<
   getSymbolArray() {
     return Array.from(this.ctx().config.symbols).map(([n, v]) => v)
   }
+
+  /**
+   * Gets the configuration for the current game mode.
+   */
+  getCurrentGameMode() {
+    return this.ctx().config.gameModes[this.ctx().state.currentGameMode]!
+  }
+
+  /**
+   * Ensures the requested number of scatters is valid based on the game configuration.\
+   * Returns a valid number of scatters.
+   */
+  verifyScatterCount(numScatters: number) {
+    const scatterCounts =
+      this.ctx().config.scatterToFreespins[this.ctx().state.currentSpinType]
+    if (!scatterCounts) {
+      throw new Error(
+        `No scatter counts defined for spin type "${this.ctx().state.currentSpinType}". Please check your game configuration.`,
+      )
+    }
+    const validCounts = Object.keys(scatterCounts).map((key) => parseInt(key, 10))
+    if (validCounts.length === 0) {
+      throw new Error(
+        `No scatter counts defined for spin type "${this.ctx().state.currentSpinType}". Please check your game configuration.`,
+      )
+    }
+    if (numScatters < Math.min(...validCounts)) {
+      return Math.min(...validCounts)
+    }
+    if (numScatters > Math.max(...validCounts)) {
+      return Math.max(...validCounts)
+    }
+    return numScatters
+  }
+
+  /**
+   * Increases the freespin count by the specified amount.
+   *
+   * Also sets `state.triggeredFreespins` to true.
+   */
+  awardFreespins(amount: number) {
+    this.ctx().state.currentFreespinAmount += amount
+    this.ctx().state.totalFreespinAmount += amount
+    this.ctx().state.triggeredFreespins = true
+  }
 }

@@ -1,4 +1,3 @@
-import { RandomNumberGenerator } from "../../utils"
 import { AnyUserData, SpinType } from "../types"
 import { SPIN_TYPE } from "../constants"
 
@@ -28,18 +27,6 @@ export interface GameStateOptions<TUserState extends AnyUserData> {
    * Total amount of freespins awarded during the active simulation.
    */
   totalFreespinAmount: number
-  /**
-   * A library of all completed books, indexed by their ID.
-   */
-  library: Map<string, Book>
-  /**
-   * The current book being recorded.
-   */
-  book: Book
-  /**
-   * Seeded random number generator instance for the current simulation.
-   */
-  rng: RandomNumberGenerator
   /**
    * Custom user data that can be used in game flow logic.
    */
@@ -74,9 +61,6 @@ export function createGameState<TUserState extends AnyUserData = AnyUserData>(
     isCriteriaMet: opts?.isCriteriaMet || false,
     currentFreespinAmount: opts?.currentFreespinAmount || 0,
     totalFreespinAmount: opts?.totalFreespinAmount || 0,
-    library: opts?.library || new Map(),
-    book: opts?.book || new Book({ id: 0 }),
-    rng: opts?.rng || new RandomNumberGenerator(),
     userData: opts?.userData || ({} as TUserState),
     triggeredMaxWin: opts?.triggeredMaxWin || false,
     triggeredFreespins: opts?.triggeredFreespins || false,

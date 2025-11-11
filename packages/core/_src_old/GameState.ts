@@ -70,13 +70,6 @@ export class GameState<
    */
   wallet: Wallet
 
-  /**
-   * Recorder for statistical analysis (e.g. symbol occurrences, etc.).
-   */
-  private recorder: {
-    pendingRecords: PendingRecord[]
-    readonly records: RecordItem[]
-  }
 
   constructor(opts: CommonGameOptions<TGameModes, TSymbols, TUserState>) {
     super(opts)
@@ -107,30 +100,7 @@ export class GameState<
 
     this.wallet = new Wallet()
 
-    this.recorder = {
-      pendingRecords: [],
-      records: [],
-    }
-  }
 
-  /**
-   * Gets the configuration for the current game mode.
-   */
-  getCurrentGameMode() {
-    return this.config.gameModes[this.state.currentGameMode]!
-  }
-
-  resetState() {
-    this.state.rng.setSeedIfDifferent(this.state.currentSimulationId)
-    this.state.book = new Book({ id: this.state.currentSimulationId })
-    this.state.currentSpinType = GameConfig.SPIN_TYPE.BASE_GAME
-    this.state.currentFreespinAmount = 0
-    this.state.totalFreespinAmount = 0
-    this.state.triggeredMaxWin = false
-    this.state.triggeredFreespins = false
-    this.wallet.resetCurrentWin()
-    this.clearPendingRecords()
-    this.state.userData = this.config.userState || ({} as TUserState)
   }
 
   /**
@@ -175,39 +145,6 @@ export class GameState<
   }
 
   /**
-   * Record data for statistical analysis.
-   */
-  record(data: Record<string, string | number | boolean>) {
-    this.recorder.pendingRecords.push({
-      bookId: this.state.currentSimulationId,
-      properties: Object.fromEntries(
-        Object.entries(data).map(([k, v]) => [k, String(v)]),
-      ),
-    })
-  }
-
-  /**
-   * Records a symbol occurrence for statistical analysis.
-   *
-   * Calls `this.record()` with the provided data.
-   */
-  recordSymbolOccurrence(data: {
-    kind: number
-    symbolId: string
-    spinType: SpinType
-    [key: string]: any
-  }) {
-    this.record(data)
-  }
-
-  /**
-   * Gets all confirmed records.
-   */
-  getRecords() {
-    return this.recorder.records
-  }
-
-  /**
    * Moves the current book to the library and resets the current book.
    */
   moveBookToLibrary() {
@@ -215,42 +152,6 @@ export class GameState<
     this.state.book = new Book({ id: 0 })
   }
 
-  /**
-   * Increases the freespin count by the specified amount.
-   *
-   * Also sets `state.triggeredFreespins` to true.
-   */
-  awardFreespins(amount: number) {
-    this.state.currentFreespinAmount += amount
-    this.state.totalFreespinAmount += amount
-    this.state.triggeredFreespins = true
-  }
-
-  /**
-   * Ensures the requested number of scatters is valid based on the game configuration.\
-   * Returns a valid number of scatters.
-   */
-  verifyScatterCount(numScatters: number) {
-    const scatterCounts = this.config.scatterToFreespins[this.state.currentSpinType]
-    if (!scatterCounts) {
-      throw new Error(
-        `No scatter counts defined for spin type "${this.state.currentSpinType}". Please check your game configuration.`,
-      )
-    }
-    const validCounts = Object.keys(scatterCounts).map((key) => parseInt(key, 10))
-    if (validCounts.length === 0) {
-      throw new Error(
-        `No scatter counts defined for spin type "${this.state.currentSpinType}". Please check your game configuration.`,
-      )
-    }
-    if (numScatters < Math.min(...validCounts)) {
-      return Math.min(...validCounts)
-    }
-    if (numScatters > Math.max(...validCounts)) {
-      return Math.max(...validCounts)
-    }
-    return numScatters
-  }
 }
 
 interface PendingRecord {

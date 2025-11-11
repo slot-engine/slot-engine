@@ -3,6 +3,7 @@ import { createGameState, GameState } from "../game-state"
 import { BoardService } from "../service/board"
 import { DataService } from "../service/data"
 import { GameService } from "../service/game"
+import { RngService } from "../service/rng"
 import { WalletService } from "../service/wallet"
 import { AnyGameModes, AnySymbols, AnyUserData } from "../types"
 
@@ -35,7 +36,7 @@ export function createGameContext<
       data: new DataService(getContext),
       board: new BoardService(getContext),
       wallet: new WalletService(getContext),
-      rng: {},
+      rng: new RngService(getContext),
       ...opts.services,
     }
   }
@@ -50,15 +51,39 @@ export type GameContext<
   TSymbols extends AnySymbols = AnySymbols,
   TUserState extends AnyUserData = AnyUserData,
 > = {
+  /**
+   * The static configuration of the game.
+   */
   config: GameConfig<TGameModes, TSymbols, TUserState>
+  /**
+   * Game state holding information about the current simulation.
+   */
   state: GameState<TUserState>
+  /**
+   * Services providing game functionality.
+   */
   services: GameContextServices
 }
 
 export interface GameContextServices {
+  /**
+   * Service providing common utility functions.
+   */
   game: GameService
+  /**
+   * Service for interacting with the book data or recorder.
+   */
   data: DataService
+  /**
+   * Service managing the game board and reels.
+   */
   board: BoardService
+  /**
+   * Service providing win related functionality.
+   */
   wallet: WalletService
-  rng: any
+  /**
+   * Service for seeded random number generation.
+   */
+  rng: RngService
 }
