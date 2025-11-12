@@ -53,6 +53,13 @@ export class BoardService<
     this.lastDrawnReelStops = []
   }
 
+  /**
+   * Gets the current reels and symbols on the board.
+   */
+  getBoardReels() {
+    return this.reels
+  }
+
   private makeEmptyReels() {
     return Array.from(
       { length: this.ctx().services.game.getCurrentGameMode().reelsAmount },
@@ -249,7 +256,9 @@ export class BoardService<
    */
   getRandomReelset() {
     const weights = this.ctx().state.currentResultSet.reelWeights
-    const evalWeights = this.ctx().state.currentResultSet.reelWeights.evaluate?.(this)
+    const evalWeights = this.ctx().state.currentResultSet.reelWeights.evaluate?.(
+      this.ctx(),
+    )
 
     let reelSetId: string = ""
 

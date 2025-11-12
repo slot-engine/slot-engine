@@ -1,11 +1,11 @@
-import { GameSymbol } from "../GameSymbol"
-import { SimulationContext } from "../Simulation"
-import { WinCombination, WinType, WinTypeOpts } from "../WinType"
+import { GameSymbol } from "../game-symbol"
+import { WinCombination, WinType, WinTypeOpts } from "."
+import { GameContext } from "../game-context"
 
 export class LinesWinType extends WinType {
   protected lines: Record<number, number[]>
   declare protected winCombinations: LineWinCombination[]
-  declare context: (ctx: SimulationContext<any, any, any>) => LinesWinType
+  declare context: (ctx: GameContext) => LinesWinType
   declare getWins: () => {
     payout: number
     winCombinations: LineWinCombination[]
@@ -21,8 +21,8 @@ export class LinesWinType extends WinType {
   }
 
   private validateConfig() {
-    const reelsAmount = this.ctx.getCurrentGameMode().reelsAmount
-    const symsPerReel = this.ctx.getCurrentGameMode().symbolsPerReel
+    const reelsAmount = this.ctx.services.game.getCurrentGameMode().reelsAmount
+    const symsPerReel = this.ctx.services.game.getCurrentGameMode().symbolsPerReel
 
     for (const [lineNum, positions] of Object.entries(this.lines)) {
       if (positions.length !== reelsAmount) {
@@ -60,8 +60,8 @@ export class LinesWinType extends WinType {
     const lineWins: LineWinCombination[] = []
     let payout = 0
 
-    const reels = this.ctx.board.reels
-    const reelsAmount = this.ctx.getCurrentGameMode().reelsAmount
+    const reels = this.ctx.services.board.getBoardReels()
+    const reelsAmount = this.ctx.services.game.getCurrentGameMode().reelsAmount
 
     for (const [lineNumStr, lineDef] of Object.entries(this.lines)) {
       const lineNum = Number(lineNumStr)
@@ -165,7 +165,7 @@ export class LinesWinType extends WinType {
     }
 
     for (const win of lineWins) {
-      this.ctx.recordSymbolOccurrence({
+      this.ctx.services.data.recordSymbolOccurrence({
         kind: win.kind,
         symbolId: win.symbol.id,
         spinType: this.ctx.state.currentSpinType,

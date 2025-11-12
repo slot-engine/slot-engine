@@ -1,5 +1,6 @@
 import { AnyUserData, SpinType } from "../types"
 import { SPIN_TYPE } from "../constants"
+import { ResultSet } from "../result-set"
 
 export interface GameStateOptions<TUserState extends AnyUserData> {
   currentSimulationId: number

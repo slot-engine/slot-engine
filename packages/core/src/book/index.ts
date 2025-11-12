@@ -1,20 +1,17 @@
 import { SPIN_TYPE } from "../constants"
 import { GameContext } from "../game-context"
+import { Wallet } from "../wallet"
 
 export class Book {
-  protected id: number
-  protected criteria: string = "N/A"
-  protected events: BookEvent[] = []
-  protected payout: number = 0
-  protected basegameWins: number = 0
-  protected freespinsWins: number = 0
+  readonly id: number
+  criteria: string = "N/A"
+  events: BookEvent[] = []
+  payout: number = 0
+  basegameWins: number = 0
+  freespinsWins: number = 0
 
   constructor(opts: BookOpts) {
     this.id = opts.id
-  }
-
-  setId(id: number) {
-    this.id = id
   }
 
   setCriteria(criteria: string) {
@@ -32,30 +29,18 @@ export class Book {
   /**
    * Transfers the win data from the wallet to the book.
    */
-  writePayout(ctx: GameContext) {
+  writePayout(ctx: GameContext, wallet: Wallet) {
     function process(number: number) {
       return Math.round(Math.min(number, ctx.config.maxWinX) * 100) / 100
     }
 
-    this.payout = Math.round(process(ctx.wallet.getCurrentWin()) * 100)
+    this.payout = Math.round(process(wallet.getCurrentWin()) * 100)
     this.basegameWins = process(
-      ctx.wallet.getCurrentWinPerSpinType()[SPIN_TYPE.BASE_GAME] || 0,
+      wallet.getCurrentWinPerSpinType()[SPIN_TYPE.BASE_GAME] || 0,
     )
     this.freespinsWins = process(
-      ctx.wallet.getCurrentWinPerSpinType()[SPIN_TYPE.FREE_SPINS] || 0,
+      wallet.getCurrentWinPerSpinType()[SPIN_TYPE.FREE_SPINS] || 0,
     )
-  }
-
-  getPayout() {
-    return this.payout
-  }
-
-  getBasegameWins() {
-    return this.basegameWins
-  }
-
-  getFreespinsWins() {
-    return this.freespinsWins
   }
 
   serialize() {

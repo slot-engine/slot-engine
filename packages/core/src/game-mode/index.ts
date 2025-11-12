@@ -1,6 +1,5 @@
 import assert from "assert"
-import { type ReelGenerator } from "./ReelGenerator"
-import { type ResultSet } from "./ResultSet"
+import { ResultSet } from "../result-set"
 
 export class GameMode {
   readonly name: string

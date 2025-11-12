@@ -1,10 +1,10 @@
-import { GameSymbol } from "./GameSymbol"
-import { AnySimulationContext, SimulationContext } from "./Simulation"
+import { GameContext } from "../game-context"
+import { GameSymbol } from "../game-symbol"
 
 export class WinType {
   protected payout: number
   protected winCombinations: WinCombination[]
-  protected ctx!: AnySimulationContext
+  protected ctx!: GameContext
   protected readonly wildSymbol?: WildSymbol
 
   constructor(opts?: WinTypeOpts) {
@@ -15,10 +15,10 @@ export class WinType {
 
   /**
    * Sets the simulation context for this WinType instance.
-   * 
+   *
    * This gives the WinType access to the current board.
    */
-  context(ctx: SimulationContext<any, any, any>): WinType {
+  context(ctx: GameContext): WinType {
     this.ctx = ctx
     return this
   }
@@ -93,7 +93,7 @@ export type WinCombination = {
 
 type PostProcessFn<TWinCombs extends WinCombination[]> = (
   winType: WinType,
-  ctx: AnySimulationContext,
+  ctx: GameContext,
 ) => {
   payout: number
   winCombinations: TWinCombs

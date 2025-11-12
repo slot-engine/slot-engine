@@ -8,25 +8,35 @@ import { createGameConfig, GameConfigOptions, GameConfig } from "../game-config"
 import { createGameContext, GameContext } from "../game-context"
 import { createDirIfNotExists, JSONL, writeFile } from "../../utils"
 import { SPIN_TYPE } from "../constants"
-import { RecordItem } from "../types"
 import { Book } from "../book"
+import { Recorder, RecordItem } from "../recorder"
+import { Wallet } from "../wallet"
+import { ResultSet } from "../result-set"
 
 let completedSimulations = 0
 const TEMP_FILENAME = "__temp_compiled_src_IGNORE.js"
 
 export class Simulation {
-  protected readonly gameConfigOpts: GameConfigOptions
-  protected readonly gameConfig: GameConfig
-  protected readonly simRunsAmount: Partial<Record<string, number>>
-  protected readonly concurrency: number
-  protected debug = false
+  readonly gameConfigOpts: GameConfigOptions
+  readonly gameConfig: GameConfig
+  readonly simRunsAmount: Partial<Record<string, number>>
+  readonly concurrency: number
+  private debug = false
   private actualSims = 0
+  private book: Book
+  private library: Map<number, Book>
+  private recorder: Recorder
+  private wallet: Wallet
 
   constructor(opts: SimulationOptions, gameConfigOpts: GameConfigOptions) {
     this.gameConfig = createGameConfig(gameConfigOpts)
     this.gameConfigOpts = gameConfigOpts
     this.simRunsAmount = opts.simRunsAmount || {}
     this.concurrency = (opts.concurrency || 6) >= 2 ? opts.concurrency || 6 : 2
+    this.book = new Book({ id: 0 })
+    this.library = new Map()
+    this.recorder = new Recorder()
+    this.wallet = new Wallet()
 
     const gameModeKeys = Object.keys(this.gameConfig.gameModes)
     assert(
@@ -90,30 +100,11 @@ export class Simulation {
           path.join(process.cwd(), this.gameConfig.outputDir, "publish_files"),
         )
 
-        Simulation.writeLookupTableCSV({
-          gameMode: mode,
-          library: this.library,
-          gameConfig: this.gameConfig,
-        })
-        Simulation.writeLookupTableSegmentedCSV({
-          gameMode: mode,
-          library: this.library,
-          gameConfig: this.gameConfig,
-        })
-        Simulation.writeRecords({
-          gameMode: mode,
-          records: this.records,
-          gameConfig: this.gameConfig,
-          debug: this.debug,
-        })
-        await Simulation.writeBooksJson({
-          gameMode: mode,
-          library: this.library,
-          gameConfig: this.gameConfig,
-        })
-        Simulation.writeIndexJson({
-          gameConfig: this.gameConfig,
-        })
+        this.writeLookupTableCSV(mode)
+        this.writeLookupTableSegmentedCSV(mode)
+        this.writeRecords(mode)
+        await this.writeBooksJson(mode)
+        this.writeIndexJson()
 
         debugDetails[mode].rtp =
           this.wallet.getCumulativeWins() / (runs * this.gameConfig.gameModes[mode]!.cost)
@@ -239,7 +230,7 @@ export class Simulation {
 
           // Write data to global library
           const book = Book.fromSerialized(msg.book)
-          this.library.set(book.id.toString(), book)
+          this.library.set(book.id, book)
           this.wallet.mergeSerialized(msg.wallet)
           this.mergeRecords(msg.records)
         } else if (msg.type === "done") {
@@ -275,29 +266,35 @@ export class Simulation {
       config: this.gameConfig,
     })
 
+    ctx.services.data._setRecorder(this.recorder)
+    ctx.services.wallet._setWallet(this.wallet)
     ctx.state.currentGameMode = mode
     ctx.state.currentSimulationId = simId
     ctx.state.isCriteriaMet = false
 
-    const resultSet = this.getResultSetByCriteria(ctx.state.currentGameMode, criteria)
+    const resultSet = ctx.services.game.getResultSetByCriteria(
+      ctx.state.currentGameMode,
+      criteria,
+    )
 
     while (!ctx.state.isCriteriaMet) {
       this.actualSims++
       this.resetSimulation(ctx)
 
       ctx.state.currentResultSet = resultSet
-      ctx.services.data.book.setCriteria(resultSet.criteria)
+      this.book.criteria = resultSet.criteria
 
       this.handleGameFlow(ctx)
 
-      if (resultSet.meetsCriteria(this)) {
+      if (resultSet.meetsCriteria(ctx, this.wallet)) {
         ctx.state.isCriteriaMet = true
       }
     }
 
-    this.wallet.confirmWins(this as SimulationContext<any, any, any>)
+    this.book.writePayout(ctx, this.wallet)
+    this.wallet.confirmWins(ctx)
 
-    if (ctx.services.data.book.getPayout() >= ctx.config.maxWinX) {
+    if (this.book.payout >= ctx.config.maxWinX) {
       ctx.state.triggeredMaxWin = true
     }
 
@@ -312,9 +309,9 @@ export class Simulation {
     parentPort?.postMessage({
       type: "complete",
       simId,
-      book: ctx.services.data.book.serialize(),
-      wallet: ctx.wallet.serialize(),
-      records: ctx.services.data.getRecords(),
+      book: this.book.serialize(),
+      wallet: this.wallet.serialize(),
+      records: ctx.services.data._getRecords(),
     })
   }
 
@@ -330,14 +327,14 @@ export class Simulation {
 
   protected resetState(ctx: GameContext) {
     ctx.services.rng.setSeedIfDifferent(ctx.state.currentSimulationId)
-    ctx.services.data.book = new Book({ id: ctx.state.currentSimulationId })
+    this.book = new Book({ id: ctx.state.currentSimulationId })
     ctx.state.currentSpinType = SPIN_TYPE.BASE_GAME
     ctx.state.currentFreespinAmount = 0
     ctx.state.totalFreespinAmount = 0
     ctx.state.triggeredMaxWin = false
     ctx.state.triggeredFreespins = false
-    ctx.wallet.resetCurrentWin()
-    ctx.clearPendingRecords()
+    this.wallet.resetCurrentWin()
+    ctx.services.data._clearPendingRecords()
     ctx.state.userData = ctx.config.userState || {}
   }
 
@@ -360,27 +357,21 @@ export class Simulation {
    *
    * `weight` defaults to 1.
    */
-  private static writeLookupTableCSV(opts: {
-    gameMode: string
-    library: Map<string, Book>
-    gameConfig: GameConfig
-  }) {
-    const { gameMode, library, gameConfig } = opts
-
+  private writeLookupTableCSV(gameMode: string) {
     const rows: string[] = []
 
-    for (const [bookId, book] of library.entries()) {
-      rows.push(`${book.id},1,${Math.round(book.getPayout())}`)
+    for (const [bookId, book] of this.library.entries()) {
+      rows.push(`${book.id},1,${Math.round(book.payout)}`)
     }
 
     rows.sort((a, b) => Number(a.split(",")[0]) - Number(b.split(",")[0]))
 
     let outputFileName = `lookUpTable_${gameMode}.csv`
-    let outputFilePath = path.join(gameConfig.outputDir, outputFileName)
+    let outputFilePath = path.join(this.gameConfig.outputDir, outputFileName)
     writeFile(outputFilePath, rows.join("\n"))
 
     outputFileName = `lookUpTable_${gameMode}_0.csv`
-    outputFilePath = path.join(gameConfig.outputDir, outputFileName)
+    outputFilePath = path.join(this.gameConfig.outputDir, outputFileName)
     writeFile(outputFilePath, rows.join("\n"))
 
     return outputFilePath
@@ -389,63 +380,42 @@ export class Simulation {
   /**
    * Creates a CSV file in the format "simulationId,criteria,payoutBase,payoutFreespins".
    */
-  private static writeLookupTableSegmentedCSV(opts: {
-    gameMode: string
-    library: Map<string, Book>
-    gameConfig: GameConfig
-  }) {
-    const { gameMode, library, gameConfig } = opts
-
+  private writeLookupTableSegmentedCSV(gameMode: string) {
     const rows: string[] = []
 
-    for (const [bookId, book] of library.entries()) {
-      rows.push(
-        `${book.id},${book.criteria},${book.getBasegameWins()},${book.getFreespinsWins()}`,
-      )
+    for (const [bookId, book] of this.library.entries()) {
+      rows.push(`${book.id},${book.criteria},${book.basegameWins},${book.freespinsWins}`)
     }
 
     rows.sort((a, b) => Number(a.split(",")[0]) - Number(b.split(",")[0]))
 
     const outputFileName = `lookUpTableSegmented_${gameMode}.csv`
 
-    const outputFilePath = path.join(gameConfig.outputDir, outputFileName)
+    const outputFilePath = path.join(this.gameConfig.outputDir, outputFileName)
     writeFile(outputFilePath, rows.join("\n"))
 
     return outputFilePath
   }
 
-  private static writeRecords(opts: {
-    gameMode: string
-    records: RecordItem[]
-    gameConfig: GameConfig
-    fileNameWithoutExtension?: string
-    debug?: boolean
-  }) {
-    const { gameMode, fileNameWithoutExtension, records, gameConfig, debug } = opts
+  private writeRecords(gameMode: string) {
+    const outputFileName = `force_record_${gameMode}.json`
+    const outputFilePath = path.join(this.gameConfig.outputDir, outputFileName)
+    writeFile(outputFilePath, JSON.stringify(this.recorder, null, 2))
 
-    const outputFileName = fileNameWithoutExtension
-      ? `${fileNameWithoutExtension}.json`
-      : `force_record_${gameMode}.json`
-
-    const outputFilePath = path.join(gameConfig.outputDir, outputFileName)
-    writeFile(outputFilePath, JSON.stringify(records, null, 2))
-
-    if (debug) Simulation.logSymbolOccurrences(records)
+    if (this.debug) this.logSymbolOccurrences()
 
     return outputFilePath
   }
 
-  private static writeIndexJson(opts: { gameConfig: GameConfig }) {
-    const { gameConfig } = opts
-
+  private writeIndexJson() {
     const outputFilePath = path.join(
       process.cwd(),
-      gameConfig.outputDir,
+      this.gameConfig.outputDir,
       "publish_files",
       "index.json",
     )
 
-    const modes = Object.entries(gameConfig.gameModes).map(([mode, modeConfig]) => ({
+    const modes = Object.entries(this.gameConfig.gameModes).map(([mode, modeConfig]) => ({
       name: mode,
       cost: modeConfig.cost,
       events: `books_${mode}.jsonl.zst`,
@@ -455,20 +425,11 @@ export class Simulation {
     writeFile(outputFilePath, JSON.stringify({ modes }, null, 2))
   }
 
-  private static async writeBooksJson(opts: {
-    gameMode: string
-    library: Map<string, Book>
-    gameConfig: GameConfig
-    fileNameWithoutExtension?: string
-  }) {
-    const { gameMode, fileNameWithoutExtension, library, gameConfig } = opts
+  private async writeBooksJson(gameMode: string) {
+    const outputFileName = `books_${gameMode}.jsonl`
 
-    const outputFileName = fileNameWithoutExtension
-      ? `${fileNameWithoutExtension}.jsonl`
-      : `books_${gameMode}.jsonl`
-
-    const outputFilePath = path.join(gameConfig.outputDir, outputFileName)
-    const books = Array.from(library.values())
+    const outputFilePath = path.join(this.gameConfig.outputDir, outputFileName)
+    const books = Array.from(this.library.values())
       .map((b) => b.serialize())
       .map((b) => ({
         id: b.id,
@@ -481,13 +442,11 @@ export class Simulation {
 
     writeFile(outputFilePath, contents)
 
-    const compressedFileName = fileNameWithoutExtension
-      ? `${fileNameWithoutExtension}.jsonl.zst`
-      : `books_${gameMode}.jsonl.zst`
+    const compressedFileName = `books_${gameMode}.jsonl.zst`
 
     const compressedFilePath = path.join(
       process.cwd(),
-      gameConfig.outputDir,
+      this.gameConfig.outputDir,
       "publish_files",
       compressedFileName,
     )
@@ -498,8 +457,8 @@ export class Simulation {
     fs.writeFileSync(compressedFilePath, compressed)
   }
 
-  private static logSymbolOccurrences(records: RecordItem[]) {
-    const validRecords = records.filter(
+  private logSymbolOccurrences() {
+    const validRecords = this.recorder.records.filter(
       (r) =>
         r.search.some((s) => s.name === "symbolId") &&
         r.search.some((s) => s.name === "kind"),
@@ -565,7 +524,7 @@ export class Simulation {
 
   private mergeRecords(otherRecords: RecordItem[]) {
     for (const otherRecord of otherRecords) {
-      let record = this.records.find((r) => {
+      let record = this.recorder.records.find((r) => {
         if (r.search.length !== otherRecord.search.length) return false
         for (let i = 0; i < r.search.length; i++) {
           if (r.search[i]!.name !== otherRecord.search[i]!.name) return false
@@ -579,7 +538,7 @@ export class Simulation {
           timesTriggered: 0,
           bookIds: [],
         }
-        this.records.push(record)
+        this.recorder.records.push(record)
       }
       record.timesTriggered += otherRecord.timesTriggered
       for (const bookId of otherRecord.bookIds) {
@@ -593,7 +552,7 @@ export class Simulation {
   /**
    * Generates reelset CSV files for all game modes.
    */
-  generateReelsetFiles() {
+  private generateReelsetFiles() {
     for (const mode of Object.values(this.gameConfig.gameModes)) {
       if (mode.reelSets && mode.reelSets.length > 0) {
         for (const reelGenerator of Object.values(mode.reelSets)) {
@@ -631,7 +590,7 @@ export class Simulation {
           timesTriggered: 0,
           bookIds: [],
         }
-        ctx.services.data.recorder.records.push(record)
+        this.recorder.records.push(record)
       }
       record.timesTriggered++
       if (!record.bookIds.includes(pendingRecord.bookId)) {
@@ -639,15 +598,15 @@ export class Simulation {
       }
     }
 
-    ctx.services.data.recorder.pendingRecords = []
+    this.recorder.pendingRecords = []
   }
 
   /**
    * Moves the current book to the library and resets the current book.
    */
   moveBookToLibrary() {
-    this.state.library.set(this.state.book.id.toString(), this.state.book)
-    this.state.book = new Book({ id: 0 })
+    this.library.set(this.book.id, this.book)
+    this.book = new Book({ id: 0 })
   }
 }
 

@@ -60,23 +60,6 @@ export interface GameHooks<
   onSimulationAccepted?: (ctx: GameContext<TGameModes, TSymbols, TUserState>) => void
 }
 
-/**
- * @internal
- */
-export interface PendingRecord {
-  bookId: number
-  properties: Record<string, string>
-}
-
-/**
- * @internal
- */
-export interface RecordItem {
-  search: Array<{ name: string; value: string }>
-  timesTriggered: number
-  bookIds: number[]
-}
-
 export type SpinType = (typeof SPIN_TYPE)[keyof typeof SPIN_TYPE]
 
 export type Reels = GameSymbol[][]

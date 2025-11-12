@@ -1,49 +1,46 @@
+import assert from "assert"
 import { AbstractService } from "."
-import { Book } from "../book"
 import { GameContext } from "../game-context"
-import {
-  AnyGameModes,
-  AnySymbols,
-  AnyUserData,
-  PendingRecord,
-  RecordItem,
-  SpinType,
-} from "../types"
+import { Recorder } from "../recorder"
+import { AnyGameModes, AnySymbols, AnyUserData, SpinType } from "../types"
 
 export class DataService<
   TGameModes extends AnyGameModes = AnyGameModes,
   TSymbols extends AnySymbols = AnySymbols,
   TUserState extends AnyUserData = AnyUserData,
 > extends AbstractService {
-  /**
-   * Recorder for statistical analysis (e.g. symbol occurrences, etc.).
-   */
-  private recorder: {
-    pendingRecords: PendingRecord[]
-    readonly records: RecordItem[]
-  }
-
-  /**
-   * Book for recording win data of a single simulation.
-   */
-  book: Book
+  private recorder!: Recorder
 
   constructor(ctx: () => GameContext<TGameModes, TSymbols, TUserState>) {
     // @ts-ignore TODO: Fix type errors with AnyTypes
     super(ctx)
+  }
 
-    this.recorder = {
-      pendingRecords: [],
-      records: [],
-    }
+  private ensureRecorder() {
+    assert(this.recorder, "Recorder not set in DataService. Call setRecorder() first.")
+  }
 
-    this.book = new Book({ id: 0 })
+  /**
+   * Intended for internal use only.
+   */
+  _setRecorder(recorder: Recorder) {
+    this.recorder = recorder
+  }
+
+  /**
+   * Intended for internal use only.
+   */
+  _getRecords() {
+    this.ensureRecorder()
+    return this.recorder.records
   }
 
   /**
    * Record data for statistical analysis.
    */
   record(data: Record<string, string | number | boolean>) {
+    this.ensureRecorder()
+
     this.recorder.pendingRecords.push({
       bookId: this.ctx().state.currentSimulationId,
       properties: Object.fromEntries(
@@ -55,7 +52,7 @@ export class DataService<
   /**
    * Records a symbol occurrence for statistical analysis.
    *
-   * Calls `this.record()` with the provided data.
+   * Calls `ctx.services.data.record()` with the provided data.
    */
   recordSymbolOccurrence(data: {
     kind: number
@@ -67,9 +64,10 @@ export class DataService<
   }
 
   /**
-   * Gets all confirmed records.
+   * Intended for internal use only.
    */
-  getRecords() {
-    return this.recorder.records
+  _clearPendingRecords() {
+    this.ensureRecorder()
+    this.recorder.pendingRecords = []
   }
 }

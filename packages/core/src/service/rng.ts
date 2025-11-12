@@ -17,54 +17,17 @@ export class RngService<
   /**
    * Random weighted selection from a set of items.
    */
-  weightedRandom<T extends Record<string, number>>(weights: T) {
-    const totalWeight = Object.values(weights).reduce(
-      (sum: number, weight) => sum + (weight as number),
-      0,
-    )
-    const randomValue = this.rng.randomFloat(0, 1) * totalWeight
-
-    let cumulativeWeight = 0
-    for (const [key, weight] of Object.entries(weights)) {
-      cumulativeWeight += weight as number
-      if (randomValue < cumulativeWeight) {
-        return key
-      }
-    }
-
-    throw new Error("No item selected in weighted random selection.")
-  }
+  weightedRandom = this.rng.weightedRandom.bind(this.rng)
 
   /**
    * Selects a random item from an array.
    */
-  randomItem<T>(array: T[]) {
-    if (array.length === 0) {
-      throw new Error("Cannot select a random item from an empty array.")
-    }
-    const randomIndex = Math.floor(this.rng.randomFloat(0, 1) * array.length)
-    return array[randomIndex]!
-  }
+  randomItem = this.rng.randomItem.bind(this.rng)
 
   /**
    * Shuffles an array.
    */
-  shuffle<T>(array: T[]): T[] {
-    const newArray = [...array]
-    let currentIndex = newArray.length,
-      randomIndex
-
-    while (currentIndex != 0) {
-      randomIndex = Math.floor(this.rng.randomFloat(0, 1) * currentIndex)
-      currentIndex--
-      ;[newArray[currentIndex] as any, newArray[randomIndex] as any] = [
-        newArray[randomIndex],
-        newArray[currentIndex],
-      ]
-    }
-
-    return newArray
-  }
+  shuffle = this.rng.shuffle.bind(this.rng)
 
   /**
    * Generates a random float between two values.
@@ -77,7 +40,7 @@ export class RngService<
   setSeedIfDifferent = this.rng.setSeedIfDifferent.bind(this.rng)
 }
 
-class RandomNumberGenerator {
+export class RandomNumberGenerator {
   mIdum: number
   mIy: number
   mIv: Array<number>
@@ -182,5 +145,48 @@ class RandomNumberGenerator {
     }
 
     return float * (high - low) + low
+  }
+
+  weightedRandom<T extends Record<string, number>>(weights: T) {
+    const totalWeight = Object.values(weights).reduce(
+      (sum: number, weight) => sum + (weight as number),
+      0,
+    )
+    const randomValue = this.randomFloat(0, 1) * totalWeight
+
+    let cumulativeWeight = 0
+    for (const [key, weight] of Object.entries(weights)) {
+      cumulativeWeight += weight as number
+      if (randomValue < cumulativeWeight) {
+        return key
+      }
+    }
+
+    throw new Error("No item selected in weighted random selection.")
+  }
+
+  randomItem<T>(array: T[]) {
+    if (array.length === 0) {
+      throw new Error("Cannot select a random item from an empty array.")
+    }
+    const randomIndex = Math.floor(this.randomFloat(0, 1) * array.length)
+    return array[randomIndex]!
+  }
+
+  shuffle<T>(array: T[]): T[] {
+    const newArray = [...array]
+    let currentIndex = newArray.length,
+      randomIndex
+
+    while (currentIndex != 0) {
+      randomIndex = Math.floor(this.randomFloat(0, 1) * currentIndex)
+      currentIndex--
+      ;[newArray[currentIndex] as any, newArray[randomIndex] as any] = [
+        newArray[randomIndex],
+        newArray[currentIndex],
+      ]
+    }
+
+    return newArray
   }
 }
