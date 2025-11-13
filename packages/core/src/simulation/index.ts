@@ -558,9 +558,7 @@ export class Simulation {
       if (mode.reelSets && mode.reelSets.length > 0) {
         for (const reelGenerator of Object.values(mode.reelSets)) {
           reelGenerator.associatedGameModeName = mode.name
-          if (reelGenerator instanceof GeneratedReelSet) {
-            reelGenerator.generateReels(this)
-          }
+          reelGenerator.generateReels(this)
         }
       } else {
         throw new Error(

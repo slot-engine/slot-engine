@@ -422,42 +422,6 @@ export class GeneratedReelSet extends ReelSet {
       )
     }
   }
-
-  /**
-   * Reads a reelset CSV file and returns the reels as arrays of GameSymbols.
-   */
-  parseReelsetCSV(reelSetPath: string, config: GameConfig) {
-    const csvData = fs.readFileSync(reelSetPath, "utf8")
-    const rows = csvData.split("\n").filter((line) => line.trim() !== "")
-    const reels: Reels = Array.from(
-      { length: config.gameModes[this.associatedGameModeName]!.reelsAmount },
-      () => [],
-    )
-    rows.forEach((row) => {
-      const symsInRow = row.split(",").map((symbolId) => {
-        const symbol = config.symbols.get(symbolId.trim())
-        if (!symbol) {
-          throw new Error(`Symbol with id "${symbolId}" not found in game config.`)
-        }
-        return symbol
-      })
-      symsInRow.forEach((symbol, ridx) => {
-        reels[ridx]!.push(symbol)
-      })
-    })
-
-    const reelLengths = reels.map((r) => r.length)
-    const uniqueLengths = new Set(reelLengths)
-    if (uniqueLengths.size > 1) {
-      throw new Error(
-        `Inconsistent reel lengths in reelset CSV at ${reelSetPath}: ${[
-          ...uniqueLengths,
-        ].join(", ")}`,
-      )
-    }
-
-    return reels
-  }
 }
 
 interface GeneratedReelSetOptions extends ReelSetOptions {
