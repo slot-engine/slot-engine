@@ -12,6 +12,7 @@ import { Book } from "../book"
 import { Recorder, RecordItem } from "../recorder"
 import { Wallet } from "../wallet"
 import { ResultSet } from "../result-set"
+import { GeneratedReelSet } from "../reel-set"
 
 let completedSimulations = 0
 const TEMP_FILENAME = "__temp_compiled_src_IGNORE.js"
@@ -557,7 +558,9 @@ export class Simulation {
       if (mode.reelSets && mode.reelSets.length > 0) {
         for (const reelGenerator of Object.values(mode.reelSets)) {
           reelGenerator.associatedGameModeName = mode.name
-          reelGenerator.generateReels(this)
+          if (reelGenerator instanceof GeneratedReelSet) {
+            reelGenerator.generateReels(this)
+          }
         }
       } else {
         throw new Error(
