@@ -1,10 +1,10 @@
-import { GameConfig } from "./game-config"
+import { GameConfigOptions } from "./game-config"
 import { SlotGame } from "./slot-game"
 import { AnyGameModes, AnySymbols, AnyUserData, InferGameType } from "./types"
 
 export function createSlotGame<TGame>(
   opts: TGame extends InferGameType<infer G, infer S, infer U>
-    ? GameConfig<G, S, U>
+    ? GameConfigOptions<G, S, U>
     : never,
 ) {
   return new SlotGame(opts) as TGame
