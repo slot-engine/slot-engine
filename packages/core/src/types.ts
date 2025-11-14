@@ -4,8 +4,6 @@ import { GameMode } from "./game-mode"
 import { GameSymbol } from "./game-symbol"
 import { SlotGame } from "./slot-game"
 
-export interface GameState {}
-
 export type InferGameType<
   TGameModes extends AnyGameModes,
   TSymbols extends AnySymbols,

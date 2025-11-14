@@ -1,15 +1,11 @@
 import fs from "fs"
-import { Board } from "./_src_old/Board"
-
-
+import { BoardService } from "./src/service/board"
 
 export function createDirIfNotExists(dirPath: string): void {
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true })
   }
 }
-
-
 
 export function writeJsonFile(filePath: string, data: object | any[]) {
   try {
@@ -29,8 +25,6 @@ export function writeFile(filePath: string, data: string) {
   }
 }
 
-
-
 /**
  * Creates a deep copy of an object or array.
  */
@@ -41,9 +35,9 @@ export function copy<T>(obj: T): T {
 /**
  * Prints the board to the console in a readable format.
  */
-export function printBoard({ board }: Board<any, any, any>) {
-  const fullBoard = board.reels.map((reel, ridx) => {
-    return [...board.paddingTop[ridx]!, ...reel, ...board.paddingBottom[ridx]!]
+export function printBoard(board: BoardService) {
+  const fullBoard = board.getBoardReels().map((reel, ridx) => {
+    return [...board.getPaddingTop()[ridx]!, ...reel, ...board.getPaddingBottom()[ridx]!]
   })
 
   const rows = Math.max(...fullBoard.map((reel) => reel.length))
@@ -56,8 +50,8 @@ export function printBoard({ board }: Board<any, any, any>) {
     return " ".repeat(left) + sym + " ".repeat(right)
   }
 
-  const maxTop = Math.max(...board.paddingTop.map((p) => p?.length ?? 0))
-  const maxBottom = Math.max(...board.paddingBottom.map((p) => p?.length ?? 0))
+  const maxTop = Math.max(...board.getPaddingTop().map((p) => p?.length ?? 0))
+  const maxBottom = Math.max(...board.getPaddingBottom().map((p) => p?.length ?? 0))
   const boardStart = maxTop
   const boardEnd = rows - maxBottom - 1
 

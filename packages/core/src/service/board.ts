@@ -60,6 +60,14 @@ export class BoardService<
     return this.reels
   }
 
+  getPaddingTop() {
+    return this.paddingTop
+  }
+
+  getPaddingBottom() {
+    return this.paddingBottom
+  }
+
   private makeEmptyReels() {
     return Array.from(
       { length: this.ctx().services.game.getCurrentGameMode().reelsAmount },

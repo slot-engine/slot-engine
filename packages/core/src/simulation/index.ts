@@ -12,7 +12,6 @@ import { Book } from "../book"
 import { Recorder, RecordItem } from "../recorder"
 import { Wallet } from "../wallet"
 import { ResultSet } from "../result-set"
-import { GeneratedReelSet } from "../reel-set"
 
 let completedSimulations = 0
 const TEMP_FILENAME = "__temp_compiled_src_IGNORE.js"
@@ -268,6 +267,7 @@ export class Simulation {
     })
 
     ctx.services.data._setRecorder(this.recorder)
+    ctx.services.data._setBook(this.book)
     ctx.services.wallet._setWallet(this.wallet)
     ctx.state.currentGameMode = mode
     ctx.state.currentSimulationId = simId

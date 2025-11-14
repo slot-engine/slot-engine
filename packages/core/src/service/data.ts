@@ -3,6 +3,7 @@ import { AbstractService } from "."
 import { GameContext } from "../game-context"
 import { Recorder } from "../recorder"
 import { AnyGameModes, AnySymbols, AnyUserData, SpinType } from "../types"
+import { Book } from "../book"
 
 export class DataService<
   TGameModes extends AnyGameModes = AnyGameModes,
@@ -10,6 +11,7 @@ export class DataService<
   TUserState extends AnyUserData = AnyUserData,
 > extends AbstractService {
   private recorder!: Recorder
+  private book!: Book
 
   constructor(ctx: () => GameContext<TGameModes, TSymbols, TUserState>) {
     // @ts-ignore TODO: Fix type errors with AnyTypes
@@ -20,11 +22,22 @@ export class DataService<
     assert(this.recorder, "Recorder not set in DataService. Call setRecorder() first.")
   }
 
+  private ensureBook() {
+    assert(this.book, "Book not set in DataService. Call setBook() first.")
+  }
+
   /**
    * Intended for internal use only.
    */
   _setRecorder(recorder: Recorder) {
     this.recorder = recorder
+  }
+
+  /**
+   * Intended for internal use only.
+   */
+  _setBook(book: Book) {
+    this.book = book
   }
 
   /**
@@ -62,6 +75,11 @@ export class DataService<
   }) {
     this.record(data)
   }
+
+  /**
+   * Adds an event to the book.
+   */
+  addBookEvent = this.book.addEvent.bind(this.book)
 
   /**
    * Intended for internal use only.

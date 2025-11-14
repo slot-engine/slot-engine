@@ -1,6 +1,6 @@
 import { AnyGameModes, AnySymbols, AnyUserData } from "../types"
 import { createGameConfig, GameConfigOptions } from "../game-config"
-import { Simulation, SimulationConfigOptions } from "../simulation"
+import { Simulation, SimulationConfigOptions, SimulationOptions } from "../simulation"
 import { Analysis, AnalysisOpts } from "../analysis"
 import { OptimizationOpts, Optimizer, OptimizerOpts } from "../optimizer"
 
@@ -26,7 +26,7 @@ export class SlotGame<
    * Sets up the simulation configuration.\
    * Must be called before `runTasks()`.
    */
-  configureSimulation(opts: SimulationConfigOptions) {
+  configureSimulation(opts: SimulationOptions) {
     // @ts-ignore TODO: Fix type errors with AnyTypes
     this.simulation = new Simulation(opts, this.configOpts)
   }

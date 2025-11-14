@@ -1,18 +1,18 @@
-import { EvaluationContext, GameConfig } from "@slot-engine/core"
-import { UserStateType } from ".."
+import { SPIN_TYPE } from "@slot-engine/core"
+import { GameContextType } from ".."
 
-export function freeSpinsUpgradeEvaluation(ctx: EvaluationContext<UserStateType>) {
-  if (ctx.state.currentSpinType === GameConfig.SPIN_TYPE.BASE_GAME) return false
+export function freeSpinsUpgradeEvaluation(ctx: GameContextType) {
+  if (ctx.state.currentSpinType === SPIN_TYPE.BASE_GAME) return false
   return ctx.state.userData.freespinsUpgradedToSuper as boolean
 }
 
-export function superFreespinsReelsEvaluation(ctx: EvaluationContext<UserStateType>) {
+export function superFreespinsReelsEvaluation(ctx: GameContextType) {
   if (ctx.state.userData.triggeredSuperFreespins) {
     return { superbonus: 1 }
   }
 }
 
-export function maxwinReelsEvaluation(ctx: EvaluationContext<UserStateType>) {
+export function maxwinReelsEvaluation(ctx: GameContextType) {
   if (
     ctx.state.userData.triggeredSuperFreespins &&
     ctx.state.currentResultSet.forceMaxWin
@@ -21,7 +21,7 @@ export function maxwinReelsEvaluation(ctx: EvaluationContext<UserStateType>) {
   }
 }
 
-export function upgradeIntoMaxwinReelsEvaluation(ctx: EvaluationContext<UserStateType>) {
+export function upgradeIntoMaxwinReelsEvaluation(ctx: GameContextType) {
   if (ctx.state.userData.triggeredSuperFreespins) {
     return { superbonus: 1, maxwin: 5 }
   }
