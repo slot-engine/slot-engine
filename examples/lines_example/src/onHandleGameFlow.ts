@@ -111,7 +111,7 @@ function handleAnticipation(ctx: GameContextType) {
 
   for (const [i, reel] of ctx.services.board.getBoardReels().entries()) {
     if (count >= ctx.config.anticipationTriggers[ctx.state.currentSpinType]) {
-      ctx.services.board.setAnticipationForReel(i, 1)
+      ctx.services.board.setAnticipationForReel(i, true)
     }
     if (scatCount[i] > 0 || superScatCount[i] > 0) {
       count++
@@ -121,6 +121,7 @@ function handleAnticipation(ctx: GameContextType) {
 
 function handleWins(ctx: GameContextType) {
   const lines = new LinesWinType({
+    ctx,
     lines: {
       1: [0, 0, 0, 0, 0],
       2: [1, 1, 1, 1, 1],
@@ -141,7 +142,10 @@ function handleWins(ctx: GameContextType) {
     wildSymbol: { isWild: true },
   })
 
-  const { payout, winCombinations } = lines.context(ctx).evaluateWins().getWins()
+  const { payout, winCombinations } = lines
+    .evaluateWins(ctx.services.board.getBoardReels())
+    .getWins()
+
   ctx.services.wallet.addSpinWin(payout)
 }
 

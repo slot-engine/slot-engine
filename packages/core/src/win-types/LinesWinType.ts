@@ -1,11 +1,10 @@
 import { GameSymbol } from "../game-symbol"
 import { WinCombination, WinType, WinTypeOpts } from "."
-import { GameContext } from "../game-context"
+import { Reels } from "../types"
 
 export class LinesWinType extends WinType {
   protected lines: Record<number, number[]>
   declare protected winCombinations: LineWinCombination[]
-  declare context: (ctx: GameContext) => LinesWinType
   declare getWins: () => {
     payout: number
     winCombinations: LineWinCombination[]
@@ -49,19 +48,17 @@ export class LinesWinType extends WinType {
     }
   }
 
-  private isWild(symbol: GameSymbol) {
-    return !!this.wildSymbol && symbol.compare(this.wildSymbol)
-  }
-
-  evaluateWins() {
-    this.ensureContext()
+  /**
+   * Calculates wins based on the defined paylines and provided board state.\
+   * Retrieve the results using `getWins()` after.
+   */
+  evaluateWins(board: Reels) {
     this.validateConfig()
 
     const lineWins: LineWinCombination[] = []
     let payout = 0
 
-    const reels = this.ctx.services.board.getBoardReels()
-    const reelsAmount = this.ctx.services.game.getCurrentGameMode().reelsAmount
+    const reels = board
 
     for (const [lineNumStr, lineDef] of Object.entries(this.lines)) {
       const lineNum = Number(lineNumStr)
@@ -71,7 +68,7 @@ export class LinesWinType extends WinType {
       const chain: GameSymbol[] = []
       const details: LineWinCombination["symbols"] = []
 
-      for (let ridx = 0; ridx < reelsAmount; ridx++) {
+      for (let ridx = 0; ridx < reels.length; ridx++) {
         const rowIdx = lineDef[ridx]!
         const sym = reels[ridx]![rowIdx]
         if (!sym) throw new Error("Encountered an invalid symbol while evaluating wins.")

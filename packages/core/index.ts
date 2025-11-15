@@ -29,4 +29,6 @@ export {
 
 export { type GameContext } from "./src/game-context"
 
-export { LinesWinType } from "./src/win-types"
+export { LinesWinType, ClusterWinType, ManywaysWinType } from "./src/win-types"
+
+export { StandaloneBoard } from "./src/board/StandaloneBoard"

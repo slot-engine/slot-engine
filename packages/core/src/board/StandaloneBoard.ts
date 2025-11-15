@@ -1,21 +1,21 @@
-import { AbstractService } from "."
 import { GameContext } from "../game-context"
 import { GameSymbol } from "../game-symbol"
-import { AnyGameModes, AnySymbols, AnyUserData, Reels } from "../types"
-import { Board } from "../board"
+import { Reels } from "../types"
+import { Board } from "."
 
-export class BoardService<
-  TGameModes extends AnyGameModes = AnyGameModes,
-  TSymbols extends AnySymbols = AnySymbols,
-  TUserState extends AnyUserData = AnyUserData,
-> extends AbstractService {
+export class StandaloneBoard {
   private board: Board
+  private ctx: GameContext
+  private reelsAmount: number
+  private symbolsPerReel: number[]
+  private padSymbols: number
 
-  constructor(ctx: () => GameContext<TGameModes, TSymbols, TUserState>) {
-    // @ts-ignore TODO: Fix type errors with AnyTypes
-    super(ctx)
-
+  constructor(opts: StandaloneBoardOptions) {
     this.board = new Board()
+    this.ctx = opts.ctx
+    this.reelsAmount = opts.reelsAmount
+    this.symbolsPerReel = opts.symbolsPerReel
+    this.padSymbols = opts.padSymbols
   }
 
   /**
@@ -44,7 +44,7 @@ export class BoardService<
 
   private resetReels() {
     this.board.resetReels({
-      ctx: this.ctx(),
+      ctx: this.ctx,
     })
   }
 
@@ -100,7 +100,7 @@ export class BoardService<
    */
   combineReelStops(...reelStops: number[][][]) {
     return this.board.combineReelStops({
-      ctx: this.ctx(),
+      ctx: this.ctx,
       reelStops,
     })
   }
@@ -112,8 +112,9 @@ export class BoardService<
    */
   getRandomReelStops(reels: Reels, reelStops: number[][], amount: number) {
     return this.board.getRandomReelStops({
-      ctx: this.ctx(),
+      ctx: this.ctx,
       reels,
+      reelsAmount: this.reelsAmount,
       reelStops,
       amount,
     })
@@ -124,7 +125,7 @@ export class BoardService<
    * Returns the reels as arrays of GameSymbols.
    */
   getRandomReelset() {
-    return this.board.getRandomReelset(this.ctx())
+    return this.board.getRandomReelset(this.ctx)
   }
 
   /**
@@ -143,9 +144,12 @@ export class BoardService<
 
   private drawBoardMixed(reels: Reels, forcedStops?: Record<string, number>) {
     this.board.drawBoardMixed({
-      ctx: this.ctx(),
+      ctx: this.ctx,
       reels,
       forcedStops,
+      reelsAmount: this.reelsAmount,
+      symbolsPerReel: this.symbolsPerReel,
+      padSymbols: this.padSymbols,
     })
   }
 
@@ -154,8 +158,18 @@ export class BoardService<
    */
   tumbleBoard(symbolsToDelete: Array<{ reelIdx: number; rowIdx: number }>) {
     this.board.tumbleBoard({
-      ctx: this.ctx(),
+      ctx: this.ctx,
       symbolsToDelete,
+      reelsAmount: this.reelsAmount,
+      symbolsPerReel: this.symbolsPerReel,
+      padSymbols: this.padSymbols,
     })
   }
+}
+
+interface StandaloneBoardOptions {
+  ctx: GameContext
+  reelsAmount: number
+  symbolsPerReel: number[]
+  padSymbols: number
 }
