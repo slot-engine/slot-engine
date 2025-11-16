@@ -73,6 +73,7 @@ export class Simulation {
         completedSimulations = 0
         this.wallet = new Wallet()
         this.library = new Map()
+        this.recorder = new Recorder()
 
         debugDetails[mode] = {}
 
