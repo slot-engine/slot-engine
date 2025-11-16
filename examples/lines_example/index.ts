@@ -290,7 +290,7 @@ export const game = createSlotGame<GameType>({
 
 game.configureSimulation({
   simRunsAmount: {
-    base: 100000,
+    base: 10000,
     bonus: 100000,
   },
   concurrency: 16,
@@ -393,6 +393,9 @@ game.runTasks({
   doOptimization: true,
   optimizationOpts: {
     gameModes: ["base"],
+  },
+  simulationOpts: {
+    debug: true,
   },
   doAnalysis: true,
   analysisOpts: {
