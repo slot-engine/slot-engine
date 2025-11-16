@@ -1,5 +1,5 @@
 import { GameSymbol, LinesWinType, Reels, SPIN_TYPE } from "@slot-engine/core"
-import { GameContextType, GameType } from ".."
+import { GameContextType } from ".."
 
 export function onHandleGameFlow(ctx: GameContextType) {
   drawBoard(ctx)

@@ -1,4 +1,4 @@
-import { ReelGenerator } from "@slot-engine/core"
+import { GeneratedReelSet } from "@slot-engine/core"
 
 const SYM_WEIGHTS = {
   base: {
@@ -76,12 +76,12 @@ const defaultSettings = {
 }
 
 export const GENERATORS = {
-  base1: new ReelGenerator({
+  base1: new GeneratedReelSet({
     id: "base1",
     ...defaultSettings,
     symbolWeights: SYM_WEIGHTS.base,
   }),
-  bonus1: new ReelGenerator({
+  bonus1: new GeneratedReelSet({
     id: "bonus1",
     ...defaultSettings,
     symbolWeights: SYM_WEIGHTS.bonus,
@@ -89,7 +89,7 @@ export const GENERATORS = {
       W: { chance: { "1": 25, "2": 50, "3": 25, "4": 10 }, min: 3, max: 3 },
     },
   }),
-  bonus2: new ReelGenerator({
+  bonus2: new GeneratedReelSet({
     id: "bonus2",
     ...defaultSettings,
     symbolWeights: SYM_WEIGHTS.bonus,
@@ -97,7 +97,7 @@ export const GENERATORS = {
       W: { chance: { "1": 25, "2": 50, "3": 10, "4": 10 }, min: 3, max: 3 },
     },
   }),
-  superbonus: new ReelGenerator({
+  superbonus: new GeneratedReelSet({
     id: "superbonus",
     ...defaultSettings,
     symbolWeights: SYM_WEIGHTS.superBonus,
@@ -105,7 +105,7 @@ export const GENERATORS = {
       W: { chance: { "1": 50, "2": 50, "3": 50, "4": 50 }, min: 3, max: 3 },
     },
   }),
-  maxwin: new ReelGenerator({
+  maxwin: new GeneratedReelSet({
     id: "maxwin",
     ...defaultSettings,
     symbolWeights: SYM_WEIGHTS.maxwin,

@@ -1,9 +1,6 @@
 import { GameContext } from "../game-context"
 import { GameSymbol } from "../game-symbol"
 import { Reels } from "../types"
-export { LinesWinType } from "./LinesWinType"
-export { ClusterWinType } from "./ClusterWinType"
-export { ManywaysWinType } from "./ManywaysWinType"
 
 export class WinType {
   protected payout: number

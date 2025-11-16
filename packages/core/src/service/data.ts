@@ -3,7 +3,7 @@ import { AbstractService } from "."
 import { GameContext } from "../game-context"
 import { Recorder } from "../recorder"
 import { AnyGameModes, AnySymbols, AnyUserData, SpinType } from "../types"
-import { Book } from "../book"
+import { Book, BookEvent } from "../book"
 
 export class DataService<
   TGameModes extends AnyGameModes = AnyGameModes,
@@ -79,7 +79,10 @@ export class DataService<
   /**
    * Adds an event to the book.
    */
-  addBookEvent = this.book.addEvent.bind(this.book)
+  addBookEvent(event: Omit<BookEvent, "index">) {
+    this.ensureBook()
+    this.book.addEvent(event)
+  }
 
   /**
    * Intended for internal use only.

@@ -4,8 +4,6 @@ import { GameConfig } from "../game-config"
 import { RandomNumberGenerator } from "../service/rng"
 import { Simulation } from "../simulation"
 import { Reels } from "../types"
-export { GeneratedReelSet } from "./GeneratedReelSet"
-export { StaticReelSet } from "./StaticReelSet"
 
 export class ReelSet {
   id: string

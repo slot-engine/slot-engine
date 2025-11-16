@@ -29,6 +29,11 @@ export {
 
 export { type GameContext } from "./src/game-context"
 
-export { LinesWinType, ClusterWinType, ManywaysWinType } from "./src/win-types"
+export { LinesWinType } from "./src/win-types/LinesWinType"
+export { ClusterWinType } from "./src/win-types/ClusterWinType"
+export { ManywaysWinType } from "./src/win-types/ManywaysWinType"
+
+export { GeneratedReelSet } from "./src/reel-set/GeneratedReelSet"
+export { StaticReelSet } from "./src/reel-set/StaticReelSet"
 
 export { StandaloneBoard } from "./src/board/StandaloneBoard"
