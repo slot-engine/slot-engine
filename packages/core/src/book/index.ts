@@ -14,6 +14,9 @@ export class Book {
     this.id = opts.id
   }
 
+  /**
+   * Intended for internal use only.
+   */
   setCriteria(criteria: string) {
     this.criteria = criteria
   }
@@ -27,22 +30,8 @@ export class Book {
   }
 
   /**
-   * Transfers the win data from the wallet to the book.
+   * Intended for internal use only.
    */
-  writePayout(ctx: GameContext, wallet: Wallet) {
-    function process(number: number) {
-      return Math.round(Math.min(number, ctx.config.maxWinX) * 100) / 100
-    }
-
-    this.payout = Math.round(process(wallet.getCurrentWin()) * 100)
-    this.basegameWins = process(
-      wallet.getCurrentWinPerSpinType()[SPIN_TYPE.BASE_GAME] || 0,
-    )
-    this.freespinsWins = process(
-      wallet.getCurrentWinPerSpinType()[SPIN_TYPE.FREE_SPINS] || 0,
-    )
-  }
-
   serialize() {
     return {
       id: this.id,
@@ -54,9 +43,11 @@ export class Book {
     }
   }
 
+  /**
+   * Intended for internal use only.
+   */
   static fromSerialized(data: ReturnType<Book["serialize"]>) {
-    const book = new Book({ id: data.id })
-    book.criteria = data.criteria
+    const book = new Book({ id: data.id, criteria: data.criteria })
     book.events = data.events
     book.payout = data.payout
     book.basegameWins = data.basegameWins
@@ -73,4 +64,5 @@ export interface BookEvent {
 
 interface BookOpts {
   id: number
+  criteria: string
 }

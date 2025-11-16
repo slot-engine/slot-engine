@@ -161,6 +161,31 @@ export class Wallet {
     this.resetCurrentWin()
   }
 
+  /**
+   * Intended for internal use only.
+   *
+   * Transfers the win data from the given wallet to the calling book.
+   */
+  writePayoutToBook(ctx: GameContext) {
+    function process(number: number) {
+      return Math.round(Math.min(number, ctx.config.maxWinX) * 100) / 100
+    }
+
+    const wallet = ctx.services.wallet._getWallet()
+    const book = ctx.services.data._getBook()
+
+    book.payout = Math.round(process(wallet.getCurrentWin()) * 100)
+    book.basegameWins = process(
+      wallet.getCurrentWinPerSpinType()[SPIN_TYPE.BASE_GAME] || 0,
+    )
+    book.freespinsWins = process(
+      wallet.getCurrentWinPerSpinType()[SPIN_TYPE.FREE_SPINS] || 0,
+    )
+  }
+
+  /**
+   * Intended for internal use only.
+   */
   serialize() {
     return {
       cumulativeWins: this.cumulativeWins,
@@ -172,6 +197,9 @@ export class Wallet {
     }
   }
 
+  /**
+   * Intended for internal use only.
+   */
   merge(wallet: Wallet) {
     this.cumulativeWins += wallet.getCumulativeWins()
     const otherWinsPerSpinType = wallet.getCumulativeWinsPerSpinType()
@@ -182,6 +210,9 @@ export class Wallet {
     }
   }
 
+  /**
+   * Intended for internal use only.
+   */
   mergeSerialized(data: ReturnType<Wallet["serialize"]>) {
     this.cumulativeWins += data.cumulativeWins
     for (const spinType of Object.keys(this.cumulativeWinsPerSpinType)) {

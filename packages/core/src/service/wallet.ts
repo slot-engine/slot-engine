@@ -23,6 +23,14 @@ export class WalletService<
   /**
    * Intended for internal use only.
    */
+  _getWallet() {
+    this.ensureWallet()
+    return this.wallet
+  }
+
+  /**
+   * Intended for internal use only.
+   */
   _setWallet(wallet: Wallet) {
     this.wallet = wallet
   }

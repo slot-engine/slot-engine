@@ -36,8 +36,22 @@ export class DataService<
   /**
    * Intended for internal use only.
    */
+  _getBook() {
+    return this.book
+  }
+
+  /**
+   * Intended for internal use only.
+   */
   _setBook(book: Book) {
     this.book = book
+  }
+
+  /**
+   * Intended for internal use only.
+   */
+  _getRecorder() {
+    return this.recorder
   }
 
   /**

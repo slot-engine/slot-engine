@@ -101,11 +101,13 @@ export class ResultSet<TUserState extends AnyUserData> {
   /**
    * Checks if core criteria is met, e.g. target multiplier or max win.
    */
-  meetsCriteria(ctx: GameContext, wallet: Wallet) {
+  meetsCriteria(ctx: GameContext) {
     // @ts-ignore TODO: Fix type errors with AnyTypes
     const customEval = this.evaluate?.(copy(ctx))
 
     const freespinsMet = this.forceFreespins ? ctx.state.triggeredFreespins : true
+
+    const wallet = ctx.services.wallet._getWallet()
 
     const multiplierMet =
       this.multiplier !== undefined

@@ -23,7 +23,6 @@ export class Simulation {
   readonly concurrency: number
   private debug = false
   private actualSims = 0
-  private book: Book
   private library: Map<number, Book>
   private recorder: Recorder
   private wallet: Wallet
@@ -33,7 +32,6 @@ export class Simulation {
     this.gameConfigOpts = gameConfigOpts
     this.simRunsAmount = opts.simRunsAmount || {}
     this.concurrency = (opts.concurrency || 6) >= 2 ? opts.concurrency || 6 : 2
-    this.book = new Book({ id: 0 })
     this.library = new Map()
     this.recorder = new Recorder()
     this.wallet = new Wallet()
@@ -267,9 +265,6 @@ export class Simulation {
       config: this.gameConfig,
     })
 
-    ctx.services.data._setRecorder(this.recorder)
-    ctx.services.data._setBook(this.book)
-    ctx.services.wallet._setWallet(this.wallet)
     ctx.state.currentGameMode = mode
     ctx.state.currentSimulationId = simId
     ctx.state.isCriteriaMet = false
@@ -284,19 +279,18 @@ export class Simulation {
       this.resetSimulation(ctx)
 
       ctx.state.currentResultSet = resultSet
-      this.book.criteria = resultSet.criteria
 
       this.handleGameFlow(ctx)
 
-      if (resultSet.meetsCriteria(ctx, this.wallet)) {
+      if (resultSet.meetsCriteria(ctx)) {
         ctx.state.isCriteriaMet = true
       }
     }
 
-    this.book.writePayout(ctx, this.wallet)
-    this.wallet.confirmWins(ctx)
+    ctx.services.wallet._getWallet().writePayoutToBook(ctx)
+    ctx.services.wallet._getWallet().confirmWins(ctx)
 
-    if (this.book.payout >= ctx.config.maxWinX) {
+    if (ctx.services.data._getBook().payout >= ctx.config.maxWinX) {
       ctx.state.triggeredMaxWin = true
     }
 
@@ -311,8 +305,8 @@ export class Simulation {
     parentPort?.postMessage({
       type: "complete",
       simId,
-      book: this.book.serialize(),
-      wallet: this.wallet.serialize(),
+      book: ctx.services.data._getBook().serialize(),
+      wallet: ctx.services.wallet._getWallet().serialize(),
       records: ctx.services.data._getRecords(),
     })
   }
@@ -325,18 +319,23 @@ export class Simulation {
   protected resetSimulation(ctx: GameContext) {
     this.resetState(ctx)
     ctx.services.board.resetBoard()
+    ctx.services.data._setRecorder(new Recorder())
+    ctx.services.wallet._setWallet(new Wallet())
+    ctx.services.data._setBook(
+      new Book({
+        id: ctx.state.currentSimulationId,
+        criteria: ctx.state.currentResultSet.criteria,
+      }),
+    )
   }
 
   protected resetState(ctx: GameContext) {
     ctx.services.rng.setSeedIfDifferent(ctx.state.currentSimulationId)
-    this.book = new Book({ id: ctx.state.currentSimulationId })
     ctx.state.currentSpinType = SPIN_TYPE.BASE_GAME
     ctx.state.currentFreespinAmount = 0
     ctx.state.totalFreespinAmount = 0
     ctx.state.triggeredMaxWin = false
     ctx.state.triggeredFreespins = false
-    this.wallet.resetCurrentWin()
-    ctx.services.data._clearPendingRecords()
     ctx.state.userData = ctx.config.userState || {}
   }
 
@@ -573,12 +572,14 @@ export class Simulation {
    * Confirms all pending records and adds them to the main records list.
    */
   confirmRecords(ctx: GameContext) {
-    for (const pendingRecord of this.recorder.pendingRecords) {
+    const recorder = ctx.services.data._getRecorder()
+
+    for (const pendingRecord of recorder.pendingRecords) {
       const search = Object.entries(pendingRecord.properties)
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => a.name.localeCompare(b.name))
 
-      let record = this.recorder.records.find((r) => {
+      let record = recorder.records.find((r) => {
         if (r.search.length !== search.length) return false
         for (let i = 0; i < r.search.length; i++) {
           if (r.search[i]!.name !== search[i]!.name) return false
@@ -592,7 +593,7 @@ export class Simulation {
           timesTriggered: 0,
           bookIds: [],
         }
-        this.recorder.records.push(record)
+        recorder.records.push(record)
       }
       record.timesTriggered++
       if (!record.bookIds.includes(pendingRecord.bookId)) {
@@ -600,15 +601,7 @@ export class Simulation {
       }
     }
 
-    this.recorder.pendingRecords = []
-  }
-
-  /**
-   * Moves the current book to the library and resets the current book.
-   */
-  moveBookToLibrary() {
-    this.library.set(this.book.id, this.book)
-    this.book = new Book({ id: 0 })
+    recorder.pendingRecords = []
   }
 }
 
