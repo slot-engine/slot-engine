@@ -1,16 +1,16 @@
 import assert from "assert"
-import { type ReelGenerator } from "./ReelGenerator"
-import { type ResultSet } from "./ResultSet"
+import { ResultSet } from "../result-set"
+import { ReelSet } from "../reel-set"
 
 export class GameMode {
-  name: GameModeName
-  reelsAmount: number
-  symbolsPerReel: number[]
-  cost: number
-  rtp: number
-  reelSets: ReelGenerator[]
-  resultSets: ResultSet<any>[]
-  isBonusBuy: boolean
+  readonly name: string
+  readonly reelsAmount: number
+  readonly symbolsPerReel: number[]
+  readonly cost: number
+  readonly rtp: number
+  readonly reelSets: ReelSet[]
+  readonly resultSets: ResultSet<any>[]
+  readonly isBonusBuy: boolean
 
   constructor(opts: GameModeOpts) {
     this.name = opts.name
@@ -37,7 +37,7 @@ export interface GameModeOpts {
   /**
    * Name of the game mode.
    */
-  name: GameModeName
+  name: string
   /**
    * Number of reels the board has.
    */
@@ -56,16 +56,14 @@ export interface GameModeOpts {
    */
   rtp: number
   /**
-   * Defines and generates all reels for the game.\
+   * Defines (and generates) all reels for the game.\
    * Which reels are used in a spin is determined by the ResultSet of the current game mode.
    *
    * It is common to have one reel set for the base game and another for free spins.\
    * Each `ResultSet` can then set the weights of these reel sets to control which\
    * reel set is used for a specific criteria.
-   *
-   * The generator can be adjusted to match the reels to your games needs.
    */
-  reelSets: ReelGenerator[]
+  reelSets: ReelSet[]
   /**
    * A ResultSet defines how often a specific outcome should be generated.\
    * For example, a ResultSet can be used to force a specific ratio of max wins\
@@ -77,10 +75,3 @@ export interface GameModeOpts {
    */
   isBonusBuy: boolean
 }
-
-export type GameModeName =
-  | "base"
-  | "base-extra-chance-2x"
-  | "base-extra-chance-10x"
-  | "bonus"
-  | string

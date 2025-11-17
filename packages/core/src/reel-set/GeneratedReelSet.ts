@@ -1,9 +1,10 @@
 import fs from "fs"
 import path from "path"
-import { AnyGameConfig, GameConfig } from "./GameConfig"
-import { GameSymbol } from "./GameSymbol"
-import { RandomNumberGenerator, weightedRandom } from "../utils"
 import { isMainThread } from "worker_threads"
+import { ReelSet, ReelSetOptions } from "."
+import { GameConfig } from "../game-config"
+import { GameSymbol } from "../game-symbol"
+import { Simulation } from "../simulation"
 
 /**
  * This class is responsible for generating reel sets for slot games based on specified configurations.
@@ -14,12 +15,9 @@ import { isMainThread } from "worker_threads"
  * you might need to adjust your configuration, or edit the generated reels manually.\
  * Setting a different seed may also help.
  */
-export class ReelGenerator {
-  id: string
-  associatedGameModeName: string = ""
+export class GeneratedReelSet extends ReelSet {
   protected readonly symbolWeights: Map<string, number> = new Map()
   protected readonly rowsAmount: number
-  reels: Reels = []
   protected limitSymbolsToReels?: Record<string, number[]>
   protected readonly spaceBetweenSameSymbols?: number | Record<string, number>
   protected readonly spaceBetweenSymbols?: Record<string, Record<string, number>>
@@ -33,11 +31,10 @@ export class ReelGenerator {
     }
   >
   protected readonly symbolQuotas?: Record<string, number | Record<string, number>>
-  csvPath: string = ""
-  overrideExisting: boolean
-  rng: RandomNumberGenerator
+  private overrideExisting: boolean
 
-  constructor(opts: ReelGeneratorOpts) {
+  constructor(opts: GeneratedReelSetOptions) {
+    super(opts)
     this.id = opts.id
     this.symbolWeights = new Map(Object.entries(opts.symbolWeights))
     this.rowsAmount = opts.rowsAmount || 250
@@ -80,12 +77,9 @@ export class ReelGenerator {
         `preferStackedSymbols must be between 0 and 100, got ${this.preferStackedSymbols}.`,
       )
     }
-
-    this.rng = new RandomNumberGenerator()
-    this.rng.setSeed(opts.seed ?? 0)
   }
 
-  private validateConfig({ config }: GameConfig) {
+  private validateConfig(config: GameConfig) {
     this.symbolWeights.forEach((_, symbol) => {
       if (!config.symbols.has(symbol)) {
         throw new Error(
@@ -125,7 +119,7 @@ export class ReelGenerator {
 
   private tryPlaceStack(
     reel: Array<GameSymbol | null>,
-    gameConf: GameConfig,
+    config: GameConfig,
     reelIdx: number,
     symbolId: string,
     startIndex: number,
@@ -141,7 +135,7 @@ export class ReelGenerator {
     }
     if (canPlace === 0) return 0
 
-    const symObj = gameConf.config.symbols.get(symbolId)
+    const symObj = config.symbols.get(symbolId)
     if (!symObj) {
       throw new Error(
         `Symbol with id "${symbolId}" not found in the game config symbols map.`,
@@ -196,10 +190,10 @@ export class ReelGenerator {
     return false
   }
 
-  generateReels(gameConf: AnyGameConfig) {
-    this.validateConfig(gameConf)
+  generateReels({ gameConfig: config }: Simulation) {
+    this.validateConfig(config)
 
-    const gameMode = gameConf.config.gameModes[this.associatedGameModeName]
+    const gameMode = config.gameModes[this.associatedGameModeName]
 
     if (!gameMode) {
       throw new Error(
@@ -208,15 +202,14 @@ export class ReelGenerator {
     }
 
     const filePath = path.join(
-      gameConf.config.outputDir,
+      config.outputDir,
       `reels_${this.associatedGameModeName}-${this.id}.csv`,
     )
-    this.csvPath = filePath
 
     const exists = fs.existsSync(filePath)
 
     if (exists && !this.overrideExisting) {
-      this.reels = this.parseReelsetCSV(filePath, gameConf)
+      this.reels = this.parseReelsetCSV(filePath, config)
       return
     }
 
@@ -281,7 +274,7 @@ export class ReelGenerator {
               Math.round(this.rng.randomFloat(stackCfg.min, stackCfg.max)),
             )
             const toPlace = Math.min(stackSize, remaining)
-            placed = this.tryPlaceStack(reel, gameConf, ridx, sym, pos, toPlace)
+            placed = this.tryPlaceStack(reel, config, ridx, sym, pos, toPlace)
           }
 
           // Not enough space, fall back to placing single symbols
@@ -291,7 +284,7 @@ export class ReelGenerator {
             this.isSymbolAllowedOnReel(sym, ridx) &&
             !this.violatesSpacing(reel, sym, pos)
           ) {
-            reel[pos] = gameConf.config.symbols.get(sym)!
+            reel[pos] = config.symbols.get(sym)!
             placed = 1
           }
 
@@ -303,7 +296,7 @@ export class ReelGenerator {
       for (let r = 0; r < this.rowsAmount; r++) {
         if (reel[r] !== null) continue // already placed quota
 
-        let chosenSymbolId = weightedRandom(weightsObj, this.rng)
+        let chosenSymbolId = this.rng.weightedRandom(weightsObj)
 
         // If symbolStacks is NOT configured for the next choice, allow "preferStackedSymbols" fallback
         const nextHasStackCfg = !!this.resolveStacking(chosenSymbolId, ridx)
@@ -343,7 +336,7 @@ export class ReelGenerator {
             )
             const placed = this.tryPlaceStack(
               reel,
-              gameConf,
+              config,
               ridx,
               chosenSymbolId,
               r,
@@ -373,7 +366,7 @@ export class ReelGenerator {
               ].join(" "),
             )
           }
-          chosenSymbolId = weightedRandom(weightsObj, this.rng)
+          chosenSymbolId = this.rng.weightedRandom(weightsObj)
 
           const hasStackCfg = !!this.resolveStacking(chosenSymbolId, ridx)
           if (!hasStackCfg && this.preferStackedSymbols && reel.length > 0) {
@@ -389,7 +382,7 @@ export class ReelGenerator {
           }
         }
 
-        const symbol = gameConf.config.symbols.get(chosenSymbolId)
+        const symbol = config.symbols.get(chosenSymbolId)
 
         if (!symbol) {
           throw new Error(
@@ -423,56 +416,15 @@ export class ReelGenerator {
     if (isMainThread) {
       fs.writeFileSync(filePath, csvString)
 
-      this.reels = this.parseReelsetCSV(filePath, gameConf)
+      this.reels = this.parseReelsetCSV(filePath, config)
       console.log(
         `Generated reelset ${this.id} for game mode ${this.associatedGameModeName}`,
       )
     }
   }
-
-  /**
-   * Reads a reelset CSV file and returns the reels as arrays of GameSymbols.
-   */
-  parseReelsetCSV(reelSetPath: string, { config }: GameConfig) {
-    const csvData = fs.readFileSync(reelSetPath, "utf8")
-    const rows = csvData.split("\n").filter((line) => line.trim() !== "")
-    const reels: Reels = Array.from(
-      { length: config.gameModes[this.associatedGameModeName]!.reelsAmount },
-      () => [],
-    )
-    rows.forEach((row) => {
-      const symsInRow = row.split(",").map((symbolId) => {
-        const symbol = config.symbols.get(symbolId.trim())
-        if (!symbol) {
-          throw new Error(`Symbol with id "${symbolId}" not found in game config.`)
-        }
-        return symbol
-      })
-      symsInRow.forEach((symbol, ridx) => {
-        reels[ridx]!.push(symbol)
-      })
-    })
-
-    const reelLengths = reels.map((r) => r.length)
-    const uniqueLengths = new Set(reelLengths)
-    if (uniqueLengths.size > 1) {
-      throw new Error(
-        `Inconsistent reel lengths in reelset CSV at ${reelSetPath}: ${[
-          ...uniqueLengths,
-        ].join(", ")}`,
-      )
-    }
-
-    return reels
-  }
 }
 
-interface ReelGeneratorOpts {
-  /**
-   * The unique identifier of the reel generator.\
-   * Must be unique per game mode.
-   */
-  id: string
+interface GeneratedReelSetOptions extends ReelSetOptions {
   /**
    * The weights of the symbols in the reelset.\
    * This is a mapping of symbol IDs to their respective weights.

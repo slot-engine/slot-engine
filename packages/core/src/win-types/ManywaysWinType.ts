@@ -1,3 +1,3 @@
-import { WinType } from "../WinType"
+import { WinType } from "."
 
 export class ManywaysWinType extends WinType {}

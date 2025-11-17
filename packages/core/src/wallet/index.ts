@@ -1,9 +1,7 @@
-import { GameConfig, SpinType } from "./GameConfig"
-import { AnySimulationContext } from "./Simulation"
+import { SPIN_TYPE } from "../constants"
+import { GameContext } from "../game-context"
+import { SpinType } from "../types"
 
-/**
- * Stores win amounts for simulations.
- */
 export class Wallet {
   /**
    * Total win amount (as the bet multiplier) from all simulations.
@@ -22,8 +20,8 @@ export class Wallet {
    * ```
    */
   protected cumulativeWinsPerSpinType = {
-    [GameConfig.SPIN_TYPE.BASE_GAME]: 0,
-    [GameConfig.SPIN_TYPE.FREE_SPINS]: 0,
+    [SPIN_TYPE.BASE_GAME]: 0,
+    [SPIN_TYPE.FREE_SPINS]: 0,
   }
   /**
    * Current win amount (as the bet multiplier) for the ongoing simulation.
@@ -42,8 +40,8 @@ export class Wallet {
    * ```
    */
   protected currentWinPerSpinType = {
-    [GameConfig.SPIN_TYPE.BASE_GAME]: 0,
-    [GameConfig.SPIN_TYPE.FREE_SPINS]: 0,
+    [SPIN_TYPE.BASE_GAME]: 0,
+    [SPIN_TYPE.FREE_SPINS]: 0,
   }
   /**
    * Holds the current win amount for a single (free) spin.\
@@ -138,12 +136,10 @@ export class Wallet {
   /**
    * Adds current wins to cumulative wins and resets current wins to zero.
    */
-  confirmWins(ctx: AnySimulationContext) {
+  confirmWins(ctx: GameContext) {
     function process(number: number) {
       return Math.round(Math.min(number, ctx.config.maxWinX) * 100) / 100
     }
-
-    ctx.state.book.writePayout(ctx)
 
     this.currentWin = process(this.currentWin)
     this.cumulativeWins += this.currentWin
@@ -165,6 +161,31 @@ export class Wallet {
     this.resetCurrentWin()
   }
 
+  /**
+   * Intended for internal use only.
+   *
+   * Transfers the win data from the given wallet to the calling book.
+   */
+  writePayoutToBook(ctx: GameContext) {
+    function process(number: number) {
+      return Math.round(Math.min(number, ctx.config.maxWinX) * 100) / 100
+    }
+
+    const wallet = ctx.services.wallet._getWallet()
+    const book = ctx.services.data._getBook()
+
+    book.payout = Math.round(process(wallet.getCurrentWin()) * 100)
+    book.basegameWins = process(
+      wallet.getCurrentWinPerSpinType()[SPIN_TYPE.BASE_GAME] || 0,
+    )
+    book.freespinsWins = process(
+      wallet.getCurrentWinPerSpinType()[SPIN_TYPE.FREE_SPINS] || 0,
+    )
+  }
+
+  /**
+   * Intended for internal use only.
+   */
   serialize() {
     return {
       cumulativeWins: this.cumulativeWins,
@@ -176,6 +197,9 @@ export class Wallet {
     }
   }
 
+  /**
+   * Intended for internal use only.
+   */
   merge(wallet: Wallet) {
     this.cumulativeWins += wallet.getCumulativeWins()
     const otherWinsPerSpinType = wallet.getCumulativeWinsPerSpinType()
@@ -186,6 +210,9 @@ export class Wallet {
     }
   }
 
+  /**
+   * Intended for internal use only.
+   */
   mergeSerialized(data: ReturnType<Wallet["serialize"]>) {
     this.cumulativeWins += data.cumulativeWins
     for (const spinType of Object.keys(this.cumulativeWinsPerSpinType)) {

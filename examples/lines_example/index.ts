@@ -1,5 +1,4 @@
 import {
-  GameConfig,
   GameMode,
   GameSymbol,
   InferGameType,
@@ -11,6 +10,8 @@ import {
   defineGameModes,
   defineSymbols,
   defineUserState,
+  SPIN_TYPE,
+  GameContext,
 } from "@slot-engine/core"
 import { GENERATORS } from "./src/reels"
 import { onHandleGameFlow } from "./src/onHandleGameFlow"
@@ -139,16 +140,16 @@ export const gameModes = defineGameModes({
         quota: 0.4,
         multiplier: 0,
         reelWeights: {
-          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
-          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 1 },
+          [SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [SPIN_TYPE.FREE_SPINS]: { bonus1: 1 },
         },
       }),
       new ResultSet({
         criteria: "basegame",
         quota: 0.4,
         reelWeights: {
-          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
-          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 1 },
+          [SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [SPIN_TYPE.FREE_SPINS]: { bonus1: 1 },
         },
       }),
       new ResultSet({
@@ -156,8 +157,8 @@ export const gameModes = defineGameModes({
         quota: 0.1,
         forceFreespins: true,
         reelWeights: {
-          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
-          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
+          [SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
         },
       }),
       new ResultSet({
@@ -165,8 +166,8 @@ export const gameModes = defineGameModes({
         quota: 0.01,
         forceFreespins: true,
         reelWeights: {
-          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
-          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
+          [SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
           evaluate: superFreespinsReelsEvaluation,
         },
         userData: { upgradeFreespins: true },
@@ -177,8 +178,8 @@ export const gameModes = defineGameModes({
         quota: 0.01,
         forceFreespins: true,
         reelWeights: {
-          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
-          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
+          [SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
           evaluate: superFreespinsReelsEvaluation,
         },
         userData: { forceSuperFreespins: true },
@@ -189,8 +190,8 @@ export const gameModes = defineGameModes({
         forceMaxWin: true,
         forceFreespins: true,
         reelWeights: {
-          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
-          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 1, bonus2: 3 },
+          [SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [SPIN_TYPE.FREE_SPINS]: { bonus1: 1, bonus2: 3 },
           evaluate: upgradeIntoMaxwinReelsEvaluation,
         },
         userData: { upgradeFreespins: true },
@@ -202,8 +203,8 @@ export const gameModes = defineGameModes({
         forceMaxWin: true,
         forceFreespins: true,
         reelWeights: {
-          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
-          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 1, bonus2: 3 },
+          [SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [SPIN_TYPE.FREE_SPINS]: { bonus1: 1, bonus2: 3 },
           evaluate: maxwinReelsEvaluation,
         },
         userData: { forceSuperFreespins: true },
@@ -224,8 +225,8 @@ export const gameModes = defineGameModes({
         quota: 0.9,
         forceFreespins: true,
         reelWeights: {
-          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
-          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
+          [SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
         },
       }),
       new ResultSet({
@@ -233,8 +234,8 @@ export const gameModes = defineGameModes({
         quota: 0.05,
         forceFreespins: true,
         reelWeights: {
-          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
-          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 1, bonus2: 2 },
+          [SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [SPIN_TYPE.FREE_SPINS]: { bonus1: 1, bonus2: 2 },
           evaluate: superFreespinsReelsEvaluation,
         },
         userData: { upgradeFreespins: true },
@@ -246,8 +247,8 @@ export const gameModes = defineGameModes({
         forceMaxWin: true,
         forceFreespins: true,
         reelWeights: {
-          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
-          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 1, bonus2: 3 },
+          [SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [SPIN_TYPE.FREE_SPINS]: { bonus1: 1, bonus2: 3 },
           evaluate: upgradeIntoMaxwinReelsEvaluation,
         },
         userData: { upgradeFreespins: true },
@@ -260,6 +261,7 @@ export const gameModes = defineGameModes({
 export type GameModesType = typeof gameModes
 
 export type GameType = InferGameType<GameModesType, SymbolsType, UserStateType>
+export type GameContextType = GameContext<any, any, UserStateType>
 
 export const game = createSlotGame<GameType>({
   id: "example-01",
@@ -269,12 +271,12 @@ export const game = createSlotGame<GameType>({
   symbols,
   padSymbols: 1,
   scatterToFreespins: {
-    [GameConfig.SPIN_TYPE.BASE_GAME]: {
+    [SPIN_TYPE.BASE_GAME]: {
       3: 10,
       4: 12,
       5: 15,
     },
-    [GameConfig.SPIN_TYPE.FREE_SPINS]: {
+    [SPIN_TYPE.FREE_SPINS]: {
       3: 6,
       4: 8,
       5: 10,

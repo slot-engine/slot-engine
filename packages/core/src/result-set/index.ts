@@ -1,9 +1,11 @@
 import assert from "assert"
-import { AnyUserData } from "../index"
-import { copy, RandomNumberGenerator, shuffle, weightedRandom } from "../utils"
-import { Board } from "./Board"
-import { GameConfig } from "./GameConfig"
-import { AnySimulationContext, Simulation } from "./Simulation"
+import { AnyGameModes, AnySymbols, AnyUserData } from "../types"
+import { GameContext } from "../game-context"
+import { Simulation } from "../simulation"
+import { RandomNumberGenerator } from "../service/rng"
+import { copy } from "../../utils"
+import { Wallet } from "../wallet"
+import { SPIN_TYPE } from "../constants"
 
 export class ResultSet<TUserState extends AnyUserData> {
   criteria: string
@@ -13,7 +15,7 @@ export class ResultSet<TUserState extends AnyUserData> {
   userData?: Record<string, any>
   forceMaxWin?: boolean
   forceFreespins?: boolean
-  evaluate?: (ctx: AnySimulationContext<any, any, TUserState>) => boolean
+  evaluate?: (ctx: GameContext<AnyGameModes, AnySymbols, TUserState>) => boolean
 
   constructor(opts: ResultSetOpts<TUserState>) {
     this.criteria = opts.criteria
@@ -33,7 +35,7 @@ export class ResultSet<TUserState extends AnyUserData> {
     assert(ctx.simRunsAmount, "Simulation configuration is not set.")
 
     const simNums = ctx.simRunsAmount[gameModeName]
-    const resultSets = ctx.gameConfig.config.gameModes[gameModeName]?.resultSets
+    const resultSets = ctx.gameConfig.gameModes[gameModeName]?.resultSets
 
     if (!resultSets || resultSets.length === 0) {
       throw new Error(`No ResultSets found for game mode: ${gameModeName}.`)
@@ -64,7 +66,7 @@ export class ResultSet<TUserState extends AnyUserData> {
     )
 
     while (totalSims != simNums) {
-      const rs = weightedRandom(criteriaToWeights, rng)
+      const rs = rng.weightedRandom(criteriaToWeights)
       if (reduceSims && numberOfSimsForCriteria[rs]! > 1) {
         numberOfSimsForCriteria[rs]! -= 1
       } else if (!reduceSims) {
@@ -87,7 +89,7 @@ export class ResultSet<TUserState extends AnyUserData> {
       }
     })
 
-    allCriteria = shuffle(allCriteria, rng)
+    allCriteria = rng.shuffle(allCriteria)
 
     for (let i = 1; i <= Math.min(simNums, allCriteria.length); i++) {
       simNumsToCriteria[i] = allCriteria[i]!
@@ -99,18 +101,21 @@ export class ResultSet<TUserState extends AnyUserData> {
   /**
    * Checks if core criteria is met, e.g. target multiplier or max win.
    */
-  meetsCriteria(ctx: AnySimulationContext<any, any, TUserState>) {
+  meetsCriteria(ctx: GameContext) {
+    // @ts-ignore TODO: Fix type errors with AnyTypes
     const customEval = this.evaluate?.(copy(ctx))
 
     const freespinsMet = this.forceFreespins ? ctx.state.triggeredFreespins : true
 
+    const wallet = ctx.services.wallet._getWallet()
+
     const multiplierMet =
       this.multiplier !== undefined
-        ? ctx.wallet.getCurrentWin() === this.multiplier && !this.forceMaxWin
-        : ctx.wallet.getCurrentWin() > 0 && (!this.forceMaxWin || true)
+        ? wallet.getCurrentWin() === this.multiplier && !this.forceMaxWin
+        : wallet.getCurrentWin() > 0 && (!this.forceMaxWin || true)
 
     const maxWinMet = this.forceMaxWin
-      ? ctx.wallet.getCurrentWin() >= ctx.config.maxWinX
+      ? wallet.getCurrentWin() >= ctx.config.maxWinX
       : true
 
     const coreCriteriaMet = freespinsMet && multiplierMet && maxWinMet
@@ -119,7 +124,7 @@ export class ResultSet<TUserState extends AnyUserData> {
       customEval !== undefined ? coreCriteriaMet && customEval === true : coreCriteriaMet
 
     if (this.forceMaxWin && maxWinMet) {
-      ctx.record({
+      ctx.services.data.record({
         maxwin: true,
       })
     }
@@ -189,19 +194,13 @@ interface ResultSetOpts<TUserState extends AnyUserData> {
    * E.g. use this to check for free spins that upgraded to super free spins\
    * or other arbitrary simulation criteria.
    */
-  evaluate?: (ctx: EvaluationContext<TUserState>) => boolean
+  evaluate?: (ctx: GameContext<AnyGameModes, AnySymbols, TUserState>) => boolean
 }
 
 interface ReelWeights<TUserState extends AnyUserData> {
-  [GameConfig.SPIN_TYPE.BASE_GAME]: Record<string, number>
-  [GameConfig.SPIN_TYPE.FREE_SPINS]: Record<string, number>
+  [SPIN_TYPE.BASE_GAME]: Record<string, number>
+  [SPIN_TYPE.FREE_SPINS]: Record<string, number>
   evaluate?: (
-    ctx: EvaluationContext<TUserState>,
+    ctx: GameContext<AnyGameModes, AnySymbols, TUserState>,
   ) => Record<string, number> | undefined | null | false
 }
-
-export type EvaluationContext<TUserState extends AnyUserData> = Board<
-  any,
-  any,
-  TUserState
->

@@ -1,7 +1,7 @@
 export class GameSymbol {
-  id: string
-  pays?: Record<number, number>
-  properties: Map<string, any>
+  readonly id: string
+  readonly pays?: Record<number, number>
+  readonly properties: Map<string, any>
 
   constructor(opts: GameSymbolOpts) {
     this.id = opts.id

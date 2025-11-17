@@ -1,39 +1,24 @@
-import { GameSymbol } from "./GameSymbol"
-import { AnySimulationContext, SimulationContext } from "./Simulation"
+import { GameContext } from "../game-context"
+import { GameSymbol } from "../game-symbol"
+import { Reels } from "../types"
 
 export class WinType {
   protected payout: number
   protected winCombinations: WinCombination[]
-  protected ctx!: AnySimulationContext
+  protected ctx: GameContext
   protected readonly wildSymbol?: WildSymbol
 
-  constructor(opts?: WinTypeOpts) {
+  constructor(opts: WinTypeOpts) {
+    this.ctx = opts.ctx
     this.payout = 0
     this.winCombinations = []
     this.wildSymbol = opts?.wildSymbol
   }
 
   /**
-   * Sets the simulation context for this WinType instance.
-   * 
-   * This gives the WinType access to the current board.
-   */
-  context(ctx: SimulationContext<any, any, any>): WinType {
-    this.ctx = ctx
-    return this
-  }
-
-  protected ensureContext() {
-    if (!this.ctx) {
-      throw new Error("WinType context is not set. Call context(ctx) first.")
-    }
-  }
-
-  /**
    * Implementation of win evaluation logic. Sets `this.payout` and `this.winCombinations`.
    */
-  evaluateWins() {
-    this.ensureContext()
+  evaluateWins(board: Reels) {
     return this
   }
 
@@ -41,8 +26,7 @@ export class WinType {
    * Custom post-processing of wins, e.g. for handling multipliers.
    */
   postProcess(func: PostProcessFn<typeof this.winCombinations>) {
-    this.ensureContext()
-    const result = func(this, this.ctx!)
+    const result = func(this, this.ctx)
     this.payout = result.payout
     this.winCombinations = result.winCombinations
     return this
@@ -57,9 +41,17 @@ export class WinType {
       winCombinations: this.winCombinations,
     }
   }
+
+  protected isWild(symbol: GameSymbol) {
+    return !!this.wildSymbol && symbol.compare(this.wildSymbol)
+  }
 }
 
 export interface WinTypeOpts {
+  /**
+   * A reference to the game context.
+   */
+  ctx: GameContext<any, any, any> // TODO: Hacky and stupid. Fix AnyTypes.
   /**
    * Configuration used to identify wild symbols on the board.\
    * You can either provide a specific `GameSymbol` instance or a set of properties to match against symbols on the board.
@@ -93,7 +85,7 @@ export type WinCombination = {
 
 type PostProcessFn<TWinCombs extends WinCombination[]> = (
   winType: WinType,
-  ctx: AnySimulationContext,
+  ctx: GameContext,
 ) => {
   payout: number
   winCombinations: TWinCombs

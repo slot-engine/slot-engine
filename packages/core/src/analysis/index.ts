@@ -1,6 +1,6 @@
 import fs from "fs"
 import path from "path"
-import { GameConfig } from "../GameConfig"
+import { GameConfig } from "../game-config"
 import { Optimizer, OptimzierGameModeConfig } from "../optimizer"
 import assert from "assert"
 import {
@@ -23,7 +23,7 @@ import { writeJsonFile } from "../../utils"
 import { isMainThread } from "worker_threads"
 
 export class Analysis {
-  protected readonly gameConfig: GameConfig["config"]
+  protected readonly gameConfig: GameConfig
   protected readonly optimizerConfig: OptimzierGameModeConfig
   protected filePaths: Record<string, FilePaths>
 

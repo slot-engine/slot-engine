@@ -1,8 +1,8 @@
-import { AnyGameModes, AnySymbols, AnyUserData, CommonGameOptions } from "../index"
-import { GameConfig } from "./GameConfig"
-import { Simulation, SimulationConfigOpts, SimulationOpts } from "./Simulation"
-import { Analysis, AnalysisOpts } from "./analysis"
-import { OptimizationOpts, Optimizer, OptimizerOpts } from "./optimizer"
+import { AnyGameModes, AnySymbols, AnyUserData } from "../types"
+import { createGameConfig, GameConfigOptions } from "../game-config"
+import { Simulation, SimulationConfigOptions, SimulationOptions } from "../simulation"
+import { Analysis, AnalysisOpts } from "../analysis"
+import { OptimizationOpts, Optimizer, OptimizerOpts } from "../optimizer"
 
 /**
  * SlotGame class that encapsulates the game configuration and state.\
@@ -13,21 +13,22 @@ export class SlotGame<
   TSymbols extends AnySymbols = AnySymbols,
   TUserState extends AnyUserData = AnyUserData,
 > {
-  private readonly gameConfigOpts: CommonGameOptions<TGameModes, TSymbols, TUserState>
+  private readonly configOpts: GameConfigOptions<TGameModes, TSymbols, TUserState>
   private simulation?: Simulation
   private optimizer?: Optimizer
   private analyzer?: Analysis
 
-  constructor(config: CommonGameOptions<TGameModes, TSymbols, TUserState>) {
-    this.gameConfigOpts = config
+  constructor(config: GameConfigOptions<TGameModes, TSymbols, TUserState>) {
+    this.configOpts = config
   }
 
   /**
    * Sets up the simulation configuration.\
    * Must be called before `runTasks()`.
    */
-  configureSimulation(opts: SimulationConfigOpts) {
-    this.simulation = new Simulation(opts, this.gameConfigOpts as any)
+  configureSimulation(opts: SimulationOptions) {
+    // @ts-ignore TODO: Fix type errors with AnyTypes
+    this.simulation = new Simulation(opts, this.configOpts)
   }
 
   /**
@@ -44,7 +45,7 @@ export class SlotGame<
   /**
    * Runs the simulation based on the configured settings.
    */
-  private async runSimulation(opts: SimulationOpts = {}) {
+  private async runSimulation(opts: SimulationConfigOptions = {}) {
     if (!this.simulation) {
       throw new Error(
         "Simulation is not configured. Do so by calling configureSimulation() first.",
@@ -80,12 +81,15 @@ export class SlotGame<
     await this.analyzer.runAnalysis(opts.gameModes)
   }
 
+  /**
+   * Runs the configured tasks: simulation, optimization, and/or analysis.
+   */
   async runTasks(
     opts: {
       doSimulation?: boolean
       doOptimization?: boolean
       doAnalysis?: boolean
-      simulationOpts?: SimulationOpts
+      simulationOpts?: SimulationConfigOptions
       optimizationOpts?: OptimizationOpts
       analysisOpts?: AnalysisOpts
     } = {},
@@ -111,6 +115,6 @@ export class SlotGame<
    * Gets the game configuration.
    */
   getConfig() {
-    return new GameConfig(this.gameConfigOpts)
+    return createGameConfig(this.configOpts)
   }
 }
