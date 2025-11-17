@@ -401,7 +401,7 @@ export class Simulation {
   private writeRecords(gameMode: string) {
     const outputFileName = `force_record_${gameMode}.json`
     const outputFilePath = path.join(this.gameConfig.outputDir, outputFileName)
-    writeFile(outputFilePath, JSON.stringify(this.recorder, null, 2))
+    writeFile(outputFilePath, JSON.stringify(this.recorder.records, null, 2))
 
     if (this.debug) this.logSymbolOccurrences()
 
