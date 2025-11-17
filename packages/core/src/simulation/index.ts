@@ -372,7 +372,7 @@ export class Simulation {
     writeFile(outputFilePath, rows.join("\n"))
 
     outputFileName = `lookUpTable_${gameMode}_0.csv`
-    outputFilePath = path.join(this.gameConfig.outputDir, outputFileName)
+    outputFilePath = path.join(this.gameConfig.outputDir, "publish_files", outputFileName)
     writeFile(outputFilePath, rows.join("\n"))
 
     return outputFilePath
