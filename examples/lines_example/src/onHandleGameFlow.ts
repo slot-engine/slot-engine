@@ -1,7 +1,15 @@
-import { GameSymbol, LinesWinType, Reels, SPIN_TYPE } from "@slot-engine/core"
-import { GameContextType } from ".."
+import {
+  GameContext,
+  GameSymbol,
+  LinesWinType,
+  Reels,
+  SPIN_TYPE,
+} from "@slot-engine/core"
+import { SymbolsType, UserStateType } from ".."
 
-export function onHandleGameFlow(ctx: GameContextType) {
+type Context = GameContext<any, SymbolsType, UserStateType>
+
+export function onHandleGameFlow(ctx: Context) {
   drawBoard(ctx)
   ctx.services.data.addBookEvent({
     type: "test",
@@ -13,7 +21,7 @@ export function onHandleGameFlow(ctx: GameContextType) {
   checkFreespins(ctx)
 }
 
-function drawBoard(ctx: GameContextType) {
+function drawBoard(ctx: Context) {
   const reels = ctx.services.board.getRandomReelset()
   const scatter = ctx.config.symbols.get("S")!
   const superScatter = ctx.config.symbols.get("SS")!
@@ -100,7 +108,7 @@ function drawBoard(ctx: GameContextType) {
   }
 }
 
-function handleAnticipation(ctx: GameContextType) {
+function handleAnticipation(ctx: Context) {
   const scatter = ctx.config.symbols.get("S")!
   const superScatter = ctx.config.symbols.get("SS")!
 
@@ -119,7 +127,7 @@ function handleAnticipation(ctx: GameContextType) {
   }
 }
 
-function handleWins(ctx: GameContextType) {
+function handleWins(ctx: Context) {
   const lines = new LinesWinType({
     ctx,
     lines: {
@@ -149,7 +157,7 @@ function handleWins(ctx: GameContextType) {
   ctx.services.wallet.addSpinWin(payout)
 }
 
-function checkFreespins(ctx: GameContextType) {
+function checkFreespins(ctx: Context) {
   const scatter = ctx.config.symbols.get("S")!
   const superScatter = ctx.config.symbols.get("SS")!
 
@@ -204,7 +212,7 @@ function checkFreespins(ctx: GameContextType) {
   }
 }
 
-function playFreeSpins(ctx: GameContextType) {
+function playFreeSpins(ctx: Context) {
   while (ctx.state.currentFreespinAmount > 0) {
     ctx.state.currentFreespinAmount--
     drawBoard(ctx)
@@ -241,7 +249,7 @@ function getScatterWeights(key: string) {
 }
 
 function drawDefaultBoard(
-  ctx: GameContextType,
+  ctx: Context,
   reels: Reels,
   scatter: GameSymbol,
   superScatter: GameSymbol,
@@ -264,7 +272,7 @@ function drawDefaultBoard(
 }
 
 function drawSuperFSTriggerBoard(
-  ctx: GameContextType,
+  ctx: Context,
   reels: Reels,
   scatter: GameSymbol,
   superScatter: GameSymbol,
