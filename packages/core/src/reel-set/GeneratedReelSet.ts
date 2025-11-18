@@ -240,7 +240,7 @@ export class GeneratedReelSet extends ReelSet {
 
       if (totalReelsQuota > 100) {
         throw new Error(
-          `Total symbol quotas for reel ${ridx} exceed 100%. Adjust your configuration on ReelGenerator "${this.id}".`,
+          `Total symbol quotas for reel ${ridx} exceed 100%. Adjust your configuration on reel set "${this.id}".`,
         )
       }
 
