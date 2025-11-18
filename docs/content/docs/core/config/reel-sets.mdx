@@ -1,5 +1,5 @@
 ---
-title: Reel Sets (Generators)
+title: Reel Sets
 description: How to define your reel sets
 icon: Grid3x3
 ---
@@ -20,7 +20,7 @@ and is usually done by professional mathematicians.
 
 ## Automatic Generation of Reel Sets
 
-Slot Engine simplifies reel set creation by providing a `ReelGenerator` class that builds a CSV file containing a reel set.
+Slot Engine simplifies reel set creation by providing a `GeneratedReelSet` class that builds a CSV file containing a reel set.
 Developers simply need to define weights for the symbols that should appear on the reels,
 and the generator will randomly distribute symbols according to those weights.
 
@@ -28,16 +28,16 @@ and the generator will randomly distribute symbols according to those weights.
 You will need to playtest your game to evaluate the gameplay experience and adjust your reel generator configuration accordingly
 or edit the generated reels manually.
 
-Add one or more reel generators to your game mode configuration. **Each game mode must specify at least one reel set**.
+Add one or more reel sets to your game mode configuration. **Each game mode must specify at least one reel set**.
 
 ```ts lineNumbers
-import { defineGameModes, GameMode, ReelGenerator } from "@slot-engine/core"
+import { defineGameModes, GameMode, GeneratedReelSet } from "@slot-engine/core"
 
 export const gameModes = defineGameModes({
   base: new GameMode({
     /* the rest of your configuration */
     reelSets: [
-      new ReelGenerator({
+      new GeneratedReelSet({
         id: "base",
         overrideExisting: false,
         symbolWeights: {},
@@ -47,7 +47,7 @@ export const gameModes = defineGameModes({
 })
 ```
 
-## ReelGenerator Options
+## GeneratedReelSet Options
 
 ### General Options
 
@@ -75,7 +75,7 @@ This can be a single number to affect all symbols, or a mapping of symbol IDs to
 Must be 1 or higher, if set.
 
 ```ts
-new ReelGenerator({
+new GeneratedReelSet({
   id: "example",
   symbolWeights: {},
   spaceBetweenSameSymbols: 4,
@@ -96,7 +96,7 @@ Record<string, Record<string, number>>
 Prevents specific symbols from appearing within a certain distance of each other.
 
 ```ts
-new ReelGenerator({
+new GeneratedReelSet({
   id: "example",
   symbolWeights: {},
   spaceBetweenSymbols: {
@@ -120,7 +120,7 @@ other restrictions (like `spaceBetweenSameSymbols`) prevent it.
 This setting is overridden by `symbolStacks`.
 
 ```ts
-new ReelGenerator({
+new GeneratedReelSet({
   id: "example",
   symbolWeights: {},
   preferStackedSymbols: 50,
@@ -143,7 +143,7 @@ Record<
 A mapping of symbols to their respective advanced stacking configuration.
 
 ```ts
-new ReelGenerator({
+new GeneratedReelSet({
   id: "example",
   symbolWeights: {},
   symbolStacks: {
@@ -165,7 +165,7 @@ Record<string, number[]>
 Configures symbols to only appear on specific reels.
 
 ```ts
-new ReelGenerator({
+new GeneratedReelSet({
   id: "example",
   symbolWeights: {},
   limitSymbolsToReels: {
@@ -188,7 +188,7 @@ Reels not provided for a symbol will use the weights from `symbolWeights`.
 _Any_ small quota will ensure that the symbol appears at least once on the reel.
 
 ```ts
-new ReelGenerator({
+new GeneratedReelSet({
   id: "example",
   symbolWeights: {},
   symbolQuotas: {
@@ -200,25 +200,12 @@ new ReelGenerator({
 
 ## Manual Reel Set Creation
 
-You can define reel sets manually, but they must follow a specific naming schema.
-For the program to identify your reel sets it's required to define a reel generator for each reel set,
-even if you do not use its automatic generation features.
+You can define reel sets manually using the `StaticReelSet` class, where the reels are defined
+either via a JSON array or via a CSV file.
 
-### Naming
+### CSV File Reel Sets
 
-The name of reel set files follows this schema:
-
-`reels_{gameModeName}-{reelsId}.csv`
-
-For example: `reels_base-maxwin.csv`.\
-It must be placed in the `__build__` folder, which is automatically
-created when you start a simulation run.
-
-### Format
-
-A reel set file must be in `.csv` format.
-
-For a game mode with 5 reels, the content of a reel set file must have a structure like below.
+For a game mode with 5 reels, the content of a CSV reel set file must have a structure like below.
 
 ```csv
 L4,L5,L1,L5,L4
@@ -230,18 +217,47 @@ L5,L4,L3,S,S
 ...
 ```
 
-### Connect with Game Mode
+Then add your reel set to a game mode like so:
 
-It **needs** a corresponding `ReelGenerator` to be identified.
+```ts lineNumbers
+import { defineGameModes, GameMode, StaticReelSet } from "@slot-engine/core"
+import path from "path"
 
-For a custom reel set called `myCustomReels`, specify a reel generator like so:
-
-```ts
-new ReelGenerator({
-  id: "myCustomReels",
-  overrideExisting: false,
-  symbolWeights: {},
+export const gameModes = defineGameModes({
+  base: new GameMode({
+    /* the rest of your configuration */
+    reelSets: [
+      new StaticReelSet({
+        id: "base",
+        csvPath: path.join(__dirname, "path-to-your", "reelset.csv"),
+      }),
+    ],
+  }),
 })
 ```
 
-**Remember to add this reel generator to every game mode you need to use these reels in.**
+### JSON Reel Sets
+
+You can also define your reel strips as a JSON array of symbol ID's like so:
+
+```ts lineNumbers
+import { defineGameModes, GameMode, StaticReelSet } from "@slot-engine/core"
+
+export const gameModes = defineGameModes({
+  base: new GameMode({
+    /* the rest of your configuration */
+    reelSets: [
+      new StaticReelSet({
+        id: "base",
+        reels: [
+          ["L4", "L2", "L4", "L3", "H1", "L5"],
+          ["L5", "L4", "H2", "L3", "H4", "L4"],
+          ["L1", "L4", "W", "H4", "H1", "L3"],
+          ["L5", "L3", "L4", "H4", "L5", "S"],
+          ["L4", "L3", "L1", "H1", "H2", "S"],
+        ]
+      }),
+    ],
+  }),
+})
+```

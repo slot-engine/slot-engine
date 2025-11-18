@@ -28,7 +28,7 @@ Game modes usually require a lot of configuration. They define which symbols mak
 and which simulation results to output. Here is a relatively simple example with one game mode:
 
 ```ts lineNumbers
-import { defineGameModes, GameMode, ResultSet } from "@slot-engine/core"
+import { defineGameModes, GameMode } from "@slot-engine/core"
 
 export const gameModes = defineGameModes({
   base: new GameMode({
@@ -39,7 +39,7 @@ export const gameModes = defineGameModes({
     symbolsPerReel: [3, 3, 3, 3, 3],
     isBonusBuy: false,
     reelSets: [
-      /* list of reel generators */
+      /* list of reel sets */
     ],
     resultSets: [
       /* list of result sets */
@@ -59,6 +59,6 @@ All options are required.
 | `symbolsPerReel` | `number[]`        | Amount of symbols on each reel.                                          |
 | `cost`           | `number`          | Cost of the game mode, multiplied by the base bet.                       |
 | `rtp`            | `number`          | The target RTP of the game mode, between 90 and 99.                      |
-| `reelSets`       | `ReelGenerator[]` | See: [Game Modes: Reel Sets](/docs/core/config/game-modes/reel-sets)     |
-| `resultSets`     | `ResultSet[]`     | See: [Game Modes: Result Sets](/docs/core/config/game-modes/result-sets) |
+| `reelSets`       | `ReelSet[]` | See: [Game Modes: Reel Sets](/docs/core/config/reel-sets)     |
+| `resultSets`     | `ResultSet[]`     | See: [Game Modes: Result Sets](/docs/core/config/result-sets) |
 | `isBonusBuy`     | `boolean`         | Whether this game mode is a bonus buy.                                   |

@@ -24,7 +24,7 @@ export default function Layout({ children }: LayoutProps<"/">) {
             "#b753db",
           ]}
         >
-          Public Alpha! Features are missing and there may be bugs. Feel free to
+          Public Alpha - Expect bugs! Feel free to
           experiment and help shape the library.
         </Banner>
         <RootProvider>{children}</RootProvider>

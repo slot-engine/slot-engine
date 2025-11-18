@@ -12,7 +12,7 @@ Create a game by calling `createSlotGame()` and passing a configuration object.
 Begin by defining basic game details, then explore the comprehensive [configuration options](#options) detailed below.
 
 ```ts lineNumbers
-import { createSlotGame, GameConfig } from "@slot-engine/core"
+import { createSlotGame, SPIN_TYPE } from "@slot-engine/core"
 
 export const game = createSlotGame({
   id: "my-game",
@@ -20,12 +20,12 @@ export const game = createSlotGame({
   maxWinX: 5000,
   padSymbols: 1,
   scatterToFreespins: {
-    [GameConfig.SPIN_TYPE.BASE_GAME]: {
+    [SPIN_TYPE.BASE_GAME]: {
       3: 10,
       4: 12,
       5: 15,
     },
-    [GameConfig.SPIN_TYPE.FREE_SPINS]: {
+    [SPIN_TYPE.FREE_SPINS]: {
       3: 6,
       4: 8,
       5: 10,
@@ -35,7 +35,7 @@ export const game = createSlotGame({
   gameModes: {},
   userState: {},
   hooks: {
-    onHandleGameFlow: () => {},
+    onHandleGameFlow(ctx) {},
   },
 })
 ```
@@ -44,8 +44,8 @@ When using TypeScript, you will encounter a type error.
 This is expected because `createSlotGame` requires a type argument. Let's create a type for your game.
 
 ```ts lineNumbers
-import { createSlotGame, GameConfig } from "@slot-engine/core" // [!code --]
-import { createSlotGame, GameConfig, InferGameType } from "@slot-engine/core" // [!code ++]
+import { createSlotGame, SPIN_TYPE } from "@slot-engine/core" // [!code --]
+import { createSlotGame, SPIN_TYPE, InferGameType } from "@slot-engine/core" // [!code ++]
 
 export type GameType = InferGameType<any, any, any> // [!code ++]
 
@@ -62,7 +62,7 @@ You can now prepare the rest of the configuration.
 import { createSlotGame, GameConfig, InferGameType } from "@slot-engine/core" // [!code --]
 import {
   createSlotGame, // [!code ++]
-  GameConfig, // [!code ++]
+  SPIN_TYPE, // [!code ++]
   InferGameType, // [!code ++]
   defineGameModes, // [!code ++]
   defineSymbols, // [!code ++]

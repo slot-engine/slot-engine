@@ -11,7 +11,6 @@ import {
   defineSymbols,
   defineUserState,
   SPIN_TYPE,
-  GameContext,
 } from "@slot-engine/core"
 import { GENERATORS } from "./src/reels"
 import { onHandleGameFlow } from "./src/onHandleGameFlow"
