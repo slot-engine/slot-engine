@@ -47,7 +47,7 @@ In your [game implementation](/docs/core/game-flow), you will have access to the
 From there you can access your custom state.
 
 ```ts lineNumbers
-export function onHandleGameFlow(ctx: HookContext<GameType>) {
+export function onHandleGameFlow(ctx: GameContext) {
   /* the rest of your game flow */
 
   // Example usage

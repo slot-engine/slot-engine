@@ -1,0 +1,44 @@
+---
+title: Implementing your Game
+description: Keep full control over your game flow.
+icon: "Repeat2"
+---
+
+---
+
+## Quick Start
+
+The entire game flow will live inside a single hook that is passed to the game configuration.
+
+```ts lineNumbers
+export const game = createSlotGame({
+  /* the rest of your configuration */
+  hooks: {
+    onHandleGameFlow(ctx) {
+      // implement your game here
+    },
+  },
+})
+```
+
+As a game implementation might be a couple hundred lines long, you could **write your implementation in a different file**.
+
+```ts lineNumbers
+import { GameContext } from "@slot-engine/core"
+import { GameModesType, SymbolsType, UserStateType } from "./your-main-file"
+
+type Context = GameContext<GameModesType, SymbolsType, UserStateType>
+
+export function onHandleGameFlow(ctx: Context) {
+  // ...
+}
+```
+
+<Callout title="Example Implementation">
+  Check out a complete game flow example [on our
+  GitHub](https://github.com/slot-engine/slot-engine/blob/main/examples/lines_example/src/onHandleGameFlow.ts).
+</Callout>
+
+## Next Steps
+
+Learn about the [context object](/docs/core/game-context) and what role it plays when implementing your game.

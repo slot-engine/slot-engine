@@ -11,8 +11,8 @@
     "config/index",
     "config",
     "---Game Implementation---",
-    "game-flow",
-    "game-flow/tips",
+    "game-implementation/index",
+    "game-context",
     "---Game Simulation---",
     "---Game Optimization---"
   ]

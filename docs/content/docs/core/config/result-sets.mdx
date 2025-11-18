@@ -56,16 +56,16 @@ export const gameModes = defineGameModes({
         quota: 0.4,
         multiplier: 0,
         reelWeights: {
-          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
-          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 1 },
+          [SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [SPIN_TYPE.FREE_SPINS]: { bonus1: 1 },
         },
       }),
       new ResultSet({
         criteria: "basegame",
         quota: 0.4,
         reelWeights: {
-          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
-          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 1 },
+          [SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [SPIN_TYPE.FREE_SPINS]: { bonus1: 1 },
         },
       }),
       new ResultSet({
@@ -73,8 +73,8 @@ export const gameModes = defineGameModes({
         quota: 0.1,
         forceFreespins: true,
         reelWeights: {
-          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
-          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
+          [SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
         },
       }),
       new ResultSet({
@@ -83,8 +83,8 @@ export const gameModes = defineGameModes({
         forceMaxWin: true,
         forceFreespins: true,
         reelWeights: {
-          [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
-          [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 1, bonus2: 3 },
+          [SPIN_TYPE.BASE_GAME]: { base1: 1 },
+          [SPIN_TYPE.FREE_SPINS]: { bonus1: 1, bonus2: 3 },
           evaluate: maxwinReelsEvaluation,
         },
       }),
@@ -173,7 +173,7 @@ Additional data that can be used in a custom evaluation function or in your game
 
 | Property   | Type                                              | Required |
 | ---------- | ------------------------------------------------- | -------- |
-| `evaluate` | `(ctx: EvaluationContext<TUserState>) => boolean` |          |
+| `evaluate` | `(ctx: GameContext) => boolean` |          |
 
 Inject **custom checks** into the simulation evaluation logic.
 Use this to check for free spins that upgraded to super free spins
@@ -194,8 +194,8 @@ new ResultSet({
 ```
 
 ```ts lineNumbers tab="Evaluation Function"
-export function freeSpinsUpgradeEvaluation(ctx: EvaluationContext<UserStateType>) {
-  if (ctx.state.currentSpinType === GameConfig.SPIN_TYPE.BASE_GAME) return false
+export function freeSpinsUpgradeEvaluation(ctx: GameContext<any, any, UserStateType>) {
+  if (ctx.state.currentSpinType === SPIN_TYPE.BASE_GAME) return false
   return ctx.state.userData.freespinsUpgradedToSuper
 }
 ```
@@ -204,7 +204,7 @@ export function freeSpinsUpgradeEvaluation(ctx: EvaluationContext<UserStateType>
 // Somewhere in your game implementation...
 // ResultSet `userData` can be used to achieve desired outcome.
 if (
-  ctx.state.currentSpinType == GameConfig.SPIN_TYPE.FREE_SPINS &&
+  ctx.state.currentSpinType == SPIN_TYPE.FREE_SPINS &&
   ctx.state.currentResultSet.userData?.upgradeFreespins &&
   !ctx.state.userData.freespinsUpgradedToSuper
 ) {
@@ -239,8 +239,8 @@ new ResultSet({
   quota: 1,
   forceFreespins: true,
   reelWeights: {
-    [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
-    [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
+    [SPIN_TYPE.BASE_GAME]: { base1: 1 },
+    [SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
   },
 }),
 ```
@@ -256,8 +256,8 @@ new ResultSet<UserStateType>({ // Add your custom state as a type parameter ...
   quota: 0.01,
   forceFreespins: true,
   reelWeights: {
-    [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
-    [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
+    [SPIN_TYPE.BASE_GAME]: { base1: 1 },
+    [SPIN_TYPE.FREE_SPINS]: { bonus1: 3, bonus2: 1 },
     evaluate: (ctx) => {
       if (ctx.state.userData.triggeredSuperFreespins) { // ... for type-safety!
         return { superbonus: 1 }

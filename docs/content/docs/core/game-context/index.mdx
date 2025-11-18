@@ -14,7 +14,7 @@ via the `ctx` parameter in [hooks](/docs/core/config/hooks).
 It provides **useful utility functions** to manage state and streamline game development. For example:
 
 ```ts lineNumbers
-export function onHandleGameFlow(ctx: HookContext<GameType>) {
+export function onHandleGameFlow(ctx: GameContext) {
   const reels = ctx.getRandomReelset()
   ctx.drawBoardWithRandomStops(reels)
   //                           type safe! ⤵

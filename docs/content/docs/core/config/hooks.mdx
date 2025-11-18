@@ -17,22 +17,22 @@ These are the hooks you can define in your game configuration.
 
 ### onHandleGameFlow
 
-| Property           | Type                                   | Required |
-| ------------------ | -------------------------------------- | -------- |
-| `onHandleGameFlow` | `(ctx: HookContext<GameType>) => void` | yes      |
+| Property           | Type                         | Required |
+| ------------------ | ---------------------------- | -------- |
+| `onHandleGameFlow` | `(ctx: GameContext) => void` | yes      |
 
 The complete game logic must be [implemented](/docs/core/game-flow) in this hook.
 
 ### onSimulationAccepted
 
-| Property               | Type                                   | Required |
-| ---------------------- | -------------------------------------- | -------- |
-| `onSimulationAccepted` | `(ctx: HookContext<GameType>) => void` |          |
+| Property               | Type                         | Required |
+| ---------------------- | ---------------------------- | -------- |
+| `onSimulationAccepted` | `(ctx: GameContext) => void` |          |
 
 This hook is called after a simulation is accepted and the payout has been written to the book.
 Useful to run code after completing a simulation and before continuing with the next.
 
 <Callout title="Important">
-  **No payouts or results should be altered using this hook!**
-  But adding additional data with `ctx.record()` is perfectly fine.
+  **No payouts or results should be altered using this hook!** But adding additional data
+  with `ctx.services.data.record()` is perfectly fine.
 </Callout>
