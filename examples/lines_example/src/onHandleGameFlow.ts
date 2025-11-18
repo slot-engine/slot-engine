@@ -5,9 +5,9 @@ import {
   Reels,
   SPIN_TYPE,
 } from "@slot-engine/core"
-import { SymbolsType, UserStateType } from ".."
+import { GameModesType, SymbolsType, UserStateType } from ".."
 
-type Context = GameContext<any, SymbolsType, UserStateType>
+type Context = GameContext<GameModesType, SymbolsType, UserStateType>
 
 export function onHandleGameFlow(ctx: Context) {
   drawBoard(ctx)

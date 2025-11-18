@@ -9,7 +9,7 @@ export interface GameStateOptions<TUserState extends AnyUserData> {
    */
   currentGameMode: string
   /**
-   * Spin type constant as defined in `GameConfig.SPIN_TYPE`
+   * Spin type constant as defined in `SPIN_TYPE`
    */
   currentSpinType: SpinType
   /**

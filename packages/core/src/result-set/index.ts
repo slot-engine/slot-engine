@@ -162,8 +162,8 @@ interface ResultSetOpts<TUserState extends AnyUserData> {
    *   quota: 0.05,
    *   forceFreespins: true,
    *   reelWeights: {
-   *     [GameConfig.SPIN_TYPE.BASE_GAME]: { base1: 1 },
-   *     [GameConfig.SPIN_TYPE.FREE_SPINS]: { bonus1: 1, bonus2: 2 },
+   *     [SPIN_TYPE.BASE_GAME]: { base1: 1 },
+   *     [SPIN_TYPE.FREE_SPINS]: { bonus1: 1, bonus2: 2 },
    *     evaluate: (ctx) => {
    *       if (ctx.state.userData.triggeredSuperFreespins) {
    *         return { superbonus: 1 }

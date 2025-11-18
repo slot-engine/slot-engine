@@ -30,12 +30,12 @@ export interface GameConfigOptions<
    * @example
    * ```ts
    * scatterToFreespins: {
-   *   [GameConfig.SPIN_TYPE.BASE_GAME]: {
+   *   [SPIN_TYPE.BASE_GAME]: {
    *     3: 10,
    *     4: 12,
    *     5: 15,
    *   },
-   *   [GameConfig.SPIN_TYPE.FREE_SPINS]: {
+   *   [SPIN_TYPE.FREE_SPINS]: {
    *     3: 6,
    *     4: 8,
    *     5: 10,
