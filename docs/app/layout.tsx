@@ -24,8 +24,7 @@ export default function Layout({ children }: LayoutProps<"/">) {
             "#b753db",
           ]}
         >
-          Public Alpha - Expect bugs! Feel free to
-          experiment and help shape the library.
+          Slot Engine is in Beta - Expect bugs!
         </Banner>
         <RootProvider>{children}</RootProvider>
       </body>

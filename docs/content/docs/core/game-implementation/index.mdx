@@ -39,6 +39,39 @@ export function onHandleGameFlow(ctx: Context) {
   GitHub](https://github.com/slot-engine/slot-engine/blob/main/examples/lines_example/src/onHandleGameFlow.ts).
 </Callout>
 
+## Dos and Don'ts
+
+### ✅ Do [!toc]
+
+#### Pass game context around [!toc]
+
+If you want to separate your game implementation into multiple functions to avoid code duplication,
+you can safely pass the context between functions.
+
+```ts lineNumbers
+export function onHandleGameFlow(ctx: Context) {
+  drawBoard(ctx)
+}
+
+function drawBoard(ctx: Context) {
+  const reels = ctx.services.board.getRandomReelset()
+  // ...
+}
+```
+
+### ❌ Don't [!toc]
+
+#### Destroy reference to the context objcet [!toc]
+
+Your simulations will not work as intended if you do this.
+
+```ts lineNumbers
+export function onHandleGameFlow(ctx: Context) {
+  const nope = { ...ctx }
+  const yesButWhy = ctx
+}
+```
+
 ## Next Steps
 
 Learn about the [context object](/docs/core/game-context) and what role it plays when implementing your game.
