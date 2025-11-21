@@ -100,7 +100,13 @@ export type GameConfig<
   TSymbols extends AnySymbols = AnySymbols,
   TUserState extends AnyUserData = AnyUserData,
 > = Required<Omit<GameConfigOptions<TGameModes, TSymbols, TUserState>, "symbols">> & {
+  /**
+   * A map of all symbols.
+   */
   symbols: Map<keyof TSymbols & string, TSymbols[keyof TSymbols]>
   outputDir: string
+  /**
+   * A mapping of spin types to the number of scatter symbols required to trigger anticipation.
+   */
   anticipationTriggers: Record<(typeof SPIN_TYPE)[keyof typeof SPIN_TYPE], number>
 }

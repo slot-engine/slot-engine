@@ -1,0 +1,30 @@
+---
+title: Config
+description: Access the game configuration from the game context
+---
+
+---
+
+## Introduction
+
+The static game configuration object provides access to various game-specific properties
+as defined in your `createSlotGame` function.
+
+The game config **must not be modified** during runtime.
+
+## Properties
+
+Only properties that are relevant for game implementation are listed here.
+
+| Property               | Type                                     | Description                                                                                                                                                                              |
+| ---------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `anticipationTriggers` | `Record<string, number>`                 | A mapping of spin types to the number of scatter symbols required to trigger anticipation.                                                                                               |
+| `maxWinX`              | `number`                                 | The maximum bet multiplier payout. Wins exceeding this number will be capped.                                                                                                            |
+| `padSymbols`           | `number`                                 | Amount of padding symbol rows above and below the active board.<br/>Used to display partially visible symbols in the frontend at the top and bottom of the board.<br/><br/>Defaults to 1 |
+| `symbols`              | `Map<string, GameSymbol>`                | See: [Game Configuration: Symbols](/docs/core/config/symbols)                                                                                                                            |
+| `scatterToFreespins`   | `Record<string, Record<number, number>>` | A mapping from spin type to scatter counts to the number of free spins awarded.                                                                                                          |
+
+<Callout type="warn">
+  Any other properties you might find under `ctx.config` shouldn't be used as they only
+  serve internal purposes. They might be made inaccessible in a future update.
+</Callout>

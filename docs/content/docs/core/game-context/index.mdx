@@ -25,6 +25,36 @@ export function onHandleGameFlow(ctx: Context) {
 
 Below is a comprehensive list of context methods and properties available in your game implementation.
 
+## Properties
+
+### config
+
+You can access the complete game configuration through the context.
+Keep in mind that you **shouldn't do any modifications to your game config** inside your game implementation.
+
+```ts
+const config = ctx.config
+```
+
+[Further reading](/docs/core/game-context/config)
+
+### services
+
+Services are cohesive function groups that encapsulate and manage specific parts of the game state.
+You will use them often when implementing your game.
+
+- [Game Service](/docs/core/game-context/game-service)
+- [Data Service](/docs/core/game-context/data-service)
+- [Board Service](/docs/core/game-context/board-service)
+- [Wallet Service](/docs/core/game-context/wallet-service)
+- [RNG Service](/docs/core/game-context/rng-service)
+
+### state
+
+The core game state exposes some underlying state and information about the current simulation.
+
+[Further reading](/docs/core/game-context/state)
+
 ## Context Reference
 
 All methods and properties listed below are accessible via `ctx` parameter of the `onHandleGameFlow` hook.
