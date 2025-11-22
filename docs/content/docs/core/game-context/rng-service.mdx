@@ -7,7 +7,64 @@ description: Service for seeded random number generation.
 
 ## Introduction
 
-The core game state holds useful information about the current simulation.
+The RNG service is connected to the underlying program. If you ever need a random outcome
+in your game implementation, use this seeded RNG service for reproducible results.
 
 ## Methods
 
+### weightedRandom()
+
+| Method                              | Type                  |
+| ----------------------------------- | --------------------- |
+| `ctx.services.rng.weightedRandom()` | `(weights) => string` |
+
+#### Parameters [!toc]
+
+| Parameter | Type                     |
+| --------- | ------------------------ |
+| `weights` | `Record<string, number>` |
+
+Weighted draw of key from a mapping of keys to weights.
+
+### randomItem()
+
+| Method                          | Type           |
+| ------------------------------- | -------------- |
+| `ctx.services.rng.randomItem()` | `(array) => T` |
+
+#### Parameters [!toc]
+
+| Parameter | Type       |
+| --------- | ---------- |
+| `array`   | `Array<T>` |
+
+Gets a random item from an array.
+
+### shuffle()
+
+| Method                       | Type               |
+| ---------------------------- | ------------------ |
+| `ctx.services.rng.shuffle()` | `(array) => Array` |
+
+#### Parameters [!toc]
+
+| Parameter | Type    |
+| --------- | ------- |
+| `array`   | `Array` |
+
+Shuffles an array.
+
+### randomFloat()
+
+| Method                           | Type                    |
+| -------------------------------- | ----------------------- |
+| `ctx.services.rng.randomFloat()` | `(low, high) => number` |
+
+#### Parameters [!toc]
+
+| Parameter | Type     |
+| --------- | -------- |
+| `low`     | `number` |
+| `high`    | `number` |
+
+Gets a random float between two numbers.

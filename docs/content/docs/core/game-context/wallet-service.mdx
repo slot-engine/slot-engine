@@ -7,7 +7,98 @@ description: Service providing win related functionality.
 
 ## Introduction
 
-The core game state holds useful information about the current simulation.
+The underlying wallet state holds information on **several types of win data**.
+You should **understand the intentions and use cases** of the wallet state
+to ensure correct usage of this service.
+
+Each win saving state holds a number representing the bet multiplier payout.
+
+### Win [!toc]
+
+Internally called `currentWin`, this state saves the total wins of a single simulation.
+This value must be updated by the user by calling `confirmSpinWin()`, after wins have been added with `addSpinWin()`.
+
+**This value is read by the program to determine the final payout of a simulation.**
+
+### Spin Win [!toc]
+
+The spin win (`currentSpinWin`) holds information about the win of a single spin.
+During free spins logic, the spin win must be confirmed/reset before each new free spin.
+
+### Tumble Win [!toc]
+
+A tumble win (`currentTumbleWin`) is accumulated by calling `addTumbleWin()`.
+
+Effectively, this state isn't too different from the spin win. It serves the purpose of having a separate
+state to store tumble wins in - specifically for event recording / frontend display purposes.
 
 ## Methods
 
+### addSpinWin()
+
+| Method                             | Type               |
+| ---------------------------------- | ------------------ |
+| `ctx.services.wallet.addSpinWin()` | `(amount) => void` |
+
+#### Parameters [!toc]
+
+| Parameter | Type     |
+| --------- | -------- |
+| `amount`  | `number` |
+
+This method adds the given amount to the wallet state.
+
+After calculating the win for a board, call this method to update the wallet state.
+If your game has tumbling mechanics, you should call this method again after every new
+tumble and win calculation.
+
+### addTumbleWin()
+
+| Method                               | Type               |
+| ------------------------------------ | ------------------ |
+| `ctx.services.wallet.addTumbleWin()` | `(amount) => void` |
+
+#### Parameters [!toc]
+
+| Parameter | Type     |
+| --------- | -------- |
+| `amount`  | `number` |
+
+Helps to add tumble wins to the wallet state.
+
+This also calls `addSpinWin()` internally, to add the tumble win to the overall spin win.
+
+### confirmSpinWin()
+
+| Method                                 | Type         |
+| -------------------------------------- | ------------ |
+| `ctx.services.wallet.confirmSpinWin()` | `() => void` |
+
+Confirms the wins of the current spin.
+
+Should be called after `addSpinWin()`, and after your tumble events are played out,
+and after a (free) spin is played out to finalize the win.
+
+### getCurrentWin()
+
+| Method                                | Type           |
+| ------------------------------------- | -------------- |
+| `ctx.services.wallet.getCurrentWin()` | `() => number` |
+
+Gets the current total win of the simulation.
+
+### getCurrentSpinWin()
+
+| Method                                    | Type           |
+| ----------------------------------------- | -------------- |
+| `ctx.services.wallet.getCurrentSpinWin()` | `() => number` |
+
+Gets the total win of the current spin or simulation.
+
+### getCurrentTumbleWin()
+
+| Method                                      | Type           |
+| ------------------------------------------- | -------------- |
+| `ctx.services.wallet.getCurrentTumbleWin()` | `() => number` |
+
+Gets the current total tumble win.

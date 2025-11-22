@@ -1,6 +1,7 @@
 import defaultMdxComponents from "fumadocs-ui/mdx"
 import * as TabsComponents from "fumadocs-ui/components/tabs"
 import { Accordion, Accordions } from "fumadocs-ui/components/accordion"
+import { ImageZoom } from "fumadocs-ui/components/image-zoom"
 import { TypeTable } from "fumadocs-ui/components/type-table"
 import { Step, Steps } from "fumadocs-ui/components/steps"
 import type { MDXComponents } from "mdx/types"
@@ -14,6 +15,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     ...TabsComponents,
     Accordion,
     Accordions,
+    img: (props) => <ImageZoom {...props} />,
     Step,
     Steps,
     TypeTable,
