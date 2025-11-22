@@ -32,9 +32,9 @@ pnpm install
 
 ## Code Structure
 
-- The documentation is a [Next.js](https://nextjs.org) + [Fumadocs](https://fumadocs.dev/) project located in the `docs` folder.
-- All source code for the libraries is located in the `packages` folder.
-- Example projects can be found in the `examples` folder.
+- `docs`: A [Next.js](https://nextjs.org) + [Fumadocs](https://fumadocs.dev/) documentation.
+- `packages`: Contains all TypeScript packages for Slot Engine.
+- `examples`: Example projects demonstrating how to use Slot Engine packages.
 
 ## Building Packages
 
