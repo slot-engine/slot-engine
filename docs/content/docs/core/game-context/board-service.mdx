@@ -146,13 +146,13 @@ of all scatter positions in a reel set.
 #### Usage [!toc]
 
 ```ts
-const reels = ctx.getRandomReelset()
+const reels = ctx.services.board.getRandomReelset()
 const scatter = config.symbols.get("S")!
 const superScatter = config.symbols.get("SS")!
 
-const reelStops = ctx.combineReelStops(
-  ctx.getReelStopsForSymbol(reels, scatter),
-  ctx.getReelStopsForSymbol(reels, superScatter),
+const reelStops = ctx.services.board.combineReelStops(
+  ctx.services.board.getReelStopsForSymbol(reels, scatter),
+  ctx.services.board.getReelStopsForSymbol(reels, superScatter),
 )
 ```
 
@@ -176,13 +176,13 @@ This is mostly useful to forcibly place scatters on the board.
 #### Usage [!toc]
 
 ```ts
-const reels = ctx.getRandomReelset()
+const reels = ctx.services.board.getRandomReelset()
 const scatter = config.symbols.get("S")!
 
-const reelStops = ctx.getReelStopsForSymbol(reels, scatter)
-const scatterReelStops = ctx.getRandomReelStops(reels, reelStops, 3)
+const reelStops = ctx.services.board.getReelStopsForSymbol(reels, scatter)
+const scatterReelStops = ctx.services.board.getRandomReelStops(reels, reelStops, 3)
 
-ctx.drawBoardWithForcedStops(reels, scatterReelStops)
+ctx.services.board.drawBoardWithForcedStops(reels, scatterReelStops)
 ```
 
 ### getRandomReelset()
@@ -211,13 +211,13 @@ Draws a board using specified reel stops.
 #### Usage [!toc]
 
 ```ts
-const reels = ctx.getRandomReelset()
+const reels = ctx.services.board.getRandomReelset()
 const scatter = config.symbols.get("S")!
 
-const reelStops = ctx.getReelStopsForSymbol(reels, scatter)
-const scatterReelStops = ctx.getRandomReelStops(reels, reelStops, 3)
+const reelStops = ctx.services.board.getReelStopsForSymbol(reels, scatter)
+const scatterReelStops = ctx.services.board.getRandomReelStops(reels, reelStops, 3)
 
-ctx.drawBoardWithForcedStops(reels, scatterReelStops)
+ctx.services.board.drawBoardWithForcedStops(reels, scatterReelStops)
 ```
 
 ### drawBoardWithRandomStops()

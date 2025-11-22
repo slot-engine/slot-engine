@@ -15,15 +15,13 @@ The context is typically accessed via the `ctx` parameter in [hooks](/docs/core/
 type Context = GameContext<GameModesType, SymbolsType, UserStateType>
 
 export function onHandleGameFlow(ctx: Context) {
-  const reels = ctx.getRandomReelset()
-  ctx.drawBoardWithRandomStops(reels)
+  const reels = ctx.services.board.getRandomReelset()
+  ctx.services.board.drawBoardWithRandomStops(reels)
   //                           type safe! ⤵
   const scatter = ctx.config.symbols.get("S")!
-  const [count] = ctx.countSymbolsOnBoard(scatter)
+  const [count] = ctx.services.board.countSymbolsOnBoard(scatter)
 }
 ```
-
-Below is a comprehensive list of context methods and properties available in your game implementation.
 
 ## Properties
 
