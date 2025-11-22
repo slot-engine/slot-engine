@@ -8,8 +8,10 @@
   },
   "homepage": "https://slot-engine.dev/docs/lgs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "typecheck": "tsc --noEmit"
+    "test": "vitest",
+    "typecheck": "tsc --noEmit",
+    "build": "tsup ./index.ts --dts --format cjs,esm --sourcemap",
+    "dev": "tsup ./index.ts --dts --format cjs,esm --sourcemap --watch"
   },
   "files": [
     "dist"

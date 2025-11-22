@@ -28,3 +28,7 @@ Local gaming server. Test your game locally without uploading to Stake Engine an
 - Add tests with Vitest (being worked on)
 
 PR's are welcome!
+
+## Contributing
+
+See [the contributing guide](CONTRIBUTING.md) for more information.
