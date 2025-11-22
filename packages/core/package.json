@@ -28,11 +28,6 @@
       "default": "./dist/index.js"
     }
   },
-  "devDependencies": {
-    "typescript": "5.9.3",
-    "tsup": "8.5.0",
-    "vitest":"4.0.8"
-  },
   "dependencies": {
     "esbuild": "0.25.9"
   }
