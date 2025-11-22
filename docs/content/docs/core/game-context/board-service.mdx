@@ -5,9 +5,245 @@ description: Service managing the game board and reels.
 
 ---
 
-## Introduction
-
-The core game state holds useful information about the current simulation.
-
 ## Methods
 
+### getBoardReels()
+
+| Method                               | Type          |
+| ------------------------------------ | ------------- |
+| `ctx.services.board.getBoardReels()` | `() => Reels` |
+
+Returns the active board reels.
+
+### getPaddingTop()
+
+| Method                               | Type          |
+| ------------------------------------ | ------------- |
+| `ctx.services.board.getPaddingTop()` | `() => Reels` |
+
+Returns the top padding reels.
+
+### getPaddingBottom()
+
+| Method                                  | Type          |
+| --------------------------------------- | ------------- |
+| `ctx.services.board.getPaddingBottom()` | `() => Reels` |
+
+Returns the bottom padding reels.
+
+### resetBoard()
+
+| Method                            | Type         |
+| --------------------------------- | ------------ |
+| `ctx.services.board.resetBoard()` | `() => void` |
+
+Resets and clears the board.
+
+### getAnticipation()
+
+| Method                                 | Type              |
+| -------------------------------------- | ----------------- |
+| `ctx.services.board.getAnticipation()` | `() => boolean[]` |
+
+Array of booleans representing anticipation for reels. Anticipation is a visual effect
+that usually teases potential free spins when one more scatter is needed to trigger it.
+
+For example, an anticipation array of `[false, false, false, true, true]` can instruct the client
+to apply anticipation effects to reels 4 and 5.
+
+### setAnticipationForReel()
+
+| Method                                        | Type                         |
+| --------------------------------------------- | ---------------------------- |
+| `ctx.services.board.setAnticipationForReel()` | `(reelIndex, value) => void` |
+
+#### Parameters [!toc]
+
+| Parameter   | Type      |
+| ----------- | --------- |
+| `reelIndex` | `number`  |
+| `value`     | `boolean` |
+
+Sets anticipation state for a board reel.
+
+### countSymbolsOnReel()
+
+| Method                                    | Type                                        |
+| ----------------------------------------- | ------------------------------------------- |
+| `ctx.services.board.countSymbolsOnReel()` | `(symbolOrProperties, reelIndex) => number` |
+
+#### Parameters [!toc]
+
+| Parameter            | Type                                |
+| -------------------- | ----------------------------------- |
+| `symbolOrProperties` | `GameSymbol \| Record<string, any>` |
+| `reelIndex`          | `number`                            |
+
+Counts the symbols on the specified reel.
+
+### countSymbolsOnBoard()
+
+| Method                                     | Type                                                       |
+| ------------------------------------------ | ---------------------------------------------------------- |
+| `ctx.services.board.countSymbolsOnBoard()` | `(symbolOrProperties) => [number, Record<number, number>]` |
+
+#### Parameters [!toc]
+
+| Parameter            | Type                                |
+| -------------------- | ----------------------------------- |
+| `symbolOrProperties` | `GameSymbol \| Record<string, any>` |
+
+Counts how many symbols matching the criteria are on the board.
+
+Returns a tuple where the first element is the total count, and the second element is a record of counts per reel index.
+
+### isSymbolOnAnyReelMultipleTimes()
+
+| Method                                                | Type                  |
+| ----------------------------------------------------- | --------------------- |
+| `ctx.services.board.isSymbolOnAnyReelMultipleTimes()` | `(symbol) => boolean` |
+
+#### Parameters [!toc]
+
+| Parameter | Type         |
+| --------- | ------------ |
+| `symbol`  | `GameSymbol` |
+
+Checks if the given symbol occurrs multiple times on any reel.
+
+### getReelStopsForSymbol()
+
+| Method                                       | Type                            |
+| -------------------------------------------- | ------------------------------- |
+| `ctx.services.board.getReelStopsForSymbol()` | `(reels, symbol) => number[][]` |
+
+#### Parameters [!toc]
+
+| Parameter | Type         |
+| --------- | ------------ |
+| `reels`   | `Reels`      |
+| `symbol`  | `GameSymbol` |
+
+Returns all positions of a symbol in a reel set.
+Useful to retrieve all possible scatter positions, for example.
+
+### combineReelStops()
+
+| Method                                  | Type                           |
+| --------------------------------------- | ------------------------------ |
+| `ctx.services.board.combineReelStops()` | `(...reelStops) => number[][]` |
+
+#### Parameters [!toc]
+
+| Parameter   | Type           |
+| ----------- | -------------- |
+| `reelStops` | `number[][][]` |
+
+Combines multiple arrays of reel stops into a single array of reel stops.
+If you had multiple scatter variants, you could use this to get a single array
+of all scatter positions in a reel set.
+
+#### Usage [!toc]
+
+```ts
+const reels = ctx.getRandomReelset()
+const scatter = config.symbols.get("S")!
+const superScatter = config.symbols.get("SS")!
+
+const reelStops = ctx.combineReelStops(
+  ctx.getReelStopsForSymbol(reels, scatter),
+  ctx.getReelStopsForSymbol(reels, superScatter),
+)
+```
+
+### getRandomReelStops()
+
+| Method                                    | Type                                                   |
+| ----------------------------------------- | ------------------------------------------------------ |
+| `ctx.services.board.getRandomReelStops()` | `(reels, reelStops, amount) => Record<string, number>` |
+
+#### Parameters [!toc]
+
+| Parameter   | Type         |
+| ----------- | ------------ |
+| `reels`     | `Reels`      |
+| `reelStops` | `number[][]` |
+| `amount`    | `number`     |
+
+From a list of reel stops on reels, selects a random stop for `amount` number of reels.
+This is mostly useful to forcibly place scatters on the board.
+
+#### Usage [!toc]
+
+```ts
+const reels = ctx.getRandomReelset()
+const scatter = config.symbols.get("S")!
+
+const reelStops = ctx.getReelStopsForSymbol(reels, scatter)
+const scatterReelStops = ctx.getRandomReelStops(reels, reelStops, 3)
+
+ctx.drawBoardWithForcedStops(reels, scatterReelStops)
+```
+
+### getRandomReelset()
+
+| Method                                  | Type          |
+| --------------------------------------- | ------------- |
+| `ctx.services.board.getRandomReelset()` | `() => Reels` |
+
+Selects a random reel set based on the configured weights of the current result set.
+
+### drawBoardWithForcedStops()
+
+| Method                                          | Type                           |
+| ----------------------------------------------- | ------------------------------ |
+| `ctx.services.board.drawBoardWithForcedStops()` | `(reels, forcedStops) => void` |
+
+#### Parameters [!toc]
+
+| Parameter     | Type                     |
+| ------------- | ------------------------ |
+| `reels`       | `Reels`                  |
+| `forcedStops` | `Record<string, number>` |
+
+Draws a board using specified reel stops.
+
+#### Usage [!toc]
+
+```ts
+const reels = ctx.getRandomReelset()
+const scatter = config.symbols.get("S")!
+
+const reelStops = ctx.getReelStopsForSymbol(reels, scatter)
+const scatterReelStops = ctx.getRandomReelStops(reels, reelStops, 3)
+
+ctx.drawBoardWithForcedStops(reels, scatterReelStops)
+```
+
+### drawBoardWithRandomStops()
+
+| Method                                          | Type              |
+| ----------------------------------------------- | ----------------- |
+| `ctx.services.board.drawBoardWithRandomStops()` | `(reels) => void` |
+
+#### Parameters [!toc]
+
+| Parameter | Type    |
+| --------- | ------- |
+| `reels`   | `Reels` |
+
+Draws a board using random reel stops.
+
+### tumbleBoard()
+
+| Method                             | Type                        |
+| ---------------------------------- | --------------------------- |
+| `ctx.services.board.tumbleBoard()` | `(symbolsToDelete) => void` |
+
+#### Parameters [!toc]
+
+| Parameter         | Type                                         |
+| ----------------- | -------------------------------------------- |
+| `symbolsToDelete` | `Array<{ reelIdx: number; rowIdx: number }>` |
+
+Tumbles the board. All given symbols will be deleted and new symbols will fall from the top.

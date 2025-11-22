@@ -5,9 +5,95 @@ description: Service providing common utility functions.
 
 ---
 
-## Introduction
-
-The core game state holds useful information about the current simulation.
-
 ## Methods
 
+### getReelsetById()
+
+| Method                               | Type                      |
+| ------------------------------------ | ------------------------- |
+| `ctx.services.game.getReelsetById()` | `(gameMode, id) => Reels` |
+
+#### Parameters [!toc]
+
+| Parameter  | Type     |
+| ---------- | -------- |
+| `gameMode` | `string` |
+| `id`       | `string` |
+
+Retrieves a reel set by its ID within a specific game mode.
+
+### getFreeSpinsForScatters()
+
+| Method                                        | Type                                 |
+| --------------------------------------------- | ------------------------------------ |
+| `ctx.services.game.getFreeSpinsForScatters()` | `(spinType, scatterCount) => number` |
+
+#### Parameters [!toc]
+
+| Parameter      | Type       |
+| -------------- | ---------- |
+| `spinType`     | `SpinType` |
+| `scatterCount` | `number`   |
+
+Retrieves the number of free spins awarded for a given spin type and scatter count
+based on the `scatterToFreespins` configuration.
+
+### getResultSetByCriteria()
+
+| Method                                       | Type                            |
+| -------------------------------------------- | ------------------------------- |
+| `ctx.services.game.getResultSetByCriteria()` | `(mode, criteria) => ResultSet` |
+
+#### Parameters [!toc]
+
+| Parameter  | Type     |
+| ---------- | -------- |
+| `mode`     | `string` |
+| `criteria` | `string` |
+
+Retrieves a result set by its criteria within a specific game mode.
+
+### getSymbolArray()
+
+| Method                               | Type                 |
+| ------------------------------------ | -------------------- |
+| `ctx.services.game.getSymbolArray()` | `() => GameSymbol[]` |
+
+Returns all symbols as an array.
+
+### getCurrentGameMode()
+
+| Method                                   | Type             |
+| ---------------------------------------- | ---------------- |
+| `ctx.services.game.getCurrentGameMode()` | `() => GameMode` |
+
+Gets the configuration for the current [game mode](/docs/core/config/game-modes).
+
+### verifyScatterCount()
+
+| Method                                   | Type                      |
+| ---------------------------------------- | ------------------------- |
+| `ctx.services.game.verifyScatterCount()` | `(numScatters) => number` |
+
+#### Parameters [!toc]
+
+| Parameter     | Type     |
+| ------------- | -------- |
+| `numScatters` | `number` |
+
+Ensures the requested number of scatters is valid based on the game configuration.
+Returns a valid number of scatters.
+
+### awardFreespins()
+
+| Method                               | Type               |
+| ------------------------------------ | ------------------ |
+| `ctx.services.game.awardFreespins()` | `(amount) => void` |
+
+#### Parameters [!toc]
+
+| Parameter | Type     |
+| --------- | -------- |
+| `amount`  | `number` |
+
+Adds the given number of free spins to the state.
