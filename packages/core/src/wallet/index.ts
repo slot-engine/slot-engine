@@ -68,7 +68,7 @@ export class Wallet {
   }
 
   /**
-   * Assigns a win amount to the given spin type.
+   * Confirms the wins of the current spin.
    *
    * Should be called after `addSpinWin()`, and after your tumble events are played out,\
    * and after a (free) spin is played out to finalize the win.
@@ -105,6 +105,20 @@ export class Wallet {
   }
 
   /**
+   * Returns the current spin win amount (as the bet multiplier) for the ongoing simulation.
+   */
+  getCurrentSpinWin() {
+    return this.currentSpinWin
+  }
+
+  /**
+   * Returns the current tumble win amount (as the bet multiplier) for the ongoing simulation.
+   */
+  getCurrentTumbleWin() {
+    return this.currentTumbleWin
+  }
+
+  /**
    * Returns the current win amount (as the bet multiplier) per spin type for the ongoing simulation.
    */
   getCurrentWinPerSpinType() {
@@ -122,6 +136,8 @@ export class Wallet {
   }
 
   /**
+   * Intended for internal use only.
+   * 
    * Resets the current win amounts to zero.
    */
   resetCurrentWin() {
@@ -135,6 +151,8 @@ export class Wallet {
   }
 
   /**
+   * Intended for internal use only.
+   * 
    * Adds current wins to cumulative wins and resets current wins to zero.
    */
   confirmWins(ctx: GameContext) {

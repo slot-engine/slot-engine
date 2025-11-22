@@ -47,7 +47,17 @@ export class WalletService<
   }
 
   /**
-   * Assigns a win amount to the given spin type.
+   * Helps to add tumble wins to the wallet state.
+   *
+   * This also calls `addSpinWin()` internally, to add the tumble win to the overall spin win.
+   */
+  addTumbleWin(amount: number) {
+    this.ensureWallet()
+    this.wallet.addTumbleWin(amount)
+  }
+
+  /**
+   * Confirms the wins of the current spin.
    *
    * Should be called after `addSpinWin()`, and after your tumble events are played out,\
    * and after a (free) spin is played out to finalize the win.
@@ -55,5 +65,29 @@ export class WalletService<
   confirmSpinWin() {
     this.ensureWallet()
     this.wallet.confirmSpinWin(this.ctx().state.currentSpinType)
+  }
+
+  /**
+   * Gets the total win amount of the current simulation.
+   */
+  getCurrentWin() {
+    this.ensureWallet()
+    return this.wallet.getCurrentWin()
+  }
+
+  /**
+   * Gets the current spin win amount of the ongoing spin.
+   */
+  getCurrentSpinWin() {
+    this.ensureWallet()
+    return this.wallet.getCurrentSpinWin()
+  }
+
+  /**
+   * Gets the current tumble win amount of the ongoing spin.
+   */
+  getCurrentTumbleWin() {
+    this.ensureWallet()
+    return this.wallet.getCurrentTumbleWin()
   }
 }
