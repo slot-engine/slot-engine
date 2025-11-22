@@ -80,6 +80,7 @@ export class Wallet {
     this.currentWinPerSpinType[spinType]! += this.currentSpinWin
     this.currentWin += this.currentSpinWin
     this.currentSpinWin = 0
+    this.currentTumbleWin = 0
   }
 
   /**

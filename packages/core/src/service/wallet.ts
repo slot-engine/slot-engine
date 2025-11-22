@@ -36,12 +36,10 @@ export class WalletService<
   }
 
   /**
-   * Updates the win for the current spin.
+   * Adds the given amount to the wallet state.
    *
-   * Should be called after each tumble event, if applicable.\
-   * Or generally call this to add wins during a spin.
-   *
-   * After each (free) spin, this amount should be added to `currentWinPerSpinType` via `confirmSpinWin()`
+   * After calculating the win for a board, call this method to update the wallet state.\
+   * If your game has tumbling mechanics, you should call this method again after every new tumble and win calculation.
    */
   addSpinWin(amount: number) {
     this.ensureWallet()
@@ -54,8 +52,8 @@ export class WalletService<
    * Should be called after `addSpinWin()`, and after your tumble events are played out,\
    * and after a (free) spin is played out to finalize the win.
    */
-  confirmSpinWin(spinType: SpinType) {
+  confirmSpinWin() {
     this.ensureWallet()
-    this.wallet.confirmSpinWin(spinType)
+    this.wallet.confirmSpinWin(this.ctx().state.currentSpinType)
   }
 }

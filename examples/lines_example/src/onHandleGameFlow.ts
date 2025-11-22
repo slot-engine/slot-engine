@@ -17,7 +17,7 @@ export function onHandleGameFlow(ctx: Context) {
   })
   handleAnticipation(ctx)
   handleWins(ctx)
-  ctx.services.wallet.confirmSpinWin(ctx.state.currentSpinType)
+  ctx.services.wallet.confirmSpinWin()
   checkFreespins(ctx)
 }
 
@@ -218,7 +218,7 @@ function playFreeSpins(ctx: Context) {
     drawBoard(ctx)
     handleAnticipation(ctx)
     handleWins(ctx)
-    ctx.services.wallet.confirmSpinWin(ctx.state.currentSpinType)
+    ctx.services.wallet.confirmSpinWin()
     checkFreespins(ctx)
   }
 }
