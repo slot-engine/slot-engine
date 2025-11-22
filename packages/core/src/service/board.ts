@@ -42,6 +42,10 @@ export class BoardService<
     return this.board.paddingBottom
   }
 
+  getAnticipation() {
+    return this.board.anticipation
+  }
+
   private resetReels() {
     this.board.resetReels({
       ctx: this.ctx(),
