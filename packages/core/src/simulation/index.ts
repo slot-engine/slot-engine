@@ -416,12 +416,16 @@ export class Simulation {
       "index.json",
     )
 
-    const modes = Object.entries(this.gameConfig.gameModes).map(([mode, modeConfig]) => ({
-      name: mode,
-      cost: modeConfig.cost,
-      events: `books_${mode}.jsonl.zst`,
-      weights: `lookUpTable_${mode}_0.csv`,
-    }))
+    const modes = Object.keys(this.simRunsAmount).map((id) => {
+      const mode = this.gameConfig.gameModes[id]!
+
+      return {
+        name: mode.name,
+        cost: mode.cost,
+        events: `books_${mode.name}.jsonl.zst`,
+        weights: `lookUpTable_${mode.name}_0.csv`,
+      }
+    })
 
     writeFile(outputFilePath, JSON.stringify({ modes }, null, 2))
   }
