@@ -1,5 +1,13 @@
 # @slot-engine/core
 
+## 0.0.6
+
+### Patch Changes
+
+- Major refactor introducing a more unified game context and better internal structure. ([#10](https://github.com/slot-engine/slot-engine/pull/10)) - Thanks @nordowl
+
+  (Docs will be updated and will be going live soon.)
+
 ## 0.0.5
 
 ### Patch Changes
