@@ -417,7 +417,8 @@ export class Simulation {
     )
 
     const modes = Object.keys(this.simRunsAmount).map((id) => {
-      const mode = this.gameConfig.gameModes[id]!
+      const mode = this.gameConfig.gameModes[id]
+      assert(mode, `Game mode "${id}" not found in game config.`)
 
       return {
         name: mode.name,
