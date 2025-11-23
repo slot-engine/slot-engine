@@ -5,7 +5,86 @@ description: Service for interacting with the book data or recorder.
 
 ---
 
+## Introduction
+
+Slot Engine has data layers that store JSON data required for
+game optimization, statistical analysis and frontend visualization.
+
+### Book
+
+Each simulation produces a "book" that contains information about the simulation,
+like simulation ID, payout values, and JSON data for frontend visualization.
+
+The book stores **events** as an array of objects with an index, type and arbitrary data.
+Events define, in chronological order, **what should be displayed to the player** on the frontend.
+
+Common events include:
+
+- Revealing the board symbols
+- Displaying win lines
+- Displaying win amount
+- Trigger free spins screen
+
+In short: (Almost) every visual change on the frontend for a single spin is defined inside a book.
+
+For example:
+
+```ts lineNumbers
+ctx.services.data.addBookEvent({
+  type: "show-winlines",
+  data: {
+    lines: [0, 3]
+    wins: [
+      [
+        { reel: 0, row: 0 },
+        { reel: 1, row: 0 },
+        { reel: 2, row: 0 },
+      ],
+      [
+        { reel: 0, row: 2 },
+        { reel: 1, row: 2 },
+        { reel: 2, row: 2 },
+      ],
+    ]
+  }
+})
+
+ctx.services.data.addBookEvent({
+  type: "add-update-balance",
+  data: {
+    value: 200,
+  }
+})
+```
+
+Each added event receives an auto-incremented index, allowing the frontend to process events in the correct chronological order.
+
+### Recorder
+
+The recorder allows grouping simulations by arbitrary criteria. If using [optimization](/docs/core/optimization),
+this would allow you to target specific simulations to optimize.
+It also enables capturing notable runs (e.g. max win simulations) so they can be replayed locally for debugging or demonstration.
+
+Records are written to the `__build__` directory as `force_record_<gameMode>.json`. The JSON structure matches the Stake Math SDK format for interoperability.
+
+Without having to configure anything, Slot Engine automatically groups simulations by their result set criteria.
+You can add additional records as needed using `record()`.
+
 ## Methods
+
+### addBookEvent()
+
+| Method                             | Type              |
+| ---------------------------------- | ----------------- |
+| `ctx.services.data.addBookEvent()` | `(event) => void` |
+
+#### Parameters [!toc]
+
+| Parameter | Type                                          |
+| --------- | --------------------------------------------- |
+| `event`   | `{ type: string, data: Record<string, any> }` |
+
+A wrapper around `ctx.services.data.record()` to record symbol occurrences.
 
 ### record()
 
@@ -34,19 +113,5 @@ Record data for statistical analysis.
 | Parameter | Type                                                                          |
 | --------- | ----------------------------------------------------------------------------- |
 | `data`    | `{ kind: number; symbolId: string; spinType: SpinType; [key: string]: any; }` |
-
-A wrapper around `ctx.services.data.record()` to record symbol occurrences.
-
-### addBookEvent()
-
-| Method                             | Type              |
-| ---------------------------------- | ----------------- |
-| `ctx.services.data.addBookEvent()` | `(event) => void` |
-
-#### Parameters [!toc]
-
-| Parameter | Type                                          |
-| --------- | --------------------------------------------- |
-| `event`   | `{ type: string, data: Record<string, any> }` |
 
 A wrapper around `ctx.services.data.record()` to record symbol occurrences.
