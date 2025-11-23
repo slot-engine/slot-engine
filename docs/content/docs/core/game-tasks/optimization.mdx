@@ -1,0 +1,51 @@
+---
+title: Optimizing your Game
+description: Achieve perfect RTP with optimization
+icon: "Rocket"
+---
+
+---
+
+## Introduction
+
+After simulating and analyzing the outcomes of your game, you may notice that
+your RTP may be too high or too low and that the game may generally be unbalanced.
+To achieve a desired target RTP between 90% and 99%, the optimization program can be used.
+
+**A big thanks to Stake** for providing the entire game optimizer code.
+[(Original source code)](https://github.com/StakeEngine/math-sdk/tree/main/optimization_program)
+
+The optimization program (from 13.08.25) has been integrated into Slot Engine,
+enabling you to precisely adjust your games to achieve the desired RTP.
+Additionally, you can further tweak the weights of certain payout groups using custom configs.
+
+After optimization is done, you can observe that the weights in your lookup tables have been redistributed.
+
+Before:
+
+```csv
+1,1,780
+2,1,1000
+3,1,0
+...
+```
+
+After:
+
+```csv
+1,1816455674,780
+2,58062661,1000
+3,19165815565,0
+...
+```
+
+<Callout title="To other developers:">
+The optimizer works, but **it would be nice to not depend on Stake** updating their original optimizer code.
+Since their optimizer is designed to work with their math SDK, integrating new optimizer changes into
+Slot Engine might not always work.
+
+I don't know Rust and have no mathematical background, and the optimization algorithm seems complex.
+If anyone would like to try to **implement such an algorithm in TypeScript**, feel free to open an issue and let's talk about it.
+
+Having a **first-party** optimization algorithm would be **good in the long run**.
+</Callout>

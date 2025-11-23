@@ -13,7 +13,10 @@
     "---Game Implementation---",
     "game-implementation/index",
     "game-context",
-    "---Game Simulation---",
-    "---Game Optimization---"
+    "game-implementation/win-calculation",
+    "---Run Tasks---",
+    "game-tasks/simulation",
+    "game-tasks/optimization",
+    "game-tasks/analysis"
   ]
 }

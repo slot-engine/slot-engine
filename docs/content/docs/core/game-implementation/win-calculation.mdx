@@ -1,0 +1,112 @@
+---
+title: Win Calculation
+description: How to calculate wins with different strategies
+icon: "CircleDollarSign"
+---
+
+---
+
+## Introduction
+
+There are multiple approaches for calculating wins, depending of the type of game you're going for.
+
+### Context [!toc]
+
+Each win type operates disconnected from the game context, that's why you have to explicitly
+pass the game context to the win type class constructor.
+
+### Configuration [!toc]
+
+The configuration options depend on the win type.
+
+### Wild Symbol [!toc]
+
+To ensure wild symbols are recognized and handled correctly during calculation,
+you must pass one of the following to the win type constructor:
+
+A complete game symbol ...
+
+```ts lineNumbers
+const wildSymbol = ctx.config.symbols.get("W")
+
+const lines = new LinesWinType({
+  wildSymbol,
+  // ...
+})
+```
+
+... or a property that identifies one or more symbols.
+
+```ts lineNumbers
+const lines = new LinesWinType({
+  wildSymbol: { isWild: true },
+  // ...
+})
+```
+
+### Post-Processing [!toc]
+
+After calculating wins you have the option to process them further, e.g. multiply by a global multiplier.
+
+```ts lineNumbers
+const { payout, winCombinations } = lines
+  .evaluateWins(ctx.services.board.getBoardReels())
+  .postProcess((winType, ctx) => {
+    // Example: Apply 2x multiplier during free spins
+    const { payout, winCombinations } = winType.getWins()
+
+    let multiplier = 1
+    if (ctx.state.currentSpinType === SPIN_TYPE.FREE_SPINS) {
+      multiplier = 2
+    }
+
+    const newPayout = payout * multiplier
+
+    return {
+      payout: newPayout,
+      winCombinations: winCombinations.map((w) => ({
+        ...w,
+        payout: w.payout * multiplier,
+      })),
+    }
+  })
+  .getWins()
+```
+
+While you're not forced to use `postProcess()` to modify the win data,
+it provides an opinionated way of writing cohesive win evaluation logic.
+
+## Paylines Wins
+
+Calculation of classic line-based wins.
+
+```ts lineNumbers
+import { LinesWinType } from "@slot-engine/core"
+
+export function onHandleGameFlow(ctx: Context) {
+  const wildSymbol = ctx.config.symbols.get("W")
+
+  const lines = new LinesWinType({
+    ctx,
+    lines: {
+      1: [0, 0, 0, 0, 0],
+      2: [1, 1, 1, 1, 1],
+      3: [2, 2, 2, 2, 2],
+      // ...
+    },
+    wildSymbol,
+  })
+
+  const { payout, winCombinations } = lines
+    .evaluateWins(ctx.services.board.getBoardReels())
+    .getWins()
+}
+```
+
+## Cluster Wins
+
+Cluster-based win calculation.
+
+## Manyways Wins
+
+Megaways or 243-ways -esque calculations.

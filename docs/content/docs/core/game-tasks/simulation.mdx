@@ -1,0 +1,90 @@
+---
+title: Simulating your Game
+description: How Slot Engine simulates your game
+icon: "Computer"
+---
+
+---
+
+## Introduction
+
+Configuring a game alone isn't enough - it also has to be simulated to ensure correct functionality.
+
+Simulating your game is quite simple:
+
+<Steps>
+<Step>
+Call `configureSimulation()` on your game
+
+```ts lineNumbers
+const game = createSlotGame({ /* ... */ })
+
+game.configureSimulation({
+  simRunsAmount: {
+    base: 100_000,
+    bonus: 100_000,
+  },
+  concurrency: 16,
+})
+```
+
+- `simRunsAmount` defines the amount of simulations for each game mode. For quick and dirty testing
+you can do 10_000 simulations, but for production a minimum of 500_000 is recommended. If you do not wish
+to simulate certain game modes, just exclude them from `simRunsAmount`.
+- `concurrency` controls the amount of threads (Node workers) used for simulation.
+</Step>
+
+<Step>
+Finally call `runTasks()` on your game
+
+```ts lineNumbers=11
+game.runTasks({
+  doSimulation: true,
+})
+```
+</Step>
+</Steps>
+
+Simulation time can range from a few seconds to several minutes, depending on game modes,
+simulation count, thread concurrency, and your hardware.
+
+## Output Files / Publish Files
+
+The output will be written to the `__build__/publish_files` directory. Those are the **final files**
+that can be uploaded to Stake Engine as the "math" part.
+
+### books_\<gameMode>.jsonl.zst [!toc]
+
+For each game mode a books file is generated which contains a list of all books (simulations).
+That file is compressed using Zstandard compression, because book files tend to get quite large the more events you have.
+
+```jsonl
+{"id":1,"payoutMultiplier":780,"events":[{"index":1,"type":"test","data":{"test":123}}]}
+{"id":2,"payoutMultiplier":1000,"events":[{"index":1,"type":"test","data":{"test":123}}]}
+{"id":3,"payoutMultiplier":0,"events":[{"index":1,"type":"test","data":{"test":123}}]}
+...
+```
+
+### index.json [!toc]
+
+An overview of all simulated game modes and their corresponding file names.
+
+### lookUpTable_\<gameMode>_0.csv [!toc]
+
+The lookup table contains a list of all book IDs, a weight, and the payout multiplier (scaled by 100).
+
+A book's weight determines the probability of that outcome being selected by the Stake RGS when resolving a bet.
+
+**By default**, all results have an **equal probability** of being selected.
+
+```csv
+ID, weight, payout
+1,1,780
+2,1,1000
+3,1,0
+...
+```
+
+Since every outcome has the same weight, initial game RTP will likely be too high or too low - this is completely normal.
+You will use [optimization](/docs/core/game-tasks/optimization) to automatically redistribute weights
+to achieve a specific target RTP with high precision.
