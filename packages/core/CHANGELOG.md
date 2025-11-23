@@ -1,5 +1,11 @@
 # @slot-engine/core
 
+## 0.0.7
+
+### Patch Changes
+
+- Fix index.json including modes that were not simulated - Thanks @nordowl
+
 ## 0.0.6
 
 ### Patch Changes
