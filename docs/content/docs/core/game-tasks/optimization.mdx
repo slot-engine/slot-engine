@@ -49,3 +49,151 @@ If anyone would like to try to **implement such an algorithm in TypeScript**, fe
 
 Having a **first-party** optimization algorithm would be **good in the long run**.
 </Callout>
+
+## Configuration
+
+<Steps>
+<Step>
+Install [Rust](https://rust-lang.org/tools/install/) and cargo if you haven't already.
+This is necessary because the optimization program is written in Rust.
+</Step>
+
+<Step>
+Call `configureOptimization()` on your game
+
+```ts lineNumbers
+const game = createSlotGame({ /* ... */ })
+
+game.configureOptimization({
+  gameModes: {
+    base: {
+      conditions: {
+        maxwin: new OptimizationConditions({
+          rtp: 0.01,
+          avgWin: 2000,
+          searchConditions: {
+            criteria: "maxwin",
+          },
+          priority: 8,
+        }),
+        "0": new OptimizationConditions({
+          rtp: 0,
+          avgWin: 0,
+          searchConditions: 0,
+          priority: 6,
+        }),
+        superFreespins: new OptimizationConditions({
+          rtp: 0.05,
+          hitRate: 500,
+          searchConditions: {
+            criteria: "superFreespins",
+          },
+          priority: 3,
+        }),
+        freespins: new OptimizationConditions({
+          rtp: 0.35,
+          hitRate: 150,
+          searchConditions: {
+            criteria: "freespins",
+          },
+          priority: 2,
+        }),
+        basegame: new OptimizationConditions({
+          rtp: 0.55,
+          hitRate: 4,
+          priority: 1,
+        }),
+      },
+      scaling: new OptimizationScaling([]),
+      parameters: new OptimizationParameters(),
+    },
+    // ...
+  },
+})
+```
+</Step>
+
+<Step>
+Finally call `runTasks()` on your game
+
+```ts lineNumbers=11
+game.runTasks({
+  doSimulation: true,
+  doOptimization: true,
+  optimizationOpts: {
+    gameModes: ["base"],
+  },
+})
+```
+</Step>
+</Steps>
+
+- `configureOptimization` has a `gameModes` property specifying optimization configurations for different game modes.
+- The keys of `gameModes` must match the modes in your game configuration.
+- Each game mode has 3 configuration objects: `conditions`, `scaling` and `parameters`.
+
+### Optimization Conditions
+
+Each `conditions` key for a game mode can have multiple sub-properties (conditions).
+A condition is used to **select specific simulations which the optimization is applied to**.
+The key of a condition **must match** the `criteria` of a `ResultSet` from that game mode.
+
+Since you probably want to optimize every single simulation, you should define as many
+conditions for a game mode as you need, to enable optimization for all simulations.
+
+For an optimization condition, specify the property `searchConditions` and set key/value pairs
+which the optimizer will search for in the [force records file](/docs/core/game-context/data-service#recorder).
+
+The optimizer requires knowing what RTP to optimize a subset of outcomes to / how much RTP to contribute to the total RTP.
+This is especially useful for defining the hit frequency of free spins, for example.
+**2 of 3 variables need to be defined**, so the program can determine the target RTP for a set of results.
+These being: `rtp`, `avgWin`, and/or `hitRate`.
+
+Each condition is given a `priority`. This determines the **order** in which simulations are picked
+out of the pool of all simulations. Setting priorities correctly is **very important**, because once a simulation
+is optimized, it can't be optimized again. Let's break it down with an example:
+
+1. You have two simulations: ID 1 - free spins, and ID 2 - free spins max win.
+2. Both simulations are tagged in the records as "triggeredFreeSpins".
+3. You have two optimizer conditions: Priority 5 - selects free spins, and priority 1 - selects max wins.
+4. The free spins subset with 5 priority should get a target hit rate of 1/200,
+and the max win subset with 1 priority should get a target hit rate of 1/500.000.
+5. The optimizer first works on simulations that match the conditions with the highest priority.
+In this case it would get all simulations tagged as "triggeredFreeSpins" and optimize them.
+6. The "normal free spins" will get optimized and receive their target hit rate.
+But since the max win simulations are also tagged as being free spins, those will get optimized too
+and result in a hit rate which is way too high.
+7. All optimized simulations are removed from the pool.
+8. When it's time to optimize the max wins (with priority 1), there are actually no simulations
+left in the pool that match the criteria, since all max wins have already been (wrongly) optimized.
+This will not only result in an error, but also your game will be unbalanced.
+
+**The highest priority should always be given to the most specific simulation subsets.**
+
+Fortunately, **Slot Engine automatically tags** every simulation **by their result set criteria**,
+creating groups of simulations that **don't overlap** one another.
+
+When creating your optimization conditions, you can **simply specify the result set criteria**
+as the only key in `searchConditions`. This way the priority won't matter at all
+(given you did not add additional records which may cause overlap).
+
+```ts lineNumbers
+freespinsUpgradeToSuper: new OptimizationConditions({
+  rtp: 0.03,
+  hitRate: 500,
+  searchConditions: {
+    criteria: "freespinsUpgradeToSuper",
+  },
+  priority: 4,
+}),
+```
+
+<Callout title="Developer Comment">
+Since the optimizer is created by Stake and not the Slot Engine team,
+[consult their docs](https://stake-engine.com/docs/math/optimization-algorithm)
+for any more information you may need, or ask on the Stake Engine Discord server.
+</Callout>
+
+### Optimization Scaling
+
+### Optimization Parameters
