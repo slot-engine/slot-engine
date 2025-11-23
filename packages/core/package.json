@@ -30,5 +30,9 @@
   },
   "dependencies": {
     "esbuild": "0.25.9"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   }
 }
