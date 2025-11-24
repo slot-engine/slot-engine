@@ -44,6 +44,9 @@ The optimizer works, but **it would be nice to not depend on Stake** updating th
 Since their optimizer is designed to work with their math SDK, integrating new optimizer changes into
 Slot Engine might not always work.
 
+Also their optimizer is not well documented. All info on this page is gathered from the **Stake Engine Discord**.
+**Go there if you have specific questions about the optimizer not documented here.**
+
 I don't know Rust and have no mathematical background, and the optimization algorithm seems complex.
 If anyone would like to try to **implement such an algorithm in TypeScript**, feel free to open an issue and let's talk about it.
 
@@ -254,12 +257,23 @@ You can just pass `new OptimizationParameters()` to apply the default settings.
 
 #### Properties
 
-| Property      | Type               | Description                                                                 |
-| ------------- | ------------------ | --------------------------------------------------------------------------- |
-| `criteria`    | `string`           | The criteria name of a result set or optimization conditions, respectively. |
-| `scaleFactor` | `number`           | The factor which the odds of hitting the win range is multiplied by.        |
-| `winRange`    | `[number, number]` | The target win range, e.g. `[50, 150]`.                                     |
-| `probability` | `number`           | The probability (0-1) of the scaling being actually applied.                |
+All properties are optional.
+
+| Property                   | Type       |
+| -------------------------- | ---------- |
+| `numShowPigs`              | `number`   |
+| `numPigsPerFence`          | `number`   |
+| `threadsFenceConstruction` | `number`   |
+| `threadsShowConstruction`  | `number`   |
+| `testSpins`                | `number[]` |
+| `testSpinsWeights`         | `number[]` |
+| `simulationTrials`         | `number`   |
+| `graphIndexes`             | `number[]` |
+| `run1000Batch`             | `false`    |
+| `minMeanToMedian`          | `number`   |
+| `maxMeanToMedian`          | `number`   |
+| `pmbRtp`                   | `number`   |
+| `scoreType`                | `"rtp"`    |
 
 <Callout title="Developer Comment">
   Since the optimizer is created by Stake and not the Slot Engine team, [consult their
