@@ -48,6 +48,7 @@ I don't know Rust and have no mathematical background, and the optimization algo
 If anyone would like to try to **implement such an algorithm in TypeScript**, feel free to open an issue and let's talk about it.
 
 Having a **first-party** optimization algorithm would be **good in the long run**.
+
 </Callout>
 
 ## Configuration
@@ -62,7 +63,9 @@ This is necessary because the optimization program is written in Rust.
 Call `configureOptimization()` on your game
 
 ```ts lineNumbers
-const game = createSlotGame({ /* ... */ })
+const game = createSlotGame({
+  /* ... */
+})
 
 game.configureOptimization({
   gameModes: {
@@ -111,6 +114,7 @@ game.configureOptimization({
   },
 })
 ```
+
 </Step>
 
 <Step>
@@ -125,6 +129,7 @@ game.runTasks({
   },
 })
 ```
+
 </Step>
 </Steps>
 
@@ -157,16 +162,16 @@ is optimized, it can't be optimized again. Let's break it down with an example:
 2. Both simulations are tagged in the records as "triggeredFreeSpins".
 3. You have two optimizer conditions: Priority 5 - selects free spins, and priority 1 - selects max wins.
 4. The free spins subset with 5 priority should get a target hit rate of 1/200,
-and the max win subset with 1 priority should get a target hit rate of 1/500.000.
+   and the max win subset with 1 priority should get a target hit rate of 1/500.000.
 5. The optimizer first works on simulations that match the conditions with the highest priority.
-In this case it would get all simulations tagged as "triggeredFreeSpins" and optimize them.
+   In this case it would get all simulations tagged as "triggeredFreeSpins" and optimize them.
 6. The "normal free spins" will get optimized and receive their target hit rate.
-But since the max win simulations are also tagged as being free spins, those will get optimized too
-and result in a hit rate which is way too high.
+   But since the max win simulations are also tagged as being free spins, those will get optimized too
+   and result in a hit rate which is way too high.
 7. All optimized simulations are removed from the pool.
 8. When it's time to optimize the max wins (with priority 1), there are actually no simulations
-left in the pool that match the criteria, since all max wins have already been (wrongly) optimized.
-This will not only result in an error, but also your game will be unbalanced.
+   left in the pool that match the criteria, since all max wins have already been (wrongly) optimized.
+   This will not only result in an error, but also your game will be unbalanced.
 
 **The highest priority should always be given to the most specific simulation subsets.**
 
@@ -189,11 +194,75 @@ freespinsUpgradeToSuper: new OptimizationConditions({
 ```
 
 <Callout title="Developer Comment">
-Since the optimizer is created by Stake and not the Slot Engine team,
-[consult their docs](https://stake-engine.com/docs/math/optimization-algorithm)
-for any more information you may need, or ask on the Stake Engine Discord server.
+  Since the optimizer is created by Stake and not the Slot Engine team, [consult their
+  docs](https://stake-engine.com/docs/math/optimization-algorithm) for any more
+  information you may need, or ask on the Stake Engine Discord server.
 </Callout>
+
+#### Properties
+
+| Property           | Type                                                   | Description                                                                                                                                            | Required |
+| ------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| `rtp`              | `number \| "x"`                                        | The desired RTP contribution.<br/>Total RTP of all optimization conditions should equal RTP in your game configuration.                                |          |
+| `avgWin`           | `number`                                               | The desired average win per spin.                                                                                                                      |          |
+| `hitRate`          | `number \| "x"`                                        | The desired hit rate (e.g. `200` to hit 1 in 200 spins).                                                                                               |
+| `searchConditions` | `number \| Record<string, string> \| [number, number]` | - A number (payout multiplier), e.g. `5000`<br/>- Force record values, e.g. `{ "symbolId": "scatter" }`<br/>- Payout multiplier range, e.g. `[0, 100]` |
+| `priority`         | `number`                                               | As explained in the paragraphs above.                                                                                                                  | yes      |
+
+At most one optimization condition of a game mode can have either `rtp: "x"` or `hitRate: "x"`.
+The optimizer can determine one missing value automatically.
 
 ### Optimization Scaling
 
+With scaling you can artifically increase the chances of a certain win range being hit.
+**This should be used carefully!**
+
+A `new OptimizationScaling([])` **must** be provided, even if you don't intend to utilize it.
+You can just pass an empty array to the constructor.
+
+```ts lineNumbers
+scaling: new OptimizationScaling([
+  {
+    criteria: "freespins",
+    scaleFactor: 1.2,
+    winRange: [50, 150],
+    probability: 1,
+  },
+  // ...
+])
+```
+
+#### Properties
+
+| Property      | Type               | Description                                                                 |
+| ------------- | ------------------ | --------------------------------------------------------------------------- |
+| `criteria`    | `string`           | The criteria name of a result set or optimization conditions, respectively. |
+| `scaleFactor` | `number`           | The factor which the odds of hitting the win range is multiplied by.        |
+| `winRange`    | `[number, number]` | The target win range, e.g. `[50, 150]`.                                     |
+| `probability` | `number`           | The probability (0-1) of the scaling being actually applied.                |
+
+<Callout title="Developer Comment">
+  Since the optimizer is created by Stake and not the Slot Engine team, [consult their
+  docs](https://stake-engine.com/docs/math/optimization-algorithm) for any more
+  information you may need, or ask on the Stake Engine Discord server.
+</Callout>
+
 ### Optimization Parameters
+
+Configure special parameters to control the optimization algorithm.
+You can just pass `new OptimizationParameters()` to apply the default settings.
+
+#### Properties
+
+| Property      | Type               | Description                                                                 |
+| ------------- | ------------------ | --------------------------------------------------------------------------- |
+| `criteria`    | `string`           | The criteria name of a result set or optimization conditions, respectively. |
+| `scaleFactor` | `number`           | The factor which the odds of hitting the win range is multiplied by.        |
+| `winRange`    | `[number, number]` | The target win range, e.g. `[50, 150]`.                                     |
+| `probability` | `number`           | The probability (0-1) of the scaling being actually applied.                |
+
+<Callout title="Developer Comment">
+  Since the optimizer is created by Stake and not the Slot Engine team, [consult their
+  docs](https://stake-engine.com/docs/math/optimization-algorithm) for any more
+  information you may need, or ask on the Stake Engine Discord server.
+</Callout>

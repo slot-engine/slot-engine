@@ -1,7 +1,7 @@
 export class OptimizationParameters {
   protected parameters: OptimizationParametersOpts
 
-  constructor(opts?: OptimizationParametersOpts) {
+  constructor(opts?: Partial<OptimizationParametersOpts>) {
     this.parameters = {
       ...OptimizationParameters.DEFAULT_PARAMETERS,
       ...opts,
