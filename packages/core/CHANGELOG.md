@@ -1,5 +1,11 @@
 # @slot-engine/core
 
+## 0.0.8
+
+### Patch Changes
+
+- Make all OptimizationParameters optional - Thanks @nordowl
+
 ## 0.0.7
 
 ### Patch Changes
