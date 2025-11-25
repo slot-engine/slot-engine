@@ -39,7 +39,7 @@ export class Analysis {
     this.filePaths = this.getPathsForModes(gameModes)
     this.getNumberStats(gameModes)
     this.getWinRanges(gameModes)
-    //this.getSymbolStats(gameModes)
+    // TODO: this.getSymbolStats(gameModes)
     console.log("Analysis complete. Files written to build directory.")
   }
 
@@ -154,15 +154,47 @@ export class Analysis {
       [20000, 24999.99],
     ]
 
+    const payoutRanges: Record<string, Record<string, number>> = {}
+
     for (const modeStr of gameModes) {
-      const mode = this.getGameModeConfig(modeStr)
+      payoutRanges[modeStr] = {}
 
       const lutOptimized = parseLookupTable(
         fs.readFileSync(this.filePaths[modeStr]!.lutOptimized, "utf-8"),
       )
-      const totalWeight = getTotalLutWeight(lutOptimized)
-      const payoutWeights = getPayoutWeights(lutOptimized)
+
+      lutOptimized.forEach(([, , p]) => {
+        const payout = p / 100
+        for (const [min, max] of winRanges) {
+          if (payout >= min && payout <= max) {
+            const rangeKey = `${min}-${max}`
+            if (!payoutRanges[modeStr]![rangeKey]) {
+              payoutRanges[modeStr]![rangeKey] = 0
+            }
+            payoutRanges[modeStr]![rangeKey] += 1
+            break
+          }
+        }
+      })
+
+      const orderedRanges: Record<string, number> = {}
+      Object.keys(payoutRanges[modeStr]!)
+        .sort((a, b) => {
+          const [aMin] = a.split("-").map(Number)
+          const [bMin] = b.split("-").map(Number)
+          return aMin! - bMin!
+        })
+        .forEach((key) => {
+          orderedRanges[key] = payoutRanges[modeStr]![key]!
+        })
+
+      payoutRanges[modeStr] = orderedRanges
     }
+
+    writeJsonFile(
+      path.join(process.cwd(), this.gameConfig.outputDir, "stats_payouts.json"),
+      payoutRanges,
+    )
   }
 
   private getGameModeConfig(mode: string) {
