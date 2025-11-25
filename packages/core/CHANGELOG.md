@@ -1,5 +1,11 @@
 # @slot-engine/core
 
+## 0.0.9
+
+### Patch Changes
+
+- Write win range stats to file - Thanks @nordowl
+
 ## 0.0.8
 
 ### Patch Changes
