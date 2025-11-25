@@ -119,12 +119,10 @@ export class LinesWinType extends WinType {
 
       const len = chain.length
       let bestPayout = 0
-      let bestType: LineWinCombination["winType"] | null = null
       let payingSymbol: GameSymbol | null = null
 
       if (baseSymbol?.pays && baseSymbol.pays[len]) {
         bestPayout = baseSymbol.pays[len]!
-        bestType = "substituted"
         payingSymbol = baseSymbol
       }
 
@@ -132,12 +130,11 @@ export class LinesWinType extends WinType {
         const wildPay = wildRepresentative.pays[len]!
         if (wildPay > bestPayout) {
           bestPayout = wildPay
-          bestType = "pure-wild"
           payingSymbol = wildRepresentative
         }
       }
 
-      if (!bestPayout || !bestType || !payingSymbol) continue
+      if (!bestPayout || !payingSymbol) continue
 
       const minLen = payingSymbol.pays
         ? Math.min(...Object.keys(payingSymbol.pays).map(Number))
@@ -146,17 +143,13 @@ export class LinesWinType extends WinType {
       if (len < minLen) continue
 
       const wildCount = details.filter((d) => d.isWild).length
-      const nonWildCount = len - wildCount
 
       lineWins.push({
         lineNumber: lineNum,
         kind: len,
         payout: bestPayout,
-        symbol: payingSymbol,
-        winType: bestType,
-        substitutedBaseSymbol: bestType === "pure-wild" ? null : baseSymbol,
+        baseSymbol: payingSymbol,
         symbols: details,
-        stats: { wildCount, nonWildCount, leadingWilds },
       })
       payout += bestPayout
     }
@@ -164,7 +157,7 @@ export class LinesWinType extends WinType {
     for (const win of lineWins) {
       this.ctx.services.data.recordSymbolOccurrence({
         kind: win.kind,
-        symbolId: win.symbol.id,
+        symbolId: win.baseSymbol.id,
         spinType: this.ctx.state.currentSpinType,
       })
     }
@@ -194,12 +187,4 @@ interface LinesWinTypeOpts extends WinTypeOpts {
 
 export interface LineWinCombination extends WinCombination {
   lineNumber: number
-  symbol: GameSymbol
-  winType: "pure-wild" | "substituted"
-  substitutedBaseSymbol: GameSymbol | null
-  stats: {
-    wildCount: number
-    nonWildCount: number
-    leadingWilds: number
-  }
 }

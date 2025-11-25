@@ -74,6 +74,7 @@ export interface WinTypeOpts {
 export type WinCombination = {
   payout: number
   kind: number
+  baseSymbol: GameSymbol
   symbols: Array<{
     symbol: GameSymbol
     isWild: boolean
