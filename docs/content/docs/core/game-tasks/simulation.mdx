@@ -88,3 +88,18 @@ ID, weight, payout
 Since every outcome has the same weight, initial game RTP will likely be too high or too low - this is completely normal.
 You will use [optimization](/docs/core/game-tasks/optimization) to automatically redistribute weights
 to achieve a specific target RTP with high precision.
+
+## FAQ / Common Issues
+
+<Accordions>
+  <Accordion title="My simulation is very slow or stuck">
+    The most common reason for why your simulation might be stuck or progress very slowly is that
+    certain **outcomes are very rare** or might **never occurr** naturally, for example max wins.
+
+    If you're noticing that simulating max wins or other rare criteria slows down your simulation,
+    there's a few things you can do:
+
+    - Make it easier for the program to simulate rare outcomes, for example by using a dedicated
+    reel set with more wilds and generally higher symbols.
+  </Accordion>
+</Accordions>

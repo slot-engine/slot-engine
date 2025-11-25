@@ -1,0 +1,41 @@
+---
+title: Analyzing your Game
+description: Get insights on your game
+icon: "ChartBar"
+---
+
+---
+
+## Introduction
+
+Configure analysis to get useful statistics about your game.
+
+Analyzing your game is quite simple:
+
+<Steps>
+<Step>
+Simply adjust your `runTasks()` configuration to include analysis:
+
+```ts lineNumbers=11
+game.runTasks({
+  // ...
+  doAnalysis: true,
+  analysisOpts: {
+    gameModes: ["base"],
+  },
+})
+```
+</Step>
+</Steps>
+
+## Output Files / Publish Files
+
+The output will be written to the `__build__` directory.
+
+### stats_payouts.json [!toc]
+
+Contains a list of win ranges and how many simulations (from the final lookup table) fall into those ranges.
+
+### stats_summary.json [!toc]
+
+Contains various statistics about volatility, hit rates, etc.

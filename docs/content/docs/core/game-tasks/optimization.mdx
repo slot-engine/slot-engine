@@ -58,8 +58,15 @@ Having a **first-party** optimization algorithm would be **good in the long run*
 
 <Steps>
 <Step>
-Install [Rust](https://rust-lang.org/tools/install/) and cargo if you haven't already.
+Install [Rust and cargo](https://rust-lang.org/tools/install/) if you haven't already.
 This is necessary because the optimization program is written in Rust.
+</Step>
+
+<Step>
+  Ensure your simulations cover a wide range of outcomes. Otherwise the optimizer might
+  struggle to work properly. You can configure [analysis](/docs/core/game-tasks/analysis)
+  to get an overview of all payout ranges and how often certain outcomes appear. Ensure
+  there are sufficient outcomes for each payout range.
 </Step>
 
 <Step>
