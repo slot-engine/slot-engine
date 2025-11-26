@@ -42,6 +42,20 @@ export class StandaloneBoard {
     return this.board.paddingBottom
   }
 
+  /**
+   * Gets the symbol at the specified reel and row index.
+   */
+  getSymbol(reelIndex: number, rowIndex: number) {
+    return this.board.getSymbol(reelIndex, rowIndex)
+  }
+
+  /**
+   * Sets the symbol at the specified reel and row index.
+   */
+  setSymbol(reelIndex: number, rowIndex: number, symbol: GameSymbol) {
+    this.board.setSymbol(reelIndex, rowIndex, symbol)
+  }
+
   private resetReels() {
     this.board.resetReels({
       ctx: this.ctx,

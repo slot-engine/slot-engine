@@ -39,6 +39,15 @@ export class Board {
     this.lastUsedReels = []
   }
 
+  getSymbol(reelIndex: number, rowIndex: number) {
+    return this.reels[reelIndex]?.[rowIndex]
+  }
+
+  setSymbol(reelIndex: number, rowIndex: number, symbol: GameSymbol) {
+    this.reels[reelIndex] = this.reels[reelIndex] || []
+    this.reels[reelIndex]![rowIndex] = symbol
+  }
+
   makeEmptyReels(opts: { ctx: GameContext; reelsAmount?: number }) {
     const length =
       opts.reelsAmount ?? opts.ctx.services.game.getCurrentGameMode().reelsAmount
