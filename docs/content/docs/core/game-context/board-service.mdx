@@ -31,6 +31,37 @@ Returns the top padding reels.
 
 Returns the bottom padding reels.
 
+### getSymbol()
+
+| Method                           | Type                                  |
+| -------------------------------- | ------------------------------------- |
+| `ctx.services.board.getSymbol()` | `(reelIndex, rowIndex) => GameSymbol` |
+
+#### Parameters [!toc]
+
+| Parameter   | Type     |
+| ----------- | -------- |
+| `reelIndex` | `number` |
+| `rowIndex`  | `number` |
+
+Returns the symbol at the specified position.
+
+### setSymbol()
+
+| Method                           | Type                                    |
+| -------------------------------- | --------------------------------------- |
+| `ctx.services.board.setSymbol()` | `(reelIndex, rowIndex, symbol) => void` |
+
+#### Parameters [!toc]
+
+| Parameter   | Type         |
+| ----------- | ------------ |
+| `reelIndex` | `number`     |
+| `rowIndex`  | `number`     |
+| `symbol`    | `GameSymbol` |
+
+Sets the symbol at the specified position.
+
 ### resetBoard()
 
 | Method                            | Type         |
