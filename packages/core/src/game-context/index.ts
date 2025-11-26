@@ -1,4 +1,4 @@
-import { GameConfig } from "../game-config"
+import { createGameConfig, GameConfig, GameConfigOptions } from "../game-config"
 import { createGameState, GameState } from "../game-state"
 import { BoardService } from "../service/board"
 import { DataService } from "../service/data"
@@ -86,4 +86,25 @@ export interface GameContextServices {
    * Service for seeded random number generation.
    */
   rng: RngService
+}
+
+/**
+ * Intended for testing purposes only.\
+ * Creates a game context with a minimal configuration.
+ */
+export function createTestContext(config?: Partial<GameConfigOptions>) {
+  return createGameContext({
+    config: createGameConfig({
+      id: "",
+      name: "",
+      gameModes: {},
+      symbols: {},
+      scatterToFreespins: {},
+      maxWinX: 10000,
+      hooks: {
+        onHandleGameFlow() {},
+      },
+      ...config,
+    }),
+  })
 }

@@ -9,6 +9,9 @@ export class ClusterWinType extends WinType {
     winCombinations: ClusterWinCombination[]
   }
 
+  private _checked: Array<[number, number]> = []
+  private _currentBoard: Reels = []
+
   constructor(opts: ClusterWinTypeOpts) {
     super(opts)
   }
@@ -21,184 +24,104 @@ export class ClusterWinType extends WinType {
    */
   evaluateWins(board: Reels) {
     this.validateConfig()
+    this._checked = []
+    this._currentBoard = board
 
     const clusterWins: ClusterWinCombination[] = []
     let payout = 0
 
-    const reels = board
+    const potentialClusters: SymbolList[] = []
 
-    const rows = reels[0]?.length || 0
-    const cols = reels.length
-    const usedWilds = new Set<string>()
+    // Get normal symbol clusters
+    for (const [ridx, reel] of board.entries()) {
+      for (const [sidx, symbol] of reel.entries()) {
+        if (this.isWild(symbol)) continue
 
-    // Map of symbol ID to list of positions
-    const symbolLocations = new Map<string, { c: number; r: number }[]>()
-    const wildLocations: { c: number; r: number }[] = []
+        if (this.isChecked(ridx, sidx)) {
+          continue
+        }
 
-    for (let c = 0; c < cols; c++) {
-      for (let r = 0; r < rows; r++) {
-        const sym = reels[c]?.[r]
-        if (!sym) continue
+        this._checked.push([ridx, sidx])
 
-        if (this.isWild(sym)) {
-          wildLocations.push({ c, r })
-        } else {
-          if (!symbolLocations.has(sym.id)) {
-            symbolLocations.set(sym.id, [])
-          }
-          symbolLocations.get(sym.id)!.push({ c, r })
+        const thisSymbol = { reel: ridx, row: sidx, symbol }
+        const neighbors = this.getNeighbors(ridx, sidx)
+        const matchingSymbols = this.evaluateCluster(symbol, neighbors)
+
+        // Record clusters from 2 symbols and up
+        if (matchingSymbols.size >= 1) {
+          potentialClusters.push([thisSymbol, ...matchingSymbols.values()])
         }
       }
     }
 
-    // 1. Evaluate Non-Wild Clusters
-    for (const [symbolId, locations] of symbolLocations.entries()) {
-      const visited = new Set<string>()
+    console.log(
+      potentialClusters.map((c) =>
+        c.map((s) => `${s.symbol.id}(${s.reel},${s.row})`).join(", "),
+      ),
+    )
 
-      for (const loc of locations) {
-        const key = `${loc.c},${loc.r}`
-        if (visited.has(key)) continue
-
-        const sym = reels[loc.c]![loc.r]!
-
-        // Start flood fill
-        const cluster: { c: number; r: number; sym: GameSymbol; isWild: boolean }[] = []
-        const queue = [loc]
-        visited.add(key)
-        cluster.push({ ...loc, sym, isWild: false })
-
-        while (queue.length > 0) {
-          const curr = queue.shift()!
-          const neighbors = [
-            { c: curr.c + 1, r: curr.r },
-            { c: curr.c - 1, r: curr.r },
-            { c: curr.c, r: curr.r + 1 },
-            { c: curr.c, r: curr.r - 1 },
-          ]
-
-          for (const n of neighbors) {
-            if (n.c < 0 || n.c >= cols || n.r < 0 || n.r >= rows) continue
-            const nKey = `${n.c},${n.r}`
-            if (visited.has(nKey)) continue
-
-            const nSym = reels[n.c]![n.r]!
-            const nIsWild = this.isWild(nSym)
-
-            if (nSym.id === symbolId || nIsWild) {
-              visited.add(nKey)
-              queue.push(n)
-              cluster.push({ c: n.c, r: n.r, sym: nSym, isWild: nIsWild })
-            }
-          }
-        }
-
-        const size = cluster.length
-        const representativeSymbol = sym
-
-        if (representativeSymbol.pays && representativeSymbol.pays[size]) {
-          const winAmount = representativeSymbol.pays[size]!
-          payout += winAmount
-
-          cluster.forEach((p) => {
-            if (p.isWild) usedWilds.add(`${p.c},${p.r}`)
-          })
-
-          clusterWins.push({
-            baseSymbol: representativeSymbol,
-            payout: winAmount,
-            kind: size,
-            symbols: cluster.map((p) => ({
-              symbol: p.sym,
-              isWild: p.isWild,
-              reelIndex: p.c,
-              posIndex: p.r,
-              substitutedFor: p.isWild ? representativeSymbol : undefined,
-            })),
-          })
-
-          this.ctx.services.data.recordSymbolOccurrence({
-            kind: size,
-            symbolId: representativeSymbol.id,
-            spinType: this.ctx.state.currentSpinType,
-          })
-        }
-      }
-    }
-
-    // 2. Evaluate Pure Wild Clusters
-    const wildVisited = new Set<string>()
-    for (const loc of wildLocations) {
-      const key = `${loc.c},${loc.r}`
-      if (wildVisited.has(key)) continue
-
-      const sym = reels[loc.c]![loc.r]!
-
-      const cluster: { c: number; r: number; sym: GameSymbol }[] = []
-      const queue = [loc]
-      wildVisited.add(key)
-      cluster.push({ ...loc, sym })
-
-      while (queue.length > 0) {
-        const curr = queue.shift()!
-        const neighbors = [
-          { c: curr.c + 1, r: curr.r },
-          { c: curr.c - 1, r: curr.r },
-          { c: curr.c, r: curr.r + 1 },
-          { c: curr.c, r: curr.r - 1 },
-        ]
-
-        for (const n of neighbors) {
-          if (n.c < 0 || n.c >= cols || n.r < 0 || n.r >= rows) continue
-          const nKey = `${n.c},${n.r}`
-          if (wildVisited.has(nKey)) continue
-
-          const nSym = reels[n.c]![n.r]!
-          if (this.isWild(nSym)) {
-            wildVisited.add(nKey)
-            queue.push(n)
-            cluster.push({ c: n.c, r: n.r, sym: nSym })
-          }
-        }
-      }
-
-      const isUsed = cluster.some((p) => usedWilds.has(`${p.c},${p.r}`))
-
-      if (!isUsed) {
-        const size = cluster.length
-        const representativeSymbol = cluster[0]!.sym
-
-        if (representativeSymbol.pays && representativeSymbol.pays[size]) {
-          const winAmount = representativeSymbol.pays[size]!
-          payout += winAmount
-
-          clusterWins.push({
-            baseSymbol: representativeSymbol,
-            payout: winAmount,
-            kind: size,
-            symbols: cluster.map((p) => ({
-              symbol: p.sym,
-              isWild: true,
-              reelIndex: p.c,
-              posIndex: p.r,
-            })),
-          })
-
-          this.ctx.services.data.recordSymbolOccurrence({
-            kind: size,
-            symbolId: representativeSymbol.id,
-            spinType: this.ctx.state.currentSpinType,
-          })
-        }
-      }
-    }
+    // Get wild only clusters
 
     this.payout = payout
     this.winCombinations = clusterWins
 
     return this
   }
+
+  private getNeighbors(ridx: number, sidx: number) {
+    const board = this._currentBoard
+    const neighbors: SymbolList = []
+
+    const potentialNeighbors: Array<[number, number]> = [
+      [ridx - 1, sidx],
+      [ridx + 1, sidx],
+      [ridx, sidx - 1],
+      [ridx, sidx + 1],
+    ]
+
+    potentialNeighbors.forEach(([nridx, nsidx]) => {
+      if (board[nridx] && board[nridx][nsidx]) {
+        neighbors.push({ reel: nridx, row: nsidx, symbol: board[nridx][nsidx] })
+      }
+    })
+
+    return neighbors
+  }
+
+  private evaluateCluster(rootSymbol: GameSymbol, neighbors: SymbolList) {
+    const matchingSymbols: SymbolMap = new Map()
+
+    neighbors.forEach(({ reel, row, symbol }) => {
+      if (this.isChecked(reel, row)) return
+
+      if (this.isWild(symbol) || symbol.compare(rootSymbol)) {
+        const key = `${reel}-${row}`
+        matchingSymbols.set(key, { reel, row, symbol })
+
+        if (symbol.compare(rootSymbol)) {
+          this._checked.push([reel, row])
+        }
+
+        const neighbors = this.getNeighbors(reel, row)
+        const nestedMatches = this.evaluateCluster(rootSymbol, neighbors)
+        nestedMatches.forEach((nsym) => {
+          const nkey = `${nsym.reel}-${nsym.row}`
+          matchingSymbols.set(nkey, nsym)
+        })
+      }
+    })
+
+    return matchingSymbols
+  }
+
+  private isChecked(ridx: number, sidx: number) {
+    return !!this._checked.find((c) => c[0] === ridx && c[1] === sidx)
+  }
 }
 
 interface ClusterWinTypeOpts extends WinTypeOpts {}
 
 export interface ClusterWinCombination extends WinCombination {}
+
+type SymbolList = Array<{ reel: number; row: number; symbol: GameSymbol }>
+type SymbolMap = Map<string, { reel: number; row: number; symbol: GameSymbol }>
