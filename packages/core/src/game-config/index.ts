@@ -79,7 +79,7 @@ export function createGameConfig<
   }
 
   const getAnticipationTrigger = (spinType: string) => {
-    return Math.min(...Object.keys(opts.scatterToFreespins[spinType]!).map(Number)) - 1
+    return Math.min(...Object.keys(opts.scatterToFreespins[spinType] || {}).map(Number)) - 1
   }
 
   return {
