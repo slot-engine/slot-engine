@@ -1,5 +1,6 @@
 import { createGameConfig, GameConfig, GameConfigOptions } from "../game-config"
 import { createGameState, GameState } from "../game-state"
+import { Recorder } from "../recorder"
 import { BoardService } from "../service/board"
 import { DataService } from "../service/data"
 import { GameService } from "../service/game"
@@ -93,7 +94,7 @@ export interface GameContextServices {
  * Creates a game context with a minimal configuration.
  */
 export function createTestContext(config?: Partial<GameConfigOptions>) {
-  return createGameContext({
+  const ctx = createGameContext({
     config: createGameConfig({
       id: "",
       name: "",
@@ -107,4 +108,9 @@ export function createTestContext(config?: Partial<GameConfigOptions>) {
       ...config,
     }),
   })
+
+  // it needs a recorder to work properly
+  ctx.services.data._setRecorder(new Recorder())
+
+  return ctx
 }

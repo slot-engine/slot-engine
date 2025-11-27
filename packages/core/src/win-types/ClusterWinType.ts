@@ -1,5 +1,5 @@
 import { GameSymbol } from "../game-symbol"
-import { WinCombination, WinType, WinTypeOpts } from "."
+import { SymbolList, SymbolMap, WinCombination, WinType, WinTypeOpts } from "."
 import { Reels } from "../types"
 
 export class ClusterWinType extends WinType {
@@ -103,6 +103,14 @@ export class ClusterWinType extends WinType {
       })
     })
 
+    for (const win of clusterWins) {
+      this.ctx.services.data.recordSymbolOccurrence({
+        kind: win.kind,
+        symbolId: win.baseSymbol.id,
+        spinType: this.ctx.state.currentSpinType,
+      })
+    }
+
     this.payout = clusterWins.reduce((sum, c) => sum + c.payout, 0)
     this.winCombinations = clusterWins
 
@@ -169,29 +177,8 @@ export class ClusterWinType extends WinType {
   private isCheckedWild(ridx: number, sidx: number) {
     return !!this._checkedWilds.find((c) => c.reel === ridx && c.row === sidx)
   }
-
-  private getSymbolPayout(symbol: GameSymbol, count: number) {
-    if (!symbol.pays) return 0
-
-    let clusterSize = 0
-
-    const sizes = Object.keys(symbol.pays)
-      .map((s) => parseInt(s, 10))
-      .filter((n) => Number.isFinite(n))
-      .sort((a, b) => a - b)
-
-    for (const size of sizes) {
-      if (size > count) break
-      clusterSize = size
-    }
-
-    return symbol.pays[clusterSize] || 0
-  }
 }
 
 interface ClusterWinTypeOpts extends WinTypeOpts {}
 
 export interface ClusterWinCombination extends WinCombination {}
-
-type SymbolList = Array<{ reel: number; row: number; symbol: GameSymbol }>
-type SymbolMap = Map<string, { reel: number; row: number; symbol: GameSymbol }>

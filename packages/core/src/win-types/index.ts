@@ -45,6 +45,24 @@ export class WinType {
   protected isWild(symbol: GameSymbol) {
     return !!this.wildSymbol && symbol.compare(this.wildSymbol)
   }
+
+  protected getSymbolPayout(symbol: GameSymbol, count: number) {
+    if (!symbol.pays) return 0
+
+    let clusterSize = 0
+
+    const sizes = Object.keys(symbol.pays)
+      .map((s) => parseInt(s, 10))
+      .filter((n) => Number.isFinite(n))
+      .sort((a, b) => a - b)
+
+    for (const size of sizes) {
+      if (size > count) break
+      clusterSize = size
+    }
+
+    return symbol.pays[clusterSize] || 0
+  }
 }
 
 export interface WinTypeOpts {
@@ -93,3 +111,6 @@ type PostProcessFn<TWinCombs extends WinCombination[]> = (
 }
 
 type WildSymbol = GameSymbol | Record<string, any>
+
+export type SymbolList = Array<{ reel: number; row: number; symbol: GameSymbol }>
+export type SymbolMap = Map<string, { reel: number; row: number; symbol: GameSymbol }>
