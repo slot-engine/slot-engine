@@ -107,6 +107,23 @@ export function onHandleGameFlow(ctx: Context) {
 
 Cluster-based win calculation.
 
+```ts lineNumbers
+import { ClusterWinType } from "@slot-engine/core"
+
+export function onHandleGameFlow(ctx: Context) {
+  const wildSymbol = ctx.config.symbols.get("W")
+
+  const cluster = new ClusterWinType({
+    ctx,
+    wildSymbol,
+  })
+
+  const { payout, winCombinations } = cluster
+    .evaluateWins(ctx.services.board.getBoardReels())
+    .getWins()
+}
+```
+
 ## Manyways Wins
 
 Megaways or 243-ways -esque calculations.
