@@ -51,15 +51,15 @@ export const symbols = defineSymbols({
   H1: new GameSymbol({
     id: "H1",
     pays: {
-      3: 10,
+      3: 20,
       4: 75,
-      5: 250,
+      5: 200,
     },
   }),
   H2: new GameSymbol({
     id: "H2",
     pays: {
-      3: 7,
+      3: 10,
       4: 35,
       5: 150,
     },
@@ -67,7 +67,7 @@ export const symbols = defineSymbols({
   H3: new GameSymbol({
     id: "H3",
     pays: {
-      3: 4,
+      3: 5,
       4: 10,
       5: 50,
     },
@@ -91,25 +91,25 @@ export const symbols = defineSymbols({
   L2: new GameSymbol({
     id: "L2",
     pays: {
-      3: 0.8,
-      4: 1.2,
-      5: 2,
+      3: 0.6,
+      4: 0.8,
+      5: 1.2,
     },
   }),
   L3: new GameSymbol({
     id: "L3",
     pays: {
-      3: 0.6,
-      4: 1,
-      5: 1.5,
+      3: 0.5,
+      4: 0.8,
+      5: 1,
     },
   }),
   L4: new GameSymbol({
     id: "L4",
     pays: {
-      3: 0.5,
-      4: 0.7,
-      5: 1,
+      3: 0.2,
+      4: 0.5,
+      5: 0.8,
     },
   }),
   L5: new GameSymbol({
@@ -288,8 +288,8 @@ export const game = createSlotGame<GameType>({
 
 game.configureSimulation({
   simRunsAmount: {
-    base: 100000,
-    bonus: 100000,
+    base: 20000,
+    bonus: 20000,
   },
   concurrency: 16,
 })
@@ -356,7 +356,7 @@ game.configureOptimization({
     bonus: {
       conditions: {
         freespinsUpgradeToSuperMaxwin: new OptimizationConditions({
-          rtp: 0.06,
+          rtp: 0.12,
           avgWin: 2000,
           searchConditions: {
             criteria: "freespinsUpgradeToSuperMaxwin",
@@ -364,15 +364,15 @@ game.configureOptimization({
           priority: 10,
         }),
         freespinsUpgradeToSuper: new OptimizationConditions({
-          rtp: 0.2,
-          hitRate: 50,
+          rtp: 0.24,
+          hitRate: 25,
           searchConditions: {
             criteria: "freespinsUpgradeToSuper",
           },
           priority: 5,
         }),
         freespins: new OptimizationConditions({
-          rtp: 0.7,
+          rtp: 0.6,
           hitRate: "x",
           searchConditions: {
             criteria: "freespins",
@@ -394,6 +394,6 @@ game.runTasks({
   },
   doAnalysis: true,
   analysisOpts: {
-    gameModes: ["base"],
+    gameModes: ["base", "bonus"],
   },
 })
