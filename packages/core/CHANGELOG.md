@@ -1,5 +1,13 @@
 # @slot-engine/core
 
+## 0.0.10
+
+### Patch Changes
+
+- Add ClusterWinType + Tests - Thanks @nordowl
+
+- Add methods to read/write board symbols - Thanks @nordowl
+
 ## 0.0.9
 
 ### Patch Changes
