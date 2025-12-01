@@ -344,12 +344,30 @@ export class Board {
 
     const newFirstSymbolPositions: Record<number, number> = {}
 
+    /**
+     * A mapping of reel index to the new symbols that were added to that reel during the tumble.\
+     * The topmost added symbols are at the start of the array.
+     */
+    const newBoardSymbols: Record<string, GameSymbol[]> = {}
+
+    /**
+     * A mapping of reel index to the new padding top symbols that were added to that reel during the tumble.
+     * The topmost added symbols are at the start of the array.
+     */
+    const newPaddingTopSymbols: Record<string, GameSymbol[]> = {}
+
     for (let ridx = 0; ridx < reelsAmount; ridx++) {
-      // Drop down padding symbols from top
+      // Drop down padding symbols from top for as long as reel is not filled and padding top has symbols
       while (this.reels[ridx]!.length < symbolsPerReel[ridx]!) {
         const padSymbol = this.paddingTop[ridx]!.pop()
         if (padSymbol) {
           this.reels[ridx]!.unshift(padSymbol)
+
+          if (!newBoardSymbols[ridx]) {
+            newBoardSymbols[ridx] = []
+          }
+
+          newBoardSymbols[ridx]!.unshift(padSymbol)
         } else {
           break
         }
@@ -367,6 +385,12 @@ export class Board {
 
         this.reels[ridx]!.unshift(newSymbol)
         newFirstSymbolPositions[ridx] = symbolPos
+
+        if (!newBoardSymbols[ridx]) {
+          newBoardSymbols[ridx] = []
+        }
+
+        newBoardSymbols[ridx]!.unshift(newSymbol)
       }
     }
 
@@ -383,7 +407,18 @@ export class Board {
         assert(padSymbol, "Failed to get new padding symbol for tumbling.")
 
         this.paddingTop[ridx]!.unshift(padSymbol)
+
+        if (!newPaddingTopSymbols[ridx]) {
+          newPaddingTopSymbols[ridx] = []
+        }
+
+        newPaddingTopSymbols[ridx]!.unshift(padSymbol)
       }
+    }
+
+    return {
+      newBoardSymbols,
+      newPaddingTopSymbols,
     }
   }
 }

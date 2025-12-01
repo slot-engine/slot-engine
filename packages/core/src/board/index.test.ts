@@ -103,12 +103,13 @@ describe("Board", () => {
       { reelIdx: 3, rowIdx: 2 },
     ]
 
-    ctx.services.board.tumbleBoard(symbolsToDelete)
+    const { newBoardSymbols, newPaddingTopSymbols } =
+      ctx.services.board.tumbleBoard(symbolsToDelete)
 
-    const afterBeforeTumble = ctx.services.board.getBoardReels()
+    const boardAfterTumble = ctx.services.board.getBoardReels()
     const paddingTopAfterTumble = ctx.services.board.getPaddingTop()
 
-    idsOnBoard = afterBeforeTumble.map((reel) => reel.map((symbol) => symbol.id))
+    idsOnBoard = boardAfterTumble.map((reel) => reel.map((symbol) => symbol.id))
     paddingTopIds = paddingTopAfterTumble.flatMap((reel) =>
       reel.map((symbol) => symbol.id),
     )
@@ -122,5 +123,17 @@ describe("Board", () => {
     ])
 
     expect(paddingTopIds).toEqual(["A", "C", "A", "A", "C"])
+
+    expect(newBoardSymbols).toEqual({
+      "1": [B, A],
+      "2": [C, B],
+      "3": [A, B],
+    })
+
+    expect(newPaddingTopSymbols).toEqual({
+      "1": [C],
+      "2": [A],
+      "3": [A],
+    })
   })
 })

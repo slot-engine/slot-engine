@@ -180,7 +180,7 @@ export class StandaloneBoard {
    * Tumbles the board. All given symbols will be deleted and new symbols will fall from the top.
    */
   tumbleBoard(symbolsToDelete: Array<{ reelIdx: number; rowIdx: number }>) {
-    this.board.tumbleBoard({
+    return this.board.tumbleBoard({
       ctx: this.ctx,
       symbolsToDelete,
       reelsAmount: this.reelsAmount,

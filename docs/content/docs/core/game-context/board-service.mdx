@@ -274,9 +274,9 @@ Draws a board using random reel stops.
 
 ### tumbleBoard()
 
-| Method                             | Type                        |
-| ---------------------------------- | --------------------------- |
-| `ctx.services.board.tumbleBoard()` | `(symbolsToDelete) => void` |
+| Method                             | Type                                                             |
+| ---------------------------------- | ---------------------------------------------------------------- |
+| `ctx.services.board.tumbleBoard()` | `(symbolsToDelete) => { newBoardSymbols, newPaddingTopSymbols }` |
 
 #### Parameters [!toc]
 
@@ -284,4 +284,15 @@ Draws a board using random reel stops.
 | ----------------- | -------------------------------------------- |
 | `symbolsToDelete` | `Array<{ reelIdx: number; rowIdx: number }>` |
 
+#### Return Object [!toc]
+
+| Parameter              | Type                           |
+| ---------------------- | ------------------------------ |
+| `newBoardSymbols`      | `Record<string, GameSymbol[]>` |
+| `newPaddingTopSymbols` | `Record<string, GameSymbol[]>` |
+
 Tumbles the board. All given symbols will be deleted and new symbols will fall from the top.
+
+The function returns the new symbols that were added to each reel.
+For example, `newBoardSymbols` will be an object where the keys are the reel indexes
+and the values are the added symbols for that reel.
