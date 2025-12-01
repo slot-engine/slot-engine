@@ -73,6 +73,8 @@ pnpm build
 
 ## Running Tests
 
+All tests should pass before submitting a pull request.
+
 To run tests for all packages, use the following command:
 
 ```sh

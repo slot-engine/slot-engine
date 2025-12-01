@@ -20,12 +20,9 @@ Local gaming server. Test your game locally without uploading to Stake Engine an
 [📖 Documentation](https://slot-engine.dev/docs/lgs)
 
 ## To-Do List
-- Add Cluster Win Evaluation Class (`src/winTypes/ClusterWinType.ts`)
-- Add "ManyWays" Win Evaluation Class (`src/winTypes/ManywaysWinType.ts`)
-- Add `tumbleBoard()` utility function (being worked on)
-- Improve type-safety dealing with symbols for reel generators
+- Improve type-safety dealing with symbols for `GeneratedReelSet`
 - Improve overall type-safety for better DX
-- Add tests with Vitest (being worked on)
+- Expand test coverage
 
 PR's are welcome!
 
