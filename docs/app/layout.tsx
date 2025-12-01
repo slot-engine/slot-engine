@@ -2,10 +2,17 @@ import "@/styles/styles.css"
 import { RootProvider } from "fumadocs-ui/provider/next"
 import { Banner } from "fumadocs-ui/components/banner"
 import { Archivo } from "next/font/google"
+import { Metadata } from "next"
 
 const archivo = Archivo({
   subsets: ["latin"],
 })
+
+export const metadata: Metadata = {
+  title: "Slot Engine - Build highly customizable slot games using TypeScript",
+  description:
+    "Build slot games with TypeScript. Compatible with Stake Engine and Stakes Math SDK. Highly customizable.",
+}
 
 export default function Layout({ children }: LayoutProps<"/">) {
   return (
