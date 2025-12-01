@@ -16,13 +16,6 @@ Local gaming server. Test your game locally without uploading to Stake Engine an
 
 [📖 Documentation](https://slot-engine.dev/docs/lgs)
 
-## To-Do List
-- Improve type-safety dealing with symbols for `GeneratedReelSet`
-- Improve overall type-safety for better DX
-- Expand test coverage
-
-PR's are welcome!
-
 ## Contributing
 
 See [the contributing guide](CONTRIBUTING.md) for more information.
