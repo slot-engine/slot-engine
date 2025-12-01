@@ -112,5 +112,6 @@ type PostProcessFn<TWinCombs extends WinCombination[]> = (
 
 type WildSymbol = GameSymbol | Record<string, any>
 
-export type SymbolList = Array<{ reel: number; row: number; symbol: GameSymbol }>
-export type SymbolMap = Map<string, { reel: number; row: number; symbol: GameSymbol }>
+export type Symbol = { reel: number; row: number; symbol: GameSymbol }
+export type SymbolList = Array<Symbol>
+export type SymbolMap = Map<string, Symbol>

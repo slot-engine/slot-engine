@@ -57,7 +57,6 @@ export class LinesWinType extends WinType {
     this.validateConfig()
 
     const lineWins: LineWinCombination[] = []
-    let payout = 0
 
     const reels = board
 

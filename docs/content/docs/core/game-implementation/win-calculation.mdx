@@ -127,3 +127,20 @@ export function onHandleGameFlow(ctx: Context) {
 ## Manyways Wins
 
 Megaways or 243-ways -esque calculations.
+
+```ts lineNumbers
+import { ManywaysWinType } from "@slot-engine/core"
+
+export function onHandleGameFlow(ctx: Context) {
+  const wildSymbol = ctx.config.symbols.get("W")
+
+  const ways = new ManywaysWinType({
+    ctx,
+    wildSymbol,
+  })
+
+  const { payout, winCombinations } = ways
+    .evaluateWins(ctx.services.board.getBoardReels())
+    .getWins()
+}
+```

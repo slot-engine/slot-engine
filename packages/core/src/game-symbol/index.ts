@@ -32,6 +32,17 @@ export class GameSymbol {
       return true
     }
   }
+
+  /**
+   * Creates a clone of this GameSymbol.
+   */
+  clone() {
+    return new GameSymbol({
+      id: this.id,
+      pays: this.pays ? { ...this.pays } : undefined,
+      properties: Object.fromEntries(this.properties),
+    })
+  }
 }
 
 export interface GameSymbolOpts {
