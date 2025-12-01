@@ -10,3 +10,7 @@ runs:
     - name: Typecheck
       run: pnpm typecheck
       shell: bash
+
+    - name: Test
+      run: pnpm test
+      shell: bash
