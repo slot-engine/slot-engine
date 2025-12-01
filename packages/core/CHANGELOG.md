@@ -1,5 +1,13 @@
 # @slot-engine/core
 
+## 0.0.11
+
+### Patch Changes
+
+- Fixed tumbleBoard and added tests - Thanks @nordowl
+
+- **BREAKING**: `drawBoardWithForcedStops` now accepts an options object instead of multiple parameters. - Thanks @nordowl
+
 ## 0.0.10
 
 ### Patch Changes
