@@ -265,7 +265,7 @@ export class Board {
 
         const symCount = symbolsPerReel[reelIdx]!
 
-        if (opts.forcedStopsOffset) {
+        if (opts.forcedStopsOffset !== false) {
           finalReelStops[reelIdx] =
             stopPos - Math.round(opts.ctx.services.rng.randomFloat(0, symCount - 1))
         } else {
