@@ -70,8 +70,9 @@ reducing developer confusion and improving code clarity for developers.
 
 ### Game Flow
 
-Stake's Math SDK provides pre-built functions for common game mechanics,
-such as `draw_board()` for generating symbol layouts and `check_fs_condition()` for validating free spin triggers.
+_(This text explains some opinions of the author and the reason for certain design decisions)_
+
+Stake's Math SDK provides pre-built functions for common game mechanics.
 However, these functions are designed for standard game patterns and often fall short when implementing unique features.
 For instance, the default functions cannot accommodate super bonus mechanics without modification.
 Since every slot game has distinctive requirements, developers frequently need to override
@@ -83,6 +84,6 @@ the Core library provides granular utility functions that serve as building bloc
 
 Developers implement their complete game flow within a single hook function that integrates with the game configuration.
 This hook orchestrates the entire game sequence using utility functions combined with custom code.
-While this approach may initially appear more complex than using pre-built functions, it offers significant advantages:
+While this approach may initially appear more complex than navigating pre-built functions, it offers significant advantages:
 it eliminates the need to navigate complex source code hierarchies and override multiple interconnected functions,
 ultimately providing developers with greater flexibility to create truly customized gaming experiences.

@@ -206,7 +206,7 @@ freespinsUpgradeToSuper: new OptimizationConditions({
 <Callout title="Developer Comment">
   Since the optimizer is created by Stake and not the Slot Engine team, [consult their
   docs](https://stake-engine.com/docs/math/optimization-algorithm) for any more
-  information you may need, or ask on the Stake Engine Discord server.
+  information you may need, or ask in the Stake Engine Discord server.
 </Callout>
 
 #### Properties
@@ -244,17 +244,19 @@ scaling: new OptimizationScaling([
 
 #### Properties
 
+All properties are required.
+
 | Property      | Type               | Description                                                                 |
 | ------------- | ------------------ | --------------------------------------------------------------------------- |
 | `criteria`    | `string`           | The criteria name of a result set or optimization conditions, respectively. |
 | `scaleFactor` | `number`           | The factor which the odds of hitting the win range is multiplied by.        |
 | `winRange`    | `[number, number]` | The target win range, e.g. `[50, 150]`.                                     |
-| `probability` | `number`           | The probability (0-1) of the scaling being actually applied.                |
+| `probability` | `number`           | The probability (0-1) of the scaling being actually applied. Typically 1.   |
 
 <Callout title="Developer Comment">
   Since the optimizer is created by Stake and not the Slot Engine team, [consult their
   docs](https://stake-engine.com/docs/math/optimization-algorithm) for any more
-  information you may need, or ask on the Stake Engine Discord server.
+  information you may need, or ask in the Stake Engine Discord server.
 </Callout>
 
 ### Optimization Parameters
@@ -285,5 +287,5 @@ All properties are optional.
 <Callout title="Developer Comment">
   Since the optimizer is created by Stake and not the Slot Engine team, [consult their
   docs](https://stake-engine.com/docs/math/optimization-algorithm) for any more
-  information you may need, or ask on the Stake Engine Discord server.
+  information you may need, or ask in the Stake Engine Discord server.
 </Callout>

@@ -2,6 +2,10 @@
 @import "fumadocs-ui/css/vitepress.css";
 @import "fumadocs-ui/css/preset.css";
 
+html, body {
+  scroll-behavior: smooth;
+}
+
 strong {
   text-decoration: underline;
   text-decoration-color: var(--color-fd-primary);
