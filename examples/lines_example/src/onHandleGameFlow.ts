@@ -55,7 +55,10 @@ function drawBoard(ctx: Context) {
         numScatters,
       )
 
-      ctx.services.board.drawBoardWithForcedStops(reels, scatterReelStops)
+      ctx.services.board.drawBoardWithForcedStops({
+        reels,
+        forcedStops: scatterReelStops,
+      })
 
       const scatInvalid = ctx.services.board.isSymbolOnAnyReelMultipleTimes(scatter)
       const [scatCount] = ctx.services.board.countSymbolsOnBoard(scatter)
@@ -291,7 +294,10 @@ function drawSuperFSTriggerBoard(
       numScatters,
     )
 
-    ctx.services.board.drawBoardWithForcedStops(reels, scatterReelStops)
+    ctx.services.board.drawBoardWithForcedStops({
+      reels,
+      forcedStops: scatterReelStops,
+    })
 
     const scatInvalid = ctx.services.board.isSymbolOnAnyReelMultipleTimes(scatter)
     const superScatInvalid =

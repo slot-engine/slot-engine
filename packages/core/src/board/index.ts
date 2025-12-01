@@ -240,6 +240,7 @@ export class Board {
     ctx: GameContext
     reels: Reels
     forcedStops?: Record<string, number>
+    forcedStopsOffset?: boolean
     reelsAmount?: number
     symbolsPerReel?: number[]
     padSymbols?: number
@@ -264,8 +265,12 @@ export class Board {
 
         const symCount = symbolsPerReel[reelIdx]!
 
-        finalReelStops[reelIdx] =
-          stopPos - Math.round(opts.ctx.services.rng.randomFloat(0, symCount - 1))
+        if (opts.forcedStopsOffset) {
+          finalReelStops[reelIdx] =
+            stopPos - Math.round(opts.ctx.services.rng.randomFloat(0, symCount - 1))
+        } else {
+          finalReelStops[reelIdx] = stopPos
+        }
 
         if (finalReelStops[reelIdx]! < 0) {
           finalReelStops[reelIdx] = opts.reels[reelIdx]!.length + finalReelStops[reelIdx]!
@@ -330,7 +335,10 @@ export class Board {
 
     const reels = this.lastUsedReels
 
-    opts.symbolsToDelete.forEach(({ reelIdx, rowIdx }) => {
+    // Sort deletions by row index descending to avoid index shifting issues
+    const sortedDeletions = [...opts.symbolsToDelete].sort((a, b) => b.rowIdx - a.rowIdx)
+
+    sortedDeletions.forEach(({ reelIdx, rowIdx }) => {
       this.reels[reelIdx]!.splice(rowIdx, 1)
     })
 
@@ -365,6 +373,9 @@ export class Board {
     // Add new padding top symbols
     for (let ridx = 0; ridx < reelsAmount; ridx++) {
       const firstSymbolPos = newFirstSymbolPositions[ridx]!
+
+      if (firstSymbolPos === undefined) continue
+
       for (let p = 1; p <= padSymbols; p++) {
         const topPos = (firstSymbolPos - p + reels[ridx]!.length) % reels[ridx]!.length
         const padSymbol = reels[ridx]![topPos]

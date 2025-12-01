@@ -2,7 +2,6 @@ import fs from "fs"
 import path from "path"
 import { GameConfig } from "../game-config"
 import { RandomNumberGenerator } from "../service/rng"
-import { Simulation } from "../simulation"
 import { Reels } from "../types"
 
 export class ReelSet {
@@ -19,7 +18,7 @@ export class ReelSet {
     this.rng.setSeed(opts.seed ?? 0)
   }
 
-  generateReels(simulation: Simulation) {
+  generateReels(config: GameConfig): ReelSet {
     throw new Error("Not implemented")
   }
 

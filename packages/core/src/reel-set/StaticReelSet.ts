@@ -1,7 +1,6 @@
 import assert from "assert"
 import { ReelSet, ReelSetOptions } from "."
 import { GameConfig } from "../game-config"
-import { Simulation } from "../simulation"
 import { Reels } from "../types"
 
 /**
@@ -43,7 +42,7 @@ export class StaticReelSet extends ReelSet {
     }
   }
 
-  generateReels({ gameConfig: config }: Simulation) {
+  generateReels(config: GameConfig) {
     this.validateConfig(config)
 
     if (this._strReels.length > 0) {
@@ -63,6 +62,8 @@ export class StaticReelSet extends ReelSet {
     if (this.csvPath) {
       this.reels = this.parseReelsetCSV(this.csvPath, config)
     }
+
+    return this
   }
 }
 

@@ -4,7 +4,6 @@ import { isMainThread } from "worker_threads"
 import { ReelSet, ReelSetOptions } from "."
 import { GameConfig } from "../game-config"
 import { GameSymbol } from "../game-symbol"
-import { Simulation } from "../simulation"
 
 /**
  * This class is responsible for generating reel sets for slot games based on specified configurations.
@@ -190,7 +189,7 @@ export class GeneratedReelSet extends ReelSet {
     return false
   }
 
-  generateReels({ gameConfig: config }: Simulation) {
+  generateReels(config: GameConfig) {
     this.validateConfig(config)
 
     const gameMode = config.gameModes[this.associatedGameModeName]
@@ -210,7 +209,7 @@ export class GeneratedReelSet extends ReelSet {
 
     if (exists && !this.overrideExisting) {
       this.reels = this.parseReelsetCSV(filePath, config)
-      return
+      return this
     }
 
     if (!exists && this.symbolWeights.size === 0) {
@@ -421,6 +420,8 @@ export class GeneratedReelSet extends ReelSet {
         `Generated reelset ${this.id} for game mode ${this.associatedGameModeName}`,
       )
     }
+
+    return this
   }
 }
 

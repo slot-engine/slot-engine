@@ -145,8 +145,12 @@ export class StandaloneBoard {
   /**
    * Draws a board using specified reel stops.
    */
-  drawBoardWithForcedStops(reels: Reels, forcedStops: Record<string, number>) {
-    this.drawBoardMixed(reels, forcedStops)
+  drawBoardWithForcedStops(opts: {
+    reels: Reels
+    forcedStops: Record<string, number>
+    randomOffset?: boolean
+  }) {
+    this.drawBoardMixed(opts.reels, opts.forcedStops, opts.randomOffset)
   }
 
   /**
@@ -156,11 +160,16 @@ export class StandaloneBoard {
     this.drawBoardMixed(reels)
   }
 
-  private drawBoardMixed(reels: Reels, forcedStops?: Record<string, number>) {
+  private drawBoardMixed(
+    reels: Reels,
+    forcedStops?: Record<string, number>,
+    forcedStopsOffset?: boolean,
+  ) {
     this.board.drawBoardMixed({
       ctx: this.ctx,
       reels,
       forcedStops,
+      forcedStopsOffset,
       reelsAmount: this.reelsAmount,
       symbolsPerReel: this.symbolsPerReel,
       padSymbols: this.padSymbols,

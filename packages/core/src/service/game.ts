@@ -1,4 +1,5 @@
 import { AbstractService } from "."
+import { GameConfig } from "../game-config"
 import { GameContext } from "../game-context"
 import { AnyGameModes, AnySymbols, AnyUserData, SpinType } from "../types"
 
@@ -10,6 +11,26 @@ export class GameService<
   constructor(ctx: () => GameContext<TGameModes, TSymbols, TUserState>) {
     // @ts-ignore TODO: Fix type errors with AnyTypes
     super(ctx)
+  }
+
+  /**
+   * Intended for internal use only.\
+   * Generates reels for all reel sets in the game configuration.
+   */
+  _generateReels() {
+    const config = this.ctx().config
+    for (const mode of Object.values(config.gameModes)) {
+      if (mode.reelSets && mode.reelSets.length > 0) {
+        for (const reelSet of Object.values(mode.reelSets)) {
+          reelSet.associatedGameModeName = mode.name
+          reelSet.generateReels(config)
+        }
+      } else {
+        throw new Error(
+          `Game mode "${mode.name}" has no reel sets defined. Cannot generate reelset files.`,
+        )
+      }
+    }
   }
 
   /**

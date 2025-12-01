@@ -213,7 +213,10 @@ const scatter = config.symbols.get("S")!
 const reelStops = ctx.services.board.getReelStopsForSymbol(reels, scatter)
 const scatterReelStops = ctx.services.board.getRandomReelStops(reels, reelStops, 3)
 
-ctx.services.board.drawBoardWithForcedStops(reels, scatterReelStops)
+ctx.services.board.drawBoardWithForcedStops({
+  reels,
+  forcedStops: scatterReelStops,
+})
 ```
 
 ### getRandomReelset()
@@ -226,16 +229,17 @@ Selects a random reel set based on the configured weights of the current result 
 
 ### drawBoardWithForcedStops()
 
-| Method                                          | Type                           |
-| ----------------------------------------------- | ------------------------------ |
-| `ctx.services.board.drawBoardWithForcedStops()` | `(reels, forcedStops) => void` |
+| Method                                          | Type                                                   |
+| ----------------------------------------------- | ------------------------------------------------------ |
+| `ctx.services.board.drawBoardWithForcedStops()` | `(opts: { reels, forcedStops, randomOffset }) => void` |
 
 #### Parameters [!toc]
 
-| Parameter     | Type                     |
-| ------------- | ------------------------ |
-| `reels`       | `Reels`                  |
-| `forcedStops` | `Record<string, number>` |
+| Parameter           | Type                     | Description                                                                                                                                         | Required |
+| ------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `opts.reels`        | `Reels`                  |                                                                                                                                                     | yes      |
+| `opts.forcedStops`  | `Record<string, number>` |                                                                                                                                                     | yes      |
+| `opts.randomOffset` | `boolean`                | Whether to apply a random offset to the stops. Adds a bit of randomization to where exactly your forced symbol lands on the reel.<br/>Default: true |
 
 Draws a board using specified reel stops.
 
@@ -248,7 +252,10 @@ const scatter = config.symbols.get("S")!
 const reelStops = ctx.services.board.getReelStopsForSymbol(reels, scatter)
 const scatterReelStops = ctx.services.board.getRandomReelStops(reels, reelStops, 3)
 
-ctx.services.board.drawBoardWithForcedStops(reels, scatterReelStops)
+ctx.services.board.drawBoardWithForcedStops({
+  reels,
+  forcedStops: scatterReelStops,
+})
 ```
 
 ### drawBoardWithRandomStops()
