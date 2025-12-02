@@ -134,4 +134,40 @@ describe("LinesWinType", () => {
     expect(winCombinations[0]?.baseSymbol.id).toBe("W")
     expect(payout).toBe(3)
   })
+
+  it("post processes the payout", () => {
+    reels = [
+      [W, C, B],
+      [W, C, B],
+      [W, C, B],
+      [W, C, B],
+      [A, C, B],
+    ]
+
+    const lines = new LinesWinType({
+      ctx,
+      wildSymbol: W,
+      lines: {
+        1: [0, 0, 0, 0, 0],
+      },
+    })
+
+    const { payout, winCombinations } = lines
+      .evaluateWins(reels)
+      .postProcess(wins => {
+        const newWins = wins.map(w => ({
+          ...w,
+          payout: w.payout * 2,
+        }))
+        
+        return {
+          winCombinations: newWins,
+        }
+      })
+      .getWins()
+
+    expect(winCombinations.length).toBe(1)
+    expect(winCombinations[0]?.baseSymbol.id).toBe("W")
+    expect(payout).toBe(6)
+  })
 })

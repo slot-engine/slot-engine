@@ -51,20 +51,16 @@ After calculating wins you have the option to process them further, e.g. multipl
 ```ts lineNumbers
 const { payout, winCombinations } = lines
   .evaluateWins(ctx.services.board.getBoardReels())
-  .postProcess((winType, ctx) => {
+  .postProcess((wins, ctx) => {
     // Example: Apply 2x multiplier during free spins
-    const { payout, winCombinations } = winType.getWins()
 
     let multiplier = 1
     if (ctx.state.currentSpinType === SPIN_TYPE.FREE_SPINS) {
       multiplier = 2
     }
 
-    const newPayout = payout * multiplier
-
     return {
-      payout: newPayout,
-      winCombinations: winCombinations.map((w) => ({
+      winCombinations: wins.map((w) => ({
         ...w,
         payout: w.payout * multiplier,
       })),
@@ -72,6 +68,9 @@ const { payout, winCombinations } = lines
   })
   .getWins()
 ```
+
+`postProcess` should return the modified win combinations. The resulting total `payout` from `getWins()`
+will be recalculated based on your modifications to the win combinations.
 
 While you're not forced to use `postProcess()` to modify the win data,
 it provides an opinionated way of writing cohesive win evaluation logic.
