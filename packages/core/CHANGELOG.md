@@ -1,5 +1,31 @@
 # @slot-engine/core
 
+## 0.1.1
+
+### Patch Changes
+
+- Adjust how `WinType.postProcess` works - Thanks @nordowl
+
+  `postProcess` now must return only the modified win combinations.
+  The total `payout` is automatically calculated from the modified win combinations
+  and must not be explicitly returned anymore.
+
+  ```ts
+  const { payout, winCombinations } = lines
+    .evaluateWins(reels)
+    .postProcess((wins) => {
+      const newWins = wins.map((w) => ({
+        ...w,
+        payout: w.payout * 2,
+      }))
+
+      return {
+        winCombinations: newWins,
+      }
+    })
+    .getWins()
+  ```
+
 ## 0.1.0
 
 ### Minor Changes
