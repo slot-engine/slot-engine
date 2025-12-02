@@ -1,5 +1,17 @@
 # @slot-engine/core
 
+## 0.1.3
+
+### Patch Changes
+
+- Fix check in optimizer - Thanks @nordowl
+
+  Previously, each optimization condition needed to have a corresponding `ResultSet` in a game mode.
+  This was wrong - it should be the other way around.
+
+  Instead, now an optimization condition is not bound to a specific `ResultSet`.
+  Each `ResultSet` however must have an optimization condition defined.
+
 ## 0.1.2
 
 ### Patch Changes
