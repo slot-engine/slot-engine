@@ -55,7 +55,7 @@ export function makeMathConfig(
   }
 
   if (writeToFile) {
-    const outPath = path.join(process.cwd(), game.outputDir, "math_config.json")
+    const outPath = path.join(game.rootDir, game.outputDir, "math_config.json")
     writeJsonFile(outPath, config)
   }
 

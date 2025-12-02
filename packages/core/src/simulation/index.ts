@@ -93,10 +93,14 @@ export class Simulation {
         await this.spawnWorkersForGameMode({ mode, simNumsToCriteria })
 
         createDirIfNotExists(
-          path.join(process.cwd(), this.gameConfig.outputDir, "optimization_files"),
+          path.join(
+            this.gameConfig.rootDir,
+            this.gameConfig.outputDir,
+            "optimization_files",
+          ),
         )
         createDirIfNotExists(
-          path.join(process.cwd(), this.gameConfig.outputDir, "publish_files"),
+          path.join(this.gameConfig.rootDir, this.gameConfig.outputDir, "publish_files"),
         )
 
         this.writeLookupTableCSV(mode)
@@ -173,7 +177,7 @@ export class Simulation {
     await Promise.all(
       simRangesPerChunk.map(([simStart, simEnd], index) => {
         return this.callWorker({
-          basePath: this.gameConfig.outputDir,
+          basePath: path.join(this.gameConfig.rootDir, this.gameConfig.outputDir),
           mode,
           simStart,
           simEnd,
@@ -206,7 +210,7 @@ export class Simulation {
     }
 
     return new Promise((resolve, reject) => {
-      const scriptPath = path.join(process.cwd(), basePath, TEMP_FILENAME)
+      const scriptPath = path.join(basePath, TEMP_FILENAME)
 
       const worker = new Worker(scriptPath, {
         workerData: {
@@ -368,11 +372,20 @@ export class Simulation {
     rows.sort((a, b) => Number(a.split(",")[0]) - Number(b.split(",")[0]))
 
     let outputFileName = `lookUpTable_${gameMode}.csv`
-    let outputFilePath = path.join(this.gameConfig.outputDir, outputFileName)
+    let outputFilePath = path.join(
+      this.gameConfig.rootDir,
+      this.gameConfig.outputDir,
+      outputFileName,
+    )
     writeFile(outputFilePath, rows.join("\n"))
 
     outputFileName = `lookUpTable_${gameMode}_0.csv`
-    outputFilePath = path.join(this.gameConfig.outputDir, "publish_files", outputFileName)
+    outputFilePath = path.join(
+      this.gameConfig.rootDir,
+      this.gameConfig.outputDir,
+      "publish_files",
+      outputFileName,
+    )
     writeFile(outputFilePath, rows.join("\n"))
 
     return outputFilePath
@@ -392,7 +405,11 @@ export class Simulation {
 
     const outputFileName = `lookUpTableSegmented_${gameMode}.csv`
 
-    const outputFilePath = path.join(this.gameConfig.outputDir, outputFileName)
+    const outputFilePath = path.join(
+      this.gameConfig.rootDir,
+      this.gameConfig.outputDir,
+      outputFileName,
+    )
     writeFile(outputFilePath, rows.join("\n"))
 
     return outputFilePath
@@ -400,7 +417,11 @@ export class Simulation {
 
   private writeRecords(gameMode: string) {
     const outputFileName = `force_record_${gameMode}.json`
-    const outputFilePath = path.join(this.gameConfig.outputDir, outputFileName)
+    const outputFilePath = path.join(
+      this.gameConfig.rootDir,
+      this.gameConfig.outputDir,
+      outputFileName,
+    )
     writeFile(outputFilePath, JSON.stringify(this.recorder.records, null, 2))
 
     if (this.debug) this.logSymbolOccurrences()
@@ -410,7 +431,7 @@ export class Simulation {
 
   private writeIndexJson() {
     const outputFilePath = path.join(
-      process.cwd(),
+      this.gameConfig.rootDir,
       this.gameConfig.outputDir,
       "publish_files",
       "index.json",
@@ -434,7 +455,11 @@ export class Simulation {
   private async writeBooksJson(gameMode: string) {
     const outputFileName = `books_${gameMode}.jsonl`
 
-    const outputFilePath = path.join(this.gameConfig.outputDir, outputFileName)
+    const outputFilePath = path.join(
+      this.gameConfig.rootDir,
+      this.gameConfig.outputDir,
+      outputFileName,
+    )
     const books = Array.from(this.library.values())
       .map((b) => b.serialize())
       .map((b) => ({
@@ -451,7 +476,7 @@ export class Simulation {
     const compressedFileName = `books_${gameMode}.jsonl.zst`
 
     const compressedFilePath = path.join(
-      process.cwd(),
+      this.gameConfig.rootDir,
       this.gameConfig.outputDir,
       "publish_files",
       compressedFileName,
@@ -499,13 +524,21 @@ export class Simulation {
    * Compiles user configured game to JS for use in different Node processes
    */
   private preprocessFiles() {
-    const builtFilePath = path.join(this.gameConfig.outputDir, TEMP_FILENAME)
+    const builtFilePath = path.join(
+      this.gameConfig.rootDir,
+      this.gameConfig.outputDir,
+      TEMP_FILENAME,
+    )
     fs.rmSync(builtFilePath, { force: true })
     buildSync({
-      entryPoints: [process.cwd()],
+      entryPoints: [this.gameConfig.rootDir],
       bundle: true,
       platform: "node",
-      outfile: path.join(this.gameConfig.outputDir, TEMP_FILENAME),
+      outfile: path.join(
+        this.gameConfig.rootDir,
+        this.gameConfig.outputDir,
+        TEMP_FILENAME,
+      ),
       external: ["esbuild"],
     })
   }

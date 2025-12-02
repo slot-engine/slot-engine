@@ -45,7 +45,7 @@ export class Analysis {
   }
 
   private getPathsForModes(gameModes: string[]) {
-    const rootPath = process.cwd()
+    const rootPath = this.gameConfig.rootDir
     const paths: Record<string, FilePaths> = {}
 
     for (const modeStr of gameModes) {
@@ -126,7 +126,7 @@ export class Analysis {
     }
 
     writeJsonFile(
-      path.join(process.cwd(), this.gameConfig.outputDir, "stats_summary.json"),
+      path.join(this.gameConfig.rootDir, this.gameConfig.outputDir, "stats_summary.json"),
       stats,
     )
   }
@@ -250,7 +250,7 @@ export class Analysis {
     }
 
     writeJsonFile(
-      path.join(process.cwd(), this.gameConfig.outputDir, "stats_payouts.json"),
+      path.join(this.gameConfig.rootDir, this.gameConfig.outputDir, "stats_payouts.json"),
       payoutRanges,
     )
   }

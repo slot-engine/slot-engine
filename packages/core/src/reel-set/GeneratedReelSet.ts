@@ -201,6 +201,7 @@ export class GeneratedReelSet extends ReelSet {
     }
 
     const filePath = path.join(
+      config.rootDir,
       config.outputDir,
       `reels_${this.associatedGameModeName}-${this.id}.csv`,
     )
