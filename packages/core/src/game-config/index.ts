@@ -64,6 +64,12 @@ export interface GameConfigOptions<
    * Some required hooks must be implemented for certain features to work.
    */
   hooks: GameHooks<TGameModes, TSymbols, TUserState>
+  /**
+   * If, for some reason, you run your game WITHOUT `cd`ing into the game root,\
+   * you can specify the root directory here to ensure assets are resolved correctly.\
+   * Normally, this is not needed.
+   */
+  rootDir?: string
 }
 
 export function createGameConfig<
@@ -79,7 +85,9 @@ export function createGameConfig<
   }
 
   const getAnticipationTrigger = (spinType: string) => {
-    return Math.min(...Object.keys(opts.scatterToFreespins[spinType] || {}).map(Number)) - 1
+    return (
+      Math.min(...Object.keys(opts.scatterToFreespins[spinType] || {}).map(Number)) - 1
+    )
   }
 
   return {
@@ -92,6 +100,7 @@ export function createGameConfig<
       [SPIN_TYPE.FREE_SPINS]: getAnticipationTrigger(SPIN_TYPE.FREE_SPINS),
     },
     outputDir: "__build__",
+    rootDir: opts.rootDir || process.cwd(),
   }
 }
 
@@ -105,6 +114,7 @@ export type GameConfig<
    */
   symbols: Map<keyof TSymbols & string, TSymbols[keyof TSymbols]>
   outputDir: string
+  rootDir: string
   /**
    * A mapping of spin types to the number of scatter symbols required to trigger anticipation.
    */
