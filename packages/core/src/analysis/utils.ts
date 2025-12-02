@@ -11,7 +11,21 @@ export function parseLookupTable(content: string) {
   return lut
 }
 
+export function parseLookupTableSegmented(content: string) {
+  const lines = content.trim().split("\n")
+  const lut: LookupTableSegmented = []
+  for (const line of lines) {
+    const [indexStr, criteria, weightStr, payoutStr] = line.split(",")
+    const index = parseInt(indexStr!.trim())
+    const weight = parseInt(weightStr!.trim())
+    const payout = parseFloat(payoutStr!.trim())
+    lut.push([index, criteria!, weight, payout])
+  }
+  return lut
+}
+
 export type LookupTable = [number, number, number][]
+export type LookupTableSegmented = [number, string, number, number][]
 
 export function getTotalLutWeight(lut: LookupTable) {
   return lut.reduce((sum, [, weight]) => sum + weight, 0)

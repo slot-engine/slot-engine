@@ -18,6 +18,7 @@ import {
   getUniquePayouts,
   getVariance,
   parseLookupTable,
+  parseLookupTableSegmented,
 } from "./utils"
 import { writeJsonFile } from "../../utils"
 import { isMainThread } from "worker_threads"
@@ -154,13 +155,23 @@ export class Analysis {
       [20000, 24999.99],
     ]
 
-    const payoutRanges: Record<string, Record<string, number>> = {}
+    const payoutRanges: Record<
+      string,
+      {
+        overall: Record<string, number>
+        criteria: Record<string, Record<string, number>>
+      }
+    > = {}
 
     for (const modeStr of gameModes) {
-      payoutRanges[modeStr] = {}
+      payoutRanges[modeStr] = { overall: {}, criteria: {} }
 
       const lutOptimized = parseLookupTable(
         fs.readFileSync(this.filePaths[modeStr]!.lutOptimized, "utf-8"),
+      )
+
+      const lutSegmented = parseLookupTableSegmented(
+        fs.readFileSync(this.filePaths[modeStr]!.lutSegmented, "utf-8"),
       )
 
       lutOptimized.forEach(([, , p]) => {
@@ -168,27 +179,74 @@ export class Analysis {
         for (const [min, max] of winRanges) {
           if (payout >= min && payout <= max) {
             const rangeKey = `${min}-${max}`
-            if (!payoutRanges[modeStr]![rangeKey]) {
-              payoutRanges[modeStr]![rangeKey] = 0
+            if (!payoutRanges[modeStr]!.overall[rangeKey]) {
+              payoutRanges[modeStr]!.overall[rangeKey] = 0
             }
-            payoutRanges[modeStr]![rangeKey] += 1
+            payoutRanges[modeStr]!.overall[rangeKey] += 1
             break
           }
         }
       })
 
-      const orderedRanges: Record<string, number> = {}
-      Object.keys(payoutRanges[modeStr]!)
+      lutSegmented.forEach(([, criteria, bp, fsp]) => {
+        const basePayout = bp / 100
+        const freeSpinPayout = fsp / 100
+        const payout = basePayout + freeSpinPayout
+
+        for (const [min, max] of winRanges) {
+          if (payout >= min && payout <= max) {
+            const rangeKey = `${min}-${max}`
+
+            // Overall
+            if (!payoutRanges[modeStr]!.overall[rangeKey]) {
+              payoutRanges[modeStr]!.overall[rangeKey] = 0
+            }
+            payoutRanges[modeStr]!.overall[rangeKey] += 1
+
+            // Criteria
+            if (!payoutRanges[modeStr]!.criteria[criteria]) {
+              payoutRanges[modeStr]!.criteria[criteria] = {}
+            }
+            if (!payoutRanges[modeStr]!.criteria[criteria]![rangeKey]) {
+              payoutRanges[modeStr]!.criteria[criteria]![rangeKey] = 0
+            }
+            payoutRanges[modeStr]!.criteria[criteria]![rangeKey] += 1
+            break
+          }
+        }
+      })
+
+      const orderedOverall: Record<string, number> = {}
+      Object.keys(payoutRanges[modeStr]!.overall)
         .sort((a, b) => {
           const [aMin] = a.split("-").map(Number)
           const [bMin] = b.split("-").map(Number)
           return aMin! - bMin!
         })
         .forEach((key) => {
-          orderedRanges[key] = payoutRanges[modeStr]![key]!
+          orderedOverall[key] = payoutRanges[modeStr]!.overall[key]!
         })
 
-      payoutRanges[modeStr] = orderedRanges
+      const orderedCriteria: Record<string, Record<string, number>> = {}
+      Object.keys(payoutRanges[modeStr]!.criteria).forEach((crit) => {
+        const critMap = payoutRanges[modeStr]!.criteria[crit]!
+        const orderedCritMap: Record<string, number> = {}
+        Object.keys(critMap)
+          .sort((a, b) => {
+            const [aMin] = a.split("-").map(Number)
+            const [bMin] = b.split("-").map(Number)
+            return aMin! - bMin!
+          })
+          .forEach((key) => {
+            orderedCritMap[key] = critMap[key]!
+          })
+        orderedCriteria[crit] = orderedCritMap
+      })
+
+      payoutRanges[modeStr] = {
+        overall: orderedOverall,
+        criteria: orderedCriteria,
+      }
     }
 
     writeJsonFile(
