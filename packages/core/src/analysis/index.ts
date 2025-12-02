@@ -245,7 +245,7 @@ export class Analysis {
 
       payoutRanges[modeStr] = {
         overall: orderedOverall,
-        criteria: orderedCriteria,
+        criteria: {},
       }
     }
 
