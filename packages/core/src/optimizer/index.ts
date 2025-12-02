@@ -61,12 +61,6 @@ export class Optimizer {
         }
       }
 
-      const criteria = configMode.resultSets.map((r) => r.criteria)
-      assert(
-        conditions.every((c) => criteria.includes(c)),
-        `Not all ResultSet criteria in game mode "${k}" are defined as optimization conditions.`,
-      )
-
       let gameModeRtp = configMode.rtp
       let paramRtp = 0
       for (const cond of conditions) {
