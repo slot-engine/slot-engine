@@ -53,10 +53,10 @@ export class Optimizer {
       const scalings = Object.keys(mode.scaling)
       const parameters = Object.keys(mode.parameters)
 
-      for (const condition of conditions) {
-        if (!configMode.resultSets.find((r) => r.criteria === condition)) {
+      for (const rs of configMode.resultSets) {
+        if (!conditions.includes(rs.criteria)) {
           throw new Error(
-            `Condition "${condition}" defined in optimizer config for game mode "${k}" does not exist as criteria in any ResultSet of the same game mode.`,
+            `ResultSet criteria "${rs.criteria}" in game mode "${k}" does not have a corresponding optimization condition defined.`,
           )
         }
       }
