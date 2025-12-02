@@ -9,9 +9,6 @@ export class ManywaysWinType extends WinType {
     winCombinations: ManywaysWinCombination[]
   }
 
-  private _checked: SymbolList = []
-  private _checkedWilds: SymbolList = []
-
   constructor(opts: ManywaysWinTypeOpts) {
     super(opts)
   }
@@ -143,14 +140,6 @@ export class ManywaysWinType extends WinType {
 
   private getWayLength(symbolList: Record<string, SymbolList>) {
     return Math.max(...Object.keys(symbolList).map((k) => parseInt(k, 10))) + 1
-  }
-
-  private isChecked(ridx: number, sidx: number) {
-    return !!this._checked.find((c) => c.reel === ridx && c.row === sidx)
-  }
-
-  private isCheckedWild(ridx: number, sidx: number) {
-    return !!this._checkedWilds.find((c) => c.reel === ridx && c.row === sidx)
   }
 }
 
