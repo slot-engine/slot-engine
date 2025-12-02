@@ -1,5 +1,13 @@
 # @slot-engine/core
 
+## 0.1.2
+
+### Patch Changes
+
+- Fix bugs and improve optimizer logging - Thanks @nordowl
+
+- Fix issue with root path ([#21](https://github.com/slot-engine/slot-engine/pull/21)) - Thanks @nordowl
+
 ## 0.1.1
 
 ### Patch Changes
