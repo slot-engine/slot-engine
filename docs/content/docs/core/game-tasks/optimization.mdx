@@ -151,7 +151,7 @@ game.runTasks({
 
 Each `conditions` key for a game mode can have multiple sub-properties (conditions).
 A condition is used to **select specific simulations which the optimization is applied to**.
-The key of a condition **must match** the `criteria` of a `ResultSet` from that game mode.
+Each `ResultSet` of a game mode must have a corresponding optimization condition, named after its criteria.
 
 Since you probably want to optimize every single simulation, you should define as many
 conditions for a game mode as you need, to enable optimization for all simulations.
