@@ -1,3 +1,6 @@
+#![allow(unused)]
+#![allow(non_snake_case)]
+
 use exes::IdentityCondition;
 use ndarray::{s, Array1};
 use rand::prelude::*;
@@ -225,6 +228,7 @@ fn run_farm(
         sort_wins_by_parameter(&mut fence, &force_options, &mut lookup_table);
 
         if !fence.win_type {
+            let fence_name = fence.name.clone();
             let mut win_range_params: Vec<&mut Dress> = Vec::new();
             for dress in &mut fence.dresses {
                 win_range_params.push(dress);
@@ -265,6 +269,7 @@ fn run_farm(
                             &pig_heaven,
                             fence.min_mean_to_median,
                             fence.max_mean_to_median,
+                            fence_name.clone(),
                         )
                     })
                     .collect()
@@ -985,6 +990,7 @@ fn create_ancestors(
     pig_heaven: &PigHeaven,
     min_mean_to_median: f64,
     max_mean_to_median: f64,
+    fence_name: String,
 ) -> Vec<Pig> {
     let mut pos_pigs: Vec<Pig> = Vec::with_capacity((pig_heaven.num_pigs as f64).sqrt() as usize);
     let mut neg_pigs: Vec<Pig> = Vec::with_capacity((pig_heaven.num_pigs as f64).sqrt() as usize);
@@ -1175,12 +1181,16 @@ fn create_ancestors(
         if loop_count > 5 * pig_heaven.num_pigs {
             if neg_pigs.len() > pos_pigs.len() {
                 if !already_printed {
-                    println!("RTP too low...");
+                    println!("Unable to optimize! RTP too low... Exit this process manually.");
+                    println!("At: {}", fence_name);
+                    println!("Possible causes: Not enough variance/range in wins.");
                     already_printed = true;
                 }
             } else {
                 if !already_printed {
-                    println!("RTP too high...");
+                    println!("Unable to optimize! RTP too high... Exit this process manually.");
+                    println!("At: {}", fence_name);
+                    println!("Possible causes: Not enough variance/range in wins.");
                     already_printed = true;
                 }
             }

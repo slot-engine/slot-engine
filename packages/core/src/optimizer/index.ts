@@ -94,9 +94,10 @@ export class Optimizer {
 }
 
 async function rustProgram(...args: string[]) {
+  console.log("Starting Rust optimizer. This may take a while...")
+
   return new Promise((resolve, reject) => {
-    const task = spawn("cargo", ["run", "--release", ...args], {
-      shell: true,
+    const task = spawn("cargo", ["run", "-q", "--release", ...args], {
       cwd: path.join(__dirname, "./optimizer-rust"),
       stdio: "pipe",
     })

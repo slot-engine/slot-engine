@@ -274,11 +274,11 @@ export class Simulation {
       criteria,
     )
 
+    ctx.state.currentResultSet = resultSet
+
     while (!ctx.state.isCriteriaMet) {
       this.actualSims++
       this.resetSimulation(ctx)
-
-      ctx.state.currentResultSet = resultSet
 
       this.handleGameFlow(ctx)
 

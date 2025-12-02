@@ -1,7 +1,3 @@
-import { SPIN_TYPE } from "../constants"
-import { GameContext } from "../game-context"
-import { Wallet } from "../wallet"
-
 export class Book {
   readonly id: number
   criteria: string = "N/A"
@@ -12,6 +8,7 @@ export class Book {
 
   constructor(opts: BookOpts) {
     this.id = opts.id
+    this.criteria = opts.criteria
   }
 
   /**

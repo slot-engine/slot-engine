@@ -51,7 +51,6 @@ export class SlotGame<
         "Simulation is not configured. Do so by calling configureSimulation() first.",
       )
     }
-
     await this.simulation.runSimulation(opts)
   }
 

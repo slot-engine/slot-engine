@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use csv::ReaderBuilder;
 use serde::{Deserialize, Serialize};
 use serde_json;
