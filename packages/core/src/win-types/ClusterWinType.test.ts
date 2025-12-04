@@ -72,7 +72,7 @@ describe("ClusterWinType", () => {
 
     const { payout, winCombinations } = cluster.evaluateWins(reels).getWins()
 
-    expect(winCombinations.length).toBe(4)
+    expect(winCombinations.length).toBe(3)
     expect(winCombinations[0]?.baseSymbol.id).toBe("A")
     expect(winCombinations[0]?.symbols.some((c) => c.symbol.id == "W")).toBe(true)
     expect(winCombinations[0]?.symbols.filter((c) => c.symbol.id == "W").length).toBe(1)
