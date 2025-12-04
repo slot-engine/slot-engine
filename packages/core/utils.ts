@@ -1,4 +1,5 @@
 import fs from "fs"
+import readline from "readline"
 import { BoardService } from "./src/service/board"
 
 export function createDirIfNotExists(dirPath: string): void {
@@ -108,6 +109,38 @@ export class JSONL {
       .split("\n")
       .filter((s) => s !== "")
       .map((str) => JSON.parse(str))
+  }
+
+  public static async convertToJson(
+    inputPath: string,
+    outputPath: string,
+  ): Promise<void> {
+    const writeStream = fs.createWriteStream(outputPath, { encoding: "utf-8" })
+    writeStream.write("[\n")
+
+    const rl = readline.createInterface({
+      input: fs.createReadStream(inputPath),
+      crlfDelay: Infinity,
+    })
+
+    let isFirst = true
+
+    for await (const line of rl) {
+      if (line.trim() === "") continue
+      if (!isFirst) {
+        writeStream.write(",\n")
+      }
+      writeStream.write(line)
+      isFirst = false
+    }
+
+    writeStream.write("\n]")
+    writeStream.end()
+
+    return new Promise<void>((resolve, reject) => {
+      writeStream.on("finish", () => resolve())
+      writeStream.on("error", reject)
+    })
   }
 }
 
