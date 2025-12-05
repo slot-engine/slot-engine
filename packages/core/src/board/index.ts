@@ -2,6 +2,7 @@ import assert from "assert"
 import { GameContext } from "../game-context"
 import { Reels } from "../types"
 import { GameSymbol } from "../game-symbol"
+import { WinCombination } from "../win-types"
 
 /**
  * This general board class is designed to function with or without a game context.
@@ -420,5 +421,19 @@ export class Board {
       newBoardSymbols,
       newPaddingTopSymbols,
     }
+  }
+
+  dedupeWinSymbolsForTumble(winCombinations: WinCombination[]) {
+    const symbolsMap = new Map<string, { reelIdx: number; rowIdx: number }>()
+    winCombinations.forEach((wc) => {
+      wc.symbols.forEach((s) => {
+        symbolsMap.set(`${s.reelIndex},${s.posIndex}`, {
+          reelIdx: s.reelIndex,
+          rowIdx: s.posIndex,
+        })
+      })
+    })
+    const symbolsToRemove = Array.from(symbolsMap.values())
+    return symbolsToRemove
   }
 }

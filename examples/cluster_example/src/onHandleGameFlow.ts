@@ -107,9 +107,7 @@ function handleTumbles(ctx: Context) {
 
     if (payout === 0) break
 
-    const symbolsToRemove = winCombinations.flatMap((wc) =>
-      wc.symbols.map((s) => ({ reelIdx: s.reelIndex, rowIdx: s.posIndex })),
-    )
+    const symbolsToRemove = ctx.services.board.dedupeWinSymbolsForTumble(winCombinations)
 
     ctx.services.wallet.addTumbleWin(payout)
 
