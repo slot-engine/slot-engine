@@ -417,6 +417,11 @@ export class Board {
       }
     }
 
+    // Ensure future tumbles start from the new top positions
+    this.lastDrawnReelStops = this.lastDrawnReelStops.map((stop, ridx) => {
+      return newFirstSymbolPositions[ridx] ?? stop
+    })
+
     return {
       newBoardSymbols,
       newPaddingTopSymbols,

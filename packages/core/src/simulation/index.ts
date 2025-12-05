@@ -332,7 +332,8 @@ export class Simulation {
       })
 
       worker.on("error", (error) => {
-        console.error("Error:", error)
+        process.stdout.write(`\n${error.message}\n`)
+        process.stdout.write(`\n${error.stack}\n`)
         reject(error)
       })
 
