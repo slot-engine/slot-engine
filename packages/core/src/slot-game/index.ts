@@ -3,6 +3,7 @@ import { createGameConfig, GameConfigOptions } from "../game-config"
 import { Simulation, SimulationConfigOptions, SimulationOptions } from "../simulation"
 import { Analysis, AnalysisOpts } from "../analysis"
 import { OptimizationOpts, Optimizer, OptimizerOpts } from "../optimizer"
+import { isMainThread } from "worker_threads"
 
 /**
  * SlotGame class that encapsulates the game configuration and state.\
@@ -108,6 +109,8 @@ export class SlotGame<
     if (opts.doAnalysis) {
       await this.runAnalysis(opts.analysisOpts || { gameModes: [] })
     }
+
+    if (isMainThread) console.log("Finishing up...")
   }
 
   /**

@@ -60,7 +60,6 @@ const SYM_WEIGHTS = {
 } as const
 
 const defaultSettings = {
-  outputDir: __dirname,
   overrideExisting: false,
   limitSymbolsToReels: {
     W: [1, 2, 3, 4],

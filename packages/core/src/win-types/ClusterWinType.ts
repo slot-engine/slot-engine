@@ -79,15 +79,16 @@ export class ClusterWinType extends WinType {
       }
     }
 
-    potentialClusters.forEach((cluster) => {
+    for (const cluster of potentialClusters) {
       const kind = cluster.length
       let baseSymbol = cluster.find((s) => !this.isWild(s.symbol))?.symbol
       if (!baseSymbol) baseSymbol = cluster[0]!.symbol
 
       const payout = this.getSymbolPayout(baseSymbol, kind)
+      if (payout === 0) continue
 
       if (!baseSymbol.pays || Object.keys(baseSymbol.pays).length === 0) {
-        return // don't add non-paying symbols to final clusters
+        continue // don't add non-paying symbols to final clusters
       }
 
       clusterWins.push({
@@ -101,7 +102,7 @@ export class ClusterWinType extends WinType {
           posIndex: s.row,
         })),
       })
-    })
+    }
 
     for (const win of clusterWins) {
       this.ctx.services.data.recordSymbolOccurrence({

@@ -2,6 +2,7 @@ import fs from "fs"
 import path from "path"
 import assert from "assert"
 import zlib from "zlib"
+import readline from "readline"
 import { buildSync } from "esbuild"
 import { Worker, isMainThread, parentPort, workerData } from "worker_threads"
 import { createGameConfig, GameConfigOptions, GameConfig } from "../game-config"
@@ -12,9 +13,11 @@ import { Book } from "../book"
 import { Recorder, RecordItem } from "../recorder"
 import { Wallet } from "../wallet"
 import { ResultSet } from "../result-set"
+import { pipeline } from "stream/promises"
 
 let completedSimulations = 0
 const TEMP_FILENAME = "__temp_compiled_src_IGNORE.js"
+const TEMP_FOLDER = "temp_files"
 
 export class Simulation {
   readonly gameConfigOpts: GameConfigOptions
@@ -24,8 +27,9 @@ export class Simulation {
   private debug = false
   private actualSims = 0
   private library: Map<number, Book>
-  private recorder: Recorder
   private wallet: Wallet
+  private recordsWriteStream: fs.WriteStream | undefined
+  private hasWrittenRecord = false
 
   constructor(opts: SimulationOptions, gameConfigOpts: GameConfigOptions) {
     this.gameConfig = createGameConfig(gameConfigOpts)
@@ -33,7 +37,6 @@ export class Simulation {
     this.simRunsAmount = opts.simRunsAmount || {}
     this.concurrency = (opts.concurrency || 6) >= 2 ? opts.concurrency || 6 : 2
     this.library = new Map()
-    this.recorder = new Recorder()
     this.wallet = new Wallet()
 
     const gameModeKeys = Object.keys(this.gameConfig.gameModes)
@@ -71,7 +74,7 @@ export class Simulation {
         completedSimulations = 0
         this.wallet = new Wallet()
         this.library = new Map()
-        this.recorder = new Recorder()
+        this.hasWrittenRecord = false
 
         debugDetails[mode] = {}
 
@@ -88,9 +91,69 @@ export class Simulation {
           )
         }
 
+        const booksPath = path.join(
+          this.gameConfig.rootDir,
+          this.gameConfig.outputDir,
+          `books_${mode}.jsonl`,
+        )
+
+        const tempRecordsPath = path.join(
+          this.gameConfig.rootDir,
+          this.gameConfig.outputDir,
+          TEMP_FOLDER,
+          `temp_records_${mode}.jsonl`,
+        )
+
+        createDirIfNotExists(
+          path.join(this.gameConfig.rootDir, this.gameConfig.outputDir),
+        )
+        createDirIfNotExists(
+          path.join(this.gameConfig.rootDir, this.gameConfig.outputDir, TEMP_FOLDER),
+        )
+
+        this.recordsWriteStream = fs.createWriteStream(tempRecordsPath)
+
         const simNumsToCriteria = ResultSet.assignCriteriaToSimulations(this, mode)
 
         await this.spawnWorkersForGameMode({ mode, simNumsToCriteria })
+
+        // Merge temporary book files into the final sorted file
+        const finalBookStream = fs.createWriteStream(booksPath)
+        const numSims = Object.keys(simNumsToCriteria).length
+        const chunks = this.getSimRangesForChunks(numSims, this.concurrency!)
+
+        let isFirstChunk = true
+        for (let i = 0; i < chunks.length; i++) {
+          const tempBookPath = path.join(
+            this.gameConfig.rootDir,
+            this.gameConfig.outputDir,
+            TEMP_FOLDER,
+            `temp_books_${mode}_${i}.jsonl`,
+          )
+
+          if (fs.existsSync(tempBookPath)) {
+            if (!isFirstChunk) {
+              finalBookStream.write("\n")
+            }
+            const content = fs.createReadStream(tempBookPath)
+            for await (const chunk of content) {
+              finalBookStream.write(chunk)
+            }
+            fs.rmSync(tempBookPath)
+            isFirstChunk = false
+          }
+        }
+        finalBookStream.end()
+        await new Promise<void>((resolve) => finalBookStream.on("finish", resolve))
+
+        if (this.recordsWriteStream) {
+          await new Promise<void>((resolve) => {
+            this.recordsWriteStream!.end(() => {
+              resolve()
+            })
+          })
+          this.recordsWriteStream = undefined
+        }
 
         createDirIfNotExists(
           path.join(
@@ -103,11 +166,13 @@ export class Simulation {
           path.join(this.gameConfig.rootDir, this.gameConfig.outputDir, "publish_files"),
         )
 
+        console.log(`Writing final files for game mode: ${mode} ...`)
         this.writeLookupTableCSV(mode)
         this.writeLookupTableSegmentedCSV(mode)
         this.writeRecords(mode)
         await this.writeBooksJson(mode)
         this.writeIndexJson()
+        console.log(`Mode ${mode} done!`)
 
         debugDetails[mode].rtp =
           this.wallet.getCumulativeWins() / (runs * this.gameConfig.gameModes[mode]!.cost)
@@ -221,9 +286,15 @@ export class Simulation {
         },
       })
 
+      const tempBookPath = path.join(
+        basePath,
+        TEMP_FOLDER,
+        `temp_books_${mode}_${index}.jsonl`,
+      )
+      const bookStream = fs.createWriteStream(tempBookPath)
+
       worker.on("message", (msg) => {
         if (msg.type === "log") {
-          //console.log(`[Worker ${msg.workerNum}] ${msg.message}`)
         } else if (msg.type === "complete") {
           completedSimulations++
 
@@ -233,9 +304,28 @@ export class Simulation {
 
           // Write data to global library
           const book = Book.fromSerialized(msg.book)
+
+          const bookData = {
+            id: book.id,
+            payoutMultiplier: book.payout,
+            events: book.events,
+          }
+
+          const prefix = book.id === simStart ? "" : "\n"
+          bookStream.write(prefix + JSONL.stringify([bookData]))
+
+          book.events = []
           this.library.set(book.id, book)
+
+          if (this.recordsWriteStream) {
+            for (const record of msg.records) {
+              const recordPrefix = this.hasWrittenRecord ? "\n" : ""
+              this.recordsWriteStream.write(recordPrefix + JSONL.stringify([record]))
+              this.hasWrittenRecord = true
+            }
+          }
+
           this.wallet.mergeSerialized(msg.wallet)
-          this.mergeRecords(msg.records)
         } else if (msg.type === "done") {
           resolve(true)
         }
@@ -415,18 +505,78 @@ export class Simulation {
     return outputFilePath
   }
 
-  private writeRecords(gameMode: string) {
-    const outputFileName = `force_record_${gameMode}.json`
-    const outputFilePath = path.join(
+  private async writeRecords(mode: string) {
+    const tempRecordsPath = path.join(
       this.gameConfig.rootDir,
       this.gameConfig.outputDir,
-      outputFileName,
+      TEMP_FOLDER,
+      `temp_records_${mode}.jsonl`,
     )
-    writeFile(outputFilePath, JSON.stringify(this.recorder.records, null, 2))
 
-    if (this.debug) this.logSymbolOccurrences()
+    const forceRecordsPath = path.join(
+      this.gameConfig.rootDir,
+      this.gameConfig.outputDir,
+      `force_record_${mode}.json`,
+    )
 
-    return outputFilePath
+    // Use a local Map to aggregate records efficiently without cluttering the main Recorder
+    // Key is the stringified search criteria
+    const aggregatedRecords = new Map<string, RecordItem>()
+
+    if (fs.existsSync(tempRecordsPath)) {
+      const fileStream = fs.createReadStream(tempRecordsPath)
+
+      const rl = readline.createInterface({
+        input: fileStream,
+        crlfDelay: Infinity,
+      })
+
+      for await (const line of rl) {
+        if (line.trim() === "") continue
+        const record: RecordItem = JSON.parse(line)
+
+        const key = JSON.stringify(record.search)
+
+        let existing = aggregatedRecords.get(key)
+        if (!existing) {
+          existing = {
+            search: record.search,
+            timesTriggered: 0,
+            bookIds: [],
+          }
+          aggregatedRecords.set(key, existing)
+        }
+
+        existing.timesTriggered += record.timesTriggered
+
+        for (const bookId of record.bookIds) {
+          existing.bookIds.push(bookId)
+        }
+      }
+    }
+
+    fs.rmSync(forceRecordsPath, { force: true })
+
+    const writeStream = fs.createWriteStream(forceRecordsPath, { encoding: "utf-8" })
+    writeStream.write("[\n")
+
+    let isFirst = true
+    for (const record of aggregatedRecords.values()) {
+      if (!isFirst) {
+        writeStream.write(",\n")
+      }
+      writeStream.write(JSON.stringify(record))
+      isFirst = false
+    }
+
+    writeStream.write("\n]")
+    writeStream.end()
+
+    await new Promise<void>((resolve) => {
+      writeStream.on("finish", () => resolve())
+    })
+
+    fs.rmSync(tempRecordsPath, { force: true })
   }
 
   private writeIndexJson() {
@@ -453,71 +603,28 @@ export class Simulation {
   }
 
   private async writeBooksJson(gameMode: string) {
-    const outputFileName = `books_${gameMode}.jsonl`
-
     const outputFilePath = path.join(
       this.gameConfig.rootDir,
       this.gameConfig.outputDir,
-      outputFileName,
+      `books_${gameMode}.jsonl`,
     )
-    const books = Array.from(this.library.values())
-      .map((b) => b.serialize())
-      .map((b) => ({
-        id: b.id,
-        payoutMultiplier: b.payout,
-        events: b.events,
-      }))
-      .sort((a, b) => a.id - b.id)
-
-    const contents = JSONL.stringify(books)
-
-    writeFile(outputFilePath, contents)
-
-    const compressedFileName = `books_${gameMode}.jsonl.zst`
 
     const compressedFilePath = path.join(
       this.gameConfig.rootDir,
       this.gameConfig.outputDir,
       "publish_files",
-      compressedFileName,
+      `books_${gameMode}.jsonl.zst`,
     )
 
     fs.rmSync(compressedFilePath, { force: true })
 
-    const compressed = zlib.zstdCompressSync(Buffer.from(contents))
-    fs.writeFileSync(compressedFilePath, compressed)
-  }
-
-  private logSymbolOccurrences() {
-    const validRecords = this.recorder.records.filter(
-      (r) =>
-        r.search.some((s) => s.name === "symbolId") &&
-        r.search.some((s) => s.name === "kind"),
-    )
-
-    const structuredRecords = validRecords
-      .map((r) => {
-        const symbolEntry = r.search.find((s) => s.name === "symbolId")
-        const kindEntry = r.search.find((s) => s.name === "kind")
-        const spinTypeEntry = r.search.find((s) => s.name === "spinType")
-        return {
-          symbol: symbolEntry ? symbolEntry.value : "unknown",
-          kind: kindEntry ? kindEntry.value : "unknown",
-          spinType: spinTypeEntry ? spinTypeEntry.value : "unknown",
-          timesTriggered: r.timesTriggered,
-        }
-      })
-      .sort((a, b) => {
-        if (a.symbol < b.symbol) return -1
-        if (a.symbol > b.symbol) return 1
-        if (a.kind < b.kind) return -1
-        if (a.kind > b.kind) return 1
-        if (a.spinType < b.spinType) return -1
-        if (a.spinType > b.spinType) return 1
-        return 0
-      })
-
-    console.table(structuredRecords)
+    if (fs.existsSync(outputFilePath)) {
+      await pipeline(
+        fs.createReadStream(outputFilePath),
+        zlib.createZstdCompress(),
+        fs.createWriteStream(compressedFilePath),
+      )
+    }
   }
 
   /**
@@ -559,33 +666,6 @@ export class Simulation {
     }
 
     return result
-  }
-
-  private mergeRecords(otherRecords: RecordItem[]) {
-    for (const otherRecord of otherRecords) {
-      let record = this.recorder.records.find((r) => {
-        if (r.search.length !== otherRecord.search.length) return false
-        for (let i = 0; i < r.search.length; i++) {
-          if (r.search[i]!.name !== otherRecord.search[i]!.name) return false
-          if (r.search[i]!.value !== otherRecord.search[i]!.value) return false
-        }
-        return true
-      })
-      if (!record) {
-        record = {
-          search: otherRecord.search,
-          timesTriggered: 0,
-          bookIds: [],
-        }
-        this.recorder.records.push(record)
-      }
-      record.timesTriggered += otherRecord.timesTriggered
-      for (const bookId of otherRecord.bookIds) {
-        if (!record.bookIds.includes(bookId)) {
-          record.bookIds.push(bookId)
-        }
-      }
-    }
   }
 
   /**
