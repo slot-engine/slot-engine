@@ -97,3 +97,30 @@ Returns a valid number of scatters.
 | `amount`  | `number` |
 
 Adds the given number of free spins to the state.
+
+### dedupeWinSymbols()
+
+| Method                                 | Type                                       |
+| -------------------------------------- | ------------------------------------------ |
+| `ctx.services.game.dedupeWinSymbols()` | `(winCombinations) => { reelIdx, rowIdx }` |
+
+#### Parameters [!toc]
+
+| Parameter         | Type               |
+| ----------------- | ------------------ |
+| `winCombinations` | `WinCombination[]` |
+
+#### Return Object [!toc]
+
+| Parameter | Type     |
+| --------- | -------- |
+| `reelIdx` | `number` |
+| `rowIdx`  | `number` |
+
+When working with `winCombinations` returned from any win type, make sure you dedupe winning symbols.
+It may be possible for the same symbol (e.g. Wild) to be included in multiple win combinations.
+If you then wanted to tumble the board based on the winning symbols, that Wild symbol would be tumbled multiple times,
+which might lead to errors.
+
+Another example is games like "Sugar Rush", where winning combinations increase a multiplier on the board.
+You wouldn't want the same symbol to trigger a multiplier increase multiple times.
