@@ -136,4 +136,62 @@ describe("Board", () => {
       "3": [A],
     })
   })
+
+  it("tumbles correctly multiple times", () => {
+    reels = ctx.services.game.getReelsetById("base", "default")
+
+    ctx.services.board.drawBoardWithForcedStops({
+      reels,
+      forcedStops: {
+        "0": 5,
+        "1": 5,
+        "2": 5,
+        "3": 5,
+        "4": 5,
+      },
+      randomOffset: false,
+    })
+
+    const boardBeforeTumble = ctx.services.board.getBoardReels()
+    const paddingTopBeforeTumble = ctx.services.board.getPaddingTop()
+
+    expect(boardBeforeTumble).toEqual([
+      [C, A, B, C, A],
+      [B, C, A, B, C],
+      [A, B, C, A, B],
+      [C, C, C, A, B],
+      [C, A, B, C, A],
+    ])
+
+    expect(paddingTopBeforeTumble).toEqual([[A], [A], [B], [B], [C]])
+
+    const symbolsToDelete = [
+      { reelIdx: 0, rowIdx: 1 },
+      { reelIdx: 1, rowIdx: 1 },
+      { reelIdx: 2, rowIdx: 1 },
+      { reelIdx: 3, rowIdx: 1 },
+      { reelIdx: 4, rowIdx: 1 },
+      { reelIdx: 0, rowIdx: 2 },
+      { reelIdx: 1, rowIdx: 2 },
+      { reelIdx: 2, rowIdx: 2 },
+      { reelIdx: 3, rowIdx: 2 },
+      { reelIdx: 4, rowIdx: 2 },
+    ]
+
+    ctx.services.board.tumbleBoard(symbolsToDelete)
+    ctx.services.board.tumbleBoard(symbolsToDelete)
+
+    const boardAfterTumble = ctx.services.board.getBoardReels()
+    const paddingTopAfterTumble = ctx.services.board.getPaddingTop()
+
+    expect(boardAfterTumble).toEqual([
+      [C, B, A, C, A],
+      [A, C, B, B, C],
+      [A, A, C, A, B],
+      [C, A, A, A, B],
+      [B, C, A, C, A],
+    ])
+
+    expect(paddingTopAfterTumble).toEqual([[A], [A], [B], [B], [B]])
+  })
 })
