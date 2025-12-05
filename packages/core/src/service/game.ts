@@ -2,6 +2,7 @@ import { AbstractService } from "."
 import { GameConfig } from "../game-config"
 import { GameContext } from "../game-context"
 import { AnyGameModes, AnySymbols, AnyUserData, SpinType } from "../types"
+import { WinCombination } from "../win-types"
 
 export class GameService<
   TGameModes extends AnyGameModes = AnyGameModes,
@@ -132,5 +133,27 @@ export class GameService<
     this.ctx().state.currentFreespinAmount += amount
     this.ctx().state.totalFreespinAmount += amount
     this.ctx().state.triggeredFreespins = true
+  }
+
+  /**
+   * Dedupes win symbols.
+   *
+   * Since it may be possible that multiple win combinations include the same symbol (e.g. Wilds),\
+   * this method ensures that each symbol is only listed once.
+   * 
+   * If you want to tumble based on winning symbols, run them through this method first.
+   */
+  dedupeWinSymbols(winCombinations: WinCombination[]) {
+    const symbolsMap = new Map<string, { reelIdx: number; rowIdx: number }>()
+    winCombinations.forEach((wc) => {
+      wc.symbols.forEach((s) => {
+        symbolsMap.set(`${s.reelIndex},${s.posIndex}`, {
+          reelIdx: s.reelIndex,
+          rowIdx: s.posIndex,
+        })
+      })
+    })
+    const symbolsToRemove = Array.from(symbolsMap.values())
+    return symbolsToRemove
   }
 }
