@@ -1,5 +1,11 @@
 # @slot-engine/core
 
+## 0.1.5
+
+### Patch Changes
+
+- Fix critical bug in tumbling mechanics - Thanks @nordowl
+
 ## 0.1.4
 
 ### Patch Changes
