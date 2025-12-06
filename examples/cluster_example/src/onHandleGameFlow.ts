@@ -174,7 +174,7 @@ function handleTumbles(ctx: Context) {
       },
     })
 
-    // Double board multipliers after win
+    // Double board multipliers after win, capped at 128x
     for (const sym of winSymbols) {
       const currentMulti = ctx.state.userData.boardMultis[sym.reelIdx][sym.rowIdx]
       const newMulti = Math.max(1, Math.min(currentMulti * 2, 128))
@@ -356,6 +356,8 @@ function processWins(wins: WinCombination[], ctx: Context) {
       const multiOnPos = ctx.state.userData.boardMultis[s.reelIndex][s.posIndex]
       // A winning cluster must first "activate" the multiplier on a position (multi 0 -> 1).
       // Only on the next win does the multiplier apply (multi 1 -> 2).
+      // Multipliers themselves are updated in `handleTumbles()`.
+      // This function here just applies the multiplier to the payout.
       return multiOnPos >= 2 ? multiOnPos + multi : multi
     }, 0)
 
