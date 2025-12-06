@@ -1,5 +1,11 @@
 # @slot-engine/core
 
+## 0.1.6
+
+### Patch Changes
+
+- Various bug fixes ([#28](https://github.com/slot-engine/slot-engine/pull/28)) - Thanks @nordowl
+
 ## 0.1.5
 
 ### Patch Changes
