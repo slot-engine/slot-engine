@@ -298,10 +298,23 @@ function playFreeSpins(ctx: Context) {
     })
 
     handleTumbles(ctx)
+
+    // Add event before calling `confirmSpinWin()`, because the spin win will be reset.
+    // In contrast to base game, we should get the win with `getCurrentSpinWin()` instead of `getCurrentWin()`,
+    // because we only want to send the payout for this single free spin, not the total win across all free spins so far.
+    ctx.services.data.addBookEvent({
+      type: "show-fs-spin-win",
+      data: {
+        payout: ctx.services.wallet.getCurrentSpinWin(),
+      },
+    })
+
     ctx.services.wallet.confirmSpinWin()
+
     checkFreespins(ctx)
   }
 
+  // All FS have been played at this point so we can send the total win amount using `getCurrentWin()`.
   ctx.services.data.addBookEvent({
     type: "show-fs-win",
     data: {
