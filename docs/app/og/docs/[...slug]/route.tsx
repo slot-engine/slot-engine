@@ -15,7 +15,7 @@ export async function GET(_req: Request, { params }: RouteContext<"/og/docs/[...
       <DefaultImage
         title={page.data.title}
         description={page.data.description}
-        site="My App"
+        site="Slot Engine"
       />
     ),
     {
