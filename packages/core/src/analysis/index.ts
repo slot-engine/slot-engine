@@ -166,31 +166,13 @@ export class Analysis {
     for (const modeStr of gameModes) {
       payoutRanges[modeStr] = { overall: {}, criteria: {} }
 
-      const lutOptimized = parseLookupTable(
-        fs.readFileSync(this.filePaths[modeStr]!.lutOptimized, "utf-8"),
-      )
-
       const lutSegmented = parseLookupTableSegmented(
         fs.readFileSync(this.filePaths[modeStr]!.lutSegmented, "utf-8"),
       )
 
-      lutOptimized.forEach(([, , p]) => {
-        const payout = p / 100
-        for (const [min, max] of winRanges) {
-          if (payout >= min && payout <= max) {
-            const rangeKey = `${min}-${max}`
-            if (!payoutRanges[modeStr]!.overall[rangeKey]) {
-              payoutRanges[modeStr]!.overall[rangeKey] = 0
-            }
-            payoutRanges[modeStr]!.overall[rangeKey] += 1
-            break
-          }
-        }
-      })
-
       lutSegmented.forEach(([, criteria, bp, fsp]) => {
-        const basePayout = bp / 100
-        const freeSpinPayout = fsp / 100
+        const basePayout = bp
+        const freeSpinPayout = fsp
         const payout = basePayout + freeSpinPayout
 
         for (const [min, max] of winRanges) {

@@ -293,16 +293,17 @@ export class Board {
 
     for (let ridx = 0; ridx < reelsAmount; ridx++) {
       const reelPos = finalReelStops[ridx]!
+      const reelLength = opts.reels[ridx]!.length
 
       for (let p = padSymbols - 1; p >= 0; p--) {
-        const topPos = (reelPos - (p + 1)) % opts.reels[ridx]!.length
+        const topPos = (((reelPos - (p + 1)) % reelLength) + reelLength) % reelLength
         this.paddingTop[ridx]!.push(opts.reels[ridx]![topPos]!)
-        const bottomPos = (reelPos + symbolsPerReel[ridx]! + p) % opts.reels[ridx]!.length
+        const bottomPos = (reelPos + symbolsPerReel[ridx]! + p) % reelLength
         this.paddingBottom[ridx]!.unshift(opts.reels[ridx]![bottomPos]!)
       }
 
       for (let row = 0; row < symbolsPerReel[ridx]!; row++) {
-        const symbol = opts.reels[ridx]![(reelPos + row) % opts.reels[ridx]!.length]
+        const symbol = opts.reels[ridx]![(reelPos + row) % reelLength]
 
         if (!symbol) {
           throw new Error(`Failed to get symbol at pos ${reelPos + row} on reel ${ridx}`)
