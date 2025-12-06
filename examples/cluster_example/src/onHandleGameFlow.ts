@@ -151,7 +151,9 @@ function handleTumbles(ctx: Context) {
 
     if (payout === 0) break
 
-    // Deduplicate win symbols to avoid double processing
+    // Deduplicate win symbols to avoid double processing.
+    // For example, a Wild could be part of multiple clusters.
+    // We don't want to increase the grid multiplier on that symbol position multiple times.
     const winSymbols = ctx.services.game.dedupeWinSymbols(winCombinations)
 
     // Add event to tell client about all wins.
