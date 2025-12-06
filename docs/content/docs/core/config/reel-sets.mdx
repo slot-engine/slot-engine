@@ -238,7 +238,8 @@ export const gameModes = defineGameModes({
 
 ### JSON Reel Sets
 
-You can also define your reel strips as a JSON array of symbol ID's like so:
+You can also define your reel strips as a JSON array of symbol ID's like below.
+Note that this configuration is read from left to right, top to bottom, and _not_ top to bottom, left to right like in CSV reels.
 
 ```ts lineNumbers
 import { defineGameModes, GameMode, StaticReelSet } from "@slot-engine/core"
