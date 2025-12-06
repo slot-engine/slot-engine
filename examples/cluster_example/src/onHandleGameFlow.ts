@@ -2,7 +2,6 @@ import {
   ClusterWinType,
   WinCombination,
   GameContext,
-  GameSymbol,
   Reels,
   SPIN_TYPE,
 } from "@slot-engine/core"
@@ -10,12 +9,49 @@ import { GameModesType, SymbolsType, UserStateType } from ".."
 
 type Context = GameContext<GameModesType, SymbolsType, UserStateType>
 
+/**
+ * This game flow demonstrates a cluster-based slot game with tumbling reels.
+ * Similar to the game "Sugar Rush", win combinations build up multipliers on the board.
+ * A multiplier doubles for each tumble win it's part of, up to a maximum of 128x.
+ * During free spins, multipliers do not reset between spins.
+ */
+
 export function onHandleGameFlow(ctx: Context) {
+  // Build initial board multipliers starting at 0
   makeInitialBoardMultis(ctx)
+
+  // Build the initial board
   drawBoard(ctx)
+
+  // Set anticipation states based on scatters on board
   handleAnticipation(ctx)
+
+  // Create event to tell the client what to render
+  ctx.services.data.addBookEvent({
+    type: "board-reveal",
+    data: {
+      board: getSymIdsFromReels(ctx.services.board.getBoardReels()),
+      padTop: getSymIdsFromReels(ctx.services.board.getPaddingTop()),
+      padBottom: getSymIdsFromReels(ctx.services.board.getPaddingBottom()),
+      anticipation: ctx.services.board.getAnticipation(),
+    },
+  })
+
+  // Tumble until no more wins.
+  // This also creates event data for the frontend.
   handleTumbles(ctx)
+
+  // Finalize this round's win
   ctx.services.wallet.confirmSpinWin()
+
+  ctx.services.data.addBookEvent({
+    type: "show-final-win",
+    data: {
+      payout: ctx.services.wallet.getCurrentWin(),
+    },
+  })
+
+  // Maybe enter free spins loop
   checkFreespins(ctx)
 }
 
@@ -73,7 +109,13 @@ function drawBoard(ctx: Context) {
       if (!scatInvalid) break
     }
   } else {
-    drawDefaultBoard(ctx, reels, scatter)
+    // If no special ResultSet criteria, draw board normally
+    while (true) {
+      ctx.services.board.resetBoard()
+      ctx.services.board.drawBoardWithRandomStops(reels)
+      const scatInvalid = ctx.services.board.isSymbolOnAnyReelMultipleTimes(scatter)
+      if (!scatInvalid) break
+    }
   }
 }
 
@@ -99,6 +141,7 @@ function handleTumbles(ctx: Context) {
     wildSymbol: { isWild: true },
   })
 
+  // Keep tumbling until no more wins
   while (true) {
     const { payout, winCombinations } = cluster
       .evaluateWins(ctx.services.board.getBoardReels())
@@ -107,17 +150,55 @@ function handleTumbles(ctx: Context) {
 
     if (payout === 0) break
 
-    const symbolsToRemove = ctx.services.game.dedupeWinSymbols(winCombinations)
+    // Deduplicate win symbols to avoid double processing
+    const winSymbols = ctx.services.game.dedupeWinSymbols(winCombinations)
 
+    // Add event to tell client about all wins.
+    // It could then highlight and destroy the winning symbols.
+    ctx.services.data.addBookEvent({
+      type: "highlight-cluster-wins",
+      data: {
+        winSymbols,
+      },
+    })
+
+    // `addTumbleWin` already calls `addSpinWin`, so no need to do it here.
+    // If this wasn't a tumble based game, we would call `addSpinWin` instead.
     ctx.services.wallet.addTumbleWin(payout)
 
-    for (const syms of symbolsToRemove) {
-      const currentMulti = ctx.state.userData.boardMultis[syms.reelIdx][syms.rowIdx]
+    ctx.services.data.addBookEvent({
+      type: "update-tumble-win",
+      data: {
+        payout,
+      },
+    })
+
+    // Double board multipliers after win
+    for (const sym of winSymbols) {
+      const currentMulti = ctx.state.userData.boardMultis[sym.reelIdx][sym.rowIdx]
       const newMulti = Math.max(1, Math.min(currentMulti * 2, 128))
-      ctx.state.userData.boardMultis[syms.reelIdx][syms.rowIdx] = newMulti
+      ctx.state.userData.boardMultis[sym.reelIdx][sym.rowIdx] = newMulti
     }
 
-    ctx.services.board.tumbleBoard(symbolsToRemove)
+    ctx.services.data.addBookEvent({
+      type: "update-multipliers",
+      data: {
+        multipliers: ctx.state.userData.boardMultis,
+      },
+    })
+
+    // Tumbling the board gives us the newly added symbols as well.
+    // We can tell the client which new symbols to animate in.
+    const { newBoardSymbols, newPaddingTopSymbols } =
+      ctx.services.board.tumbleBoard(winSymbols)
+
+    ctx.services.data.addBookEvent({
+      type: "tumble-symbols",
+      data: {
+        newBoardSymbols,
+        newPaddingTopSymbols,
+      },
+    })
   }
 }
 
@@ -138,6 +219,14 @@ function checkFreespins(ctx: Context) {
   // Ensure we only trigger free spins from base game.
   // Our playFreeSpins function handles the free spins loop already and we don't want recursion.
   if (ctx.state.currentSpinType == SPIN_TYPE.BASE_GAME) {
+    ctx.services.data.addBookEvent({
+      type: "fs-triggered",
+      data: {
+        fs: freespinsAwarded,
+      },
+    })
+
+    // We can optionally record how many scatters triggered the free spins
     ctx.services.data.recordSymbolOccurrence({
       kind: scatCount,
       symbolId: scatter.id,
@@ -150,18 +239,58 @@ function checkFreespins(ctx: Context) {
 
     playFreeSpins(ctx)
   }
+
+  // If we are already in free spins, record a retrigger event
+  if (ctx.state.currentSpinType == SPIN_TYPE.FREE_SPINS) {
+    ctx.services.data.addBookEvent({
+      type: "fs-retriggered",
+      data: {
+        fs: freespinsAwarded,
+      },
+    })
+  }
 }
 
 function playFreeSpins(ctx: Context) {
+  // Change spin type to free spins manually (Slot Engine does not do this automatically yet)
   ctx.state.currentSpinType = SPIN_TYPE.FREE_SPINS
+
+  // Free spins loop
   while (ctx.state.currentFreespinAmount > 0) {
     ctx.state.currentFreespinAmount--
+
+    ctx.services.data.addBookEvent({
+      type: "update-fs-amount",
+      data: {
+        fs: ctx.state.currentFreespinAmount,
+        totalFs: ctx.state.totalFreespinAmount,
+      },
+    })
+
     drawBoard(ctx)
     handleAnticipation(ctx)
+
+    ctx.services.data.addBookEvent({
+      type: "board-reveal",
+      data: {
+        board: getSymIdsFromReels(ctx.services.board.getBoardReels()),
+        padTop: getSymIdsFromReels(ctx.services.board.getPaddingTop()),
+        padBottom: getSymIdsFromReels(ctx.services.board.getPaddingBottom()),
+        anticipation: ctx.services.board.getAnticipation(),
+      },
+    })
+
     handleTumbles(ctx)
     ctx.services.wallet.confirmSpinWin()
     checkFreespins(ctx)
   }
+
+  ctx.services.data.addBookEvent({
+    type: "show-fs-win",
+    data: {
+      payout: ctx.services.wallet.getCurrentWin(),
+    },
+  })
 }
 
 function getScatterWeights(key: string) {
@@ -184,17 +313,6 @@ function getScatterWeights(key: string) {
   }
 
   return SCATTER_WEIGHTS.freespins
-}
-
-function drawDefaultBoard(ctx: Context, reels: Reels, scatter: GameSymbol) {
-  while (true) {
-    ctx.services.board.resetBoard()
-    ctx.services.board.drawBoardWithRandomStops(reels)
-
-    const scatInvalid = ctx.services.board.isSymbolOnAnyReelMultipleTimes(scatter)
-
-    if (!scatInvalid) break
-  }
 }
 
 function makeInitialBoardMultis(ctx: Context) {
@@ -221,9 +339,12 @@ function processWins(wins: WinCombination[], ctx: Context) {
   const winCombinations = wins.map((wc) => {
     const multiForCluster = wc.symbols.reduce((multi, s) => {
       const multiOnPos = ctx.state.userData.boardMultis[s.reelIndex][s.posIndex]
+      // A winning cluster must first "activate" the multiplier on a position (multi 0 -> 1).
+      // Only on the next win does the multiplier apply (multi 1 -> 2).
       return multiOnPos >= 2 ? multiOnPos + multi : multi
     }, 0)
 
+    // Multi is initially 0, so we ensure at least 1x payout
     const payout = wc.payout * Math.max(1, multiForCluster)
 
     return {
@@ -232,4 +353,8 @@ function processWins(wins: WinCombination[], ctx: Context) {
     }
   })
   return { winCombinations }
+}
+
+function getSymIdsFromReels(reels: Reels) {
+  return reels.map((reel) => reel.map((s) => s.id))
 }

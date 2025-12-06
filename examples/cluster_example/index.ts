@@ -286,7 +286,58 @@ game.configureSimulation({
 })
 
 game.configureOptimization({
-  gameModes: {},
+  gameModes: {
+    base: {
+      conditions: {
+        maxwin: new OptimizationConditions({
+          rtp: 0.01,
+          avgWin: 5000,
+          searchConditions: {
+            criteria: "maxwin",
+          },
+          priority: 8,
+        }),
+        "0": new OptimizationConditions({
+          rtp: 0,
+          avgWin: 0,
+          searchConditions: 0,
+          priority: 6,
+        }),
+        freespins: new OptimizationConditions({
+          rtp: 0.38,
+          hitRate: 150,
+          searchConditions: {
+            criteria: "freespins",
+          },
+          priority: 2,
+        }),
+        basegame: new OptimizationConditions({
+          rtp: 0.57,
+          hitRate: 4,
+          priority: 1,
+        }),
+      },
+      scaling: new OptimizationScaling([]),
+      parameters: new OptimizationParameters(),
+    },
+    bonus: {
+      conditions: {
+        maxwin: new OptimizationConditions({
+          rtp: 0.01,
+          avgWin: 5000,
+          searchConditions: 5000,
+          priority: 2,
+        }),
+        freespins: new OptimizationConditions({
+          rtp: 0.95,
+          hitRate: "x",
+          priority: 1,
+        }),
+      },
+      scaling: new OptimizationScaling([]),
+      parameters: new OptimizationParameters(),
+    },
+  },
 })
 
 game.runTasks({
