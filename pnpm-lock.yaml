@@ -100,14 +100,28 @@ importers:
   examples/cluster_example:
     dependencies:
       '@slot-engine/core':
-        specifier: workspace:*
+        specifier: 0.1.6
         version: link:../../packages/core
+    devDependencies:
+      '@types/node':
+        specifier: ^24.7.2
+        version: 24.9.1
+      tsx:
+        specifier: ^4.20.6
+        version: 4.20.6
 
   examples/lines_example:
     dependencies:
       '@slot-engine/core':
-        specifier: workspace:*
+        specifier: 0.1.6
         version: link:../../packages/core
+    devDependencies:
+      '@types/node':
+        specifier: ^24.7.2
+        version: 24.9.1
+      tsx:
+        specifier: ^4.20.6
+        version: 4.20.6
 
   packages/core:
     dependencies:
