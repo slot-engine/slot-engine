@@ -2,6 +2,7 @@ import assert from "assert"
 import { GameContext } from "../game-context"
 import { Reels } from "../types"
 import { GameSymbol } from "../game-symbol"
+import { WinCombination } from "../win-types"
 
 /**
  * This general board class is designed to function with or without a game context.
@@ -292,16 +293,17 @@ export class Board {
 
     for (let ridx = 0; ridx < reelsAmount; ridx++) {
       const reelPos = finalReelStops[ridx]!
+      const reelLength = opts.reels[ridx]!.length
 
       for (let p = padSymbols - 1; p >= 0; p--) {
-        const topPos = (reelPos - (p + 1)) % opts.reels[ridx]!.length
+        const topPos = (((reelPos - (p + 1)) % reelLength) + reelLength) % reelLength
         this.paddingTop[ridx]!.push(opts.reels[ridx]![topPos]!)
-        const bottomPos = (reelPos + symbolsPerReel[ridx]! + p) % opts.reels[ridx]!.length
+        const bottomPos = (reelPos + symbolsPerReel[ridx]! + p) % reelLength
         this.paddingBottom[ridx]!.unshift(opts.reels[ridx]![bottomPos]!)
       }
 
       for (let row = 0; row < symbolsPerReel[ridx]!; row++) {
-        const symbol = opts.reels[ridx]![(reelPos + row) % opts.reels[ridx]!.length]
+        const symbol = opts.reels[ridx]![(reelPos + row) % reelLength]
 
         if (!symbol) {
           throw new Error(`Failed to get symbol at pos ${reelPos + row} on reel ${ridx}`)
@@ -425,5 +427,19 @@ export class Board {
       newBoardSymbols,
       newPaddingTopSymbols,
     }
+  }
+
+  dedupeWinSymbolsForTumble(winCombinations: WinCombination[]) {
+    const symbolsMap = new Map<string, { reelIdx: number; rowIdx: number }>()
+    winCombinations.forEach((wc) => {
+      wc.symbols.forEach((s) => {
+        symbolsMap.set(`${s.reelIndex},${s.posIndex}`, {
+          reelIdx: s.reelIndex,
+          rowIdx: s.posIndex,
+        })
+      })
+    })
+    const symbolsToRemove = Array.from(symbolsMap.values())
+    return symbolsToRemove
   }
 }

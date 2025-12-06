@@ -181,8 +181,8 @@ describe("Board", () => {
     ctx.services.board.tumbleBoard(symbolsToDelete)
     ctx.services.board.tumbleBoard(symbolsToDelete)
 
-    const boardAfterTumble = ctx.services.board.getBoardReels()
-    const paddingTopAfterTumble = ctx.services.board.getPaddingTop()
+    let boardAfterTumble = ctx.services.board.getBoardReels()
+    let paddingTopAfterTumble = ctx.services.board.getPaddingTop()
 
     expect(boardAfterTumble).toEqual([
       [C, B, A, C, A],
@@ -193,5 +193,20 @@ describe("Board", () => {
     ])
 
     expect(paddingTopAfterTumble).toEqual([[A], [A], [B], [B], [B]])
+
+    ctx.services.board.tumbleBoard(symbolsToDelete)
+
+    boardAfterTumble = ctx.services.board.getBoardReels()
+    paddingTopAfterTumble = ctx.services.board.getPaddingTop()
+
+    expect(boardAfterTumble).toEqual([
+      [A, A, C, C, A],
+      [C, A, A, B, C],
+      [B, B, A, A, B],
+      [B, B, C, A, B],
+      [A, B, B, C, A],
+    ])
+
+    expect(paddingTopAfterTumble).toEqual([[C], [B], [A], [A], [C]])
   })
 })

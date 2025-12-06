@@ -2,6 +2,7 @@ import { GameContext } from "../game-context"
 import { GameSymbol } from "../game-symbol"
 import { Reels } from "../types"
 import { Board } from "."
+import { WinCombination } from "../win-types"
 
 export class StandaloneBoard {
   private board: Board
@@ -187,6 +188,17 @@ export class StandaloneBoard {
       symbolsPerReel: this.symbolsPerReel,
       padSymbols: this.padSymbols,
     })
+  }
+
+  /**
+   * Dedupes win symbols for tumble.\
+   * Returns a list of symbols to remove from the board based on the given win combinations.
+   * 
+   * Since it may be possible that multiple win combinations include the same symbol (e.g. Wilds),\
+   * this method ensures that each symbol is only listed once for removal. Otherwise tumbling may break.
+   */
+  dedupeWinSymbolsForTumble(winCombinations: WinCombination[]) {
+    return this.board.dedupeWinSymbolsForTumble(winCombinations)
   }
 }
 
