@@ -250,6 +250,8 @@ function checkFreespins(ctx: Context) {
     })
 
     playFreeSpins(ctx)
+    // We return here to avoid recording a retrigger event right after all free spins were played
+    return
   }
 
   // If we are already in free spins, record a retrigger event
