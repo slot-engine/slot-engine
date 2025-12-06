@@ -30,6 +30,7 @@ export function onHandleGameFlow(ctx: Context) {
   ctx.services.data.addBookEvent({
     type: "board-reveal",
     data: {
+      // Note: If you can, only send IDs to minimize data size.
       board: getSymIdsFromReels(ctx.services.board.getBoardReels()),
       padTop: getSymIdsFromReels(ctx.services.board.getPaddingTop()),
       padBottom: getSymIdsFromReels(ctx.services.board.getPaddingBottom()),
@@ -192,11 +193,22 @@ function handleTumbles(ctx: Context) {
     const { newBoardSymbols, newPaddingTopSymbols } =
       ctx.services.board.tumbleBoard(winSymbols)
 
+    // Note: If you can, only send IDs to minimize data size.
     ctx.services.data.addBookEvent({
       type: "tumble-symbols",
       data: {
-        newBoardSymbols,
-        newPaddingTopSymbols,
+        newBoardSymbols: Object.fromEntries(
+          Object.entries(newBoardSymbols).map(([reelIdx, symbols]) => [
+            reelIdx,
+            symbols.map((s) => s.id),
+          ]),
+        ),
+        newPaddingTopSymbols: Object.fromEntries(
+          Object.entries(newPaddingTopSymbols).map(([reelIdx, symbols]) => [
+            reelIdx,
+            symbols.map((s) => s.id),
+          ]),
+        ),
       },
     })
   }
@@ -273,6 +285,7 @@ function playFreeSpins(ctx: Context) {
     ctx.services.data.addBookEvent({
       type: "board-reveal",
       data: {
+        // Note: If you can, only send IDs to minimize data size.
         board: getSymIdsFromReels(ctx.services.board.getBoardReels()),
         padTop: getSymIdsFromReels(ctx.services.board.getPaddingTop()),
         padBottom: getSymIdsFromReels(ctx.services.board.getPaddingBottom()),
