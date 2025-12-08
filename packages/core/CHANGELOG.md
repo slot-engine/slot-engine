@@ -1,5 +1,11 @@
 # @slot-engine/core
 
+## 0.1.7
+
+### Patch Changes
+
+- Fix LinesWinType - Thanks @nordowl
+
 ## 0.1.6
 
 ### Patch Changes
