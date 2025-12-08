@@ -65,6 +65,7 @@ export class LinesWinType extends WinType {
       let baseSymbol: GameSymbol | undefined
       const potentialWinLine: SymbolList = []
       const potentialWildLine: SymbolList = []
+      let isInterrupted = false
 
       for (const [ridx, reel] of reels.entries()) {
         const sidx = line[ridx]!
@@ -97,6 +98,9 @@ export class LinesWinType extends WinType {
 
         if (baseSymbol.compare(thisSymbol) || this.isWild(thisSymbol)) {
           potentialWinLine.push({ reel: ridx, row: sidx, symbol: thisSymbol })
+        } else {
+          isInterrupted = true
+          break
         }
       }
 

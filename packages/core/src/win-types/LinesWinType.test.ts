@@ -87,6 +87,32 @@ describe("LinesWinType", () => {
     expect(payout).toBe(4)
   })
 
+  it("does not count interrupted lines", () => {
+    reels = [
+      [A, C, B],
+      [A, B, B],
+      [A, C, B],
+      [C, B, C],
+      [A, B, B],
+    ]
+
+    const lines = new LinesWinType({
+      ctx,
+      wildSymbol: W,
+      lines: {
+        1: [0, 0, 0, 0, 0],
+        2: [2, 2, 2, 2, 2],
+      },
+    })
+
+    const { payout, winCombinations } = lines.evaluateWins(reels).getWins()
+
+    expect(winCombinations.length).toBe(2)
+    expect(winCombinations[0]?.kind).toBe(3)
+    expect(winCombinations[1]?.kind).toBe(3)
+    expect(payout).toBe(1)
+  })
+
   it("recognizes lines with starting wilds", () => {
     reels = [
       [W, C, B],
