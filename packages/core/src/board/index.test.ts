@@ -1,14 +1,19 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect, beforeEach } from "vitest"
 import { createTestContext } from "../game-context"
 import { Reels } from "../types"
 import { GameSymbol } from "../game-symbol"
 import { StaticReelSet } from "../reel-set/StaticReelSet"
+import { GameMode } from "../game-mode"
 
 const pays = {
   3: 0.5,
   4: 1,
   5: 2,
 }
+
+const X = new GameSymbol({
+  id: "X",
+})
 
 const A = new GameSymbol({
   id: "A",
@@ -25,14 +30,14 @@ const C = new GameSymbol({
   pays,
 })
 
-const ctx = createTestContext({
+let ctx = createTestContext({
   symbols: {
     A,
     B,
     C,
   },
   gameModes: {
-    base: {
+    base: new GameMode({
       name: "base",
       reelsAmount: 5,
       symbolsPerReel: [5, 5, 5, 5, 5],
@@ -50,16 +55,64 @@ const ctx = createTestContext({
         }),
       ],
       resultSets: [],
-      rtp: 1,
+      rtp: 0.9,
       isBonusBuy: false,
-    },
+    }),
+  },
+})
+
+const ctx2 = createTestContext({
+  padSymbols: 0,
+  symbols: {
+    X,
+    A,
+    B,
+    C,
+  },
+  gameModes: {
+    base: new GameMode({
+      name: "base",
+      reelsAmount: 5,
+      symbolsPerReel: [5, 5, 5, 5, 5],
+      cost: 1,
+      reelSets: [
+        new StaticReelSet({
+          id: "default",
+          reels: [
+            ["A", "B", "C", "A", "B", "C", "A", "B", "C"],
+            ["A", "B", "C", "A", "B", "C", "A", "B", "C"],
+            ["A", "B", "C", "A", "B", "C", "A", "B", "C"],
+            ["A", "B", "C", "A", "B", "C", "A", "B", "C"],
+            ["A", "B", "C", "A", "B", "C", "A", "B", "C"],
+          ],
+        }),
+        new StaticReelSet({
+          id: "blocker",
+          reels: [
+            ["X", "X", "X", "X", "X"],
+            ["X", "X", "X", "X", "X"],
+            ["X", "X", "X", "X", "X"],
+            ["X", "X", "X", "X", "X"],
+            ["X", "X", "X", "X", "X"],
+          ],
+        }),
+      ],
+      resultSets: [],
+      rtp: 0.9,
+      isBonusBuy: false,
+    }),
   },
 })
 
 describe("Board", () => {
   let reels: Reels
-  ctx.state.currentGameMode = "base"
-  ctx.services.game._generateReels()
+
+  beforeEach(() => {
+    ctx.state.currentGameMode = "base"
+    ctx.services.game._generateReels()
+    ctx2.state.currentGameMode = "base"
+    ctx2.services.game._generateReels()
+  })
 
   it("tumbles board correctly", () => {
     reels = ctx.services.game.getReelsetById("base", "default")
@@ -208,5 +261,78 @@ describe("Board", () => {
     ])
 
     expect(paddingTopAfterTumble).toEqual([[C], [B], [A], [A], [C]])
+  })
+
+  it("tumbles and forgets", () => {
+    ctx = ctx2
+
+    reels = ctx.services.game.getReelsetById("base", "default")
+
+    ctx.services.board.setSymbolsPerReel([2, 5, 3, 5, 2])
+
+    ctx.services.board.drawBoardWithForcedStops({
+      reels,
+      forcedStops: {
+        "0": 3,
+        "1": 3,
+        "2": 3,
+        "3": 3,
+        "4": 3,
+      },
+      randomOffset: false,
+    })
+
+    expect(ctx.services.board.getBoardReels()).toEqual([
+      [A, B],
+      [A, B, C, A, B],
+      [A, B, C],
+      [A, B, C, A, B],
+      [A, B],
+    ])
+
+    ctx.services.board.setSymbolsPerReel([5, 5, 5, 5, 5])
+
+    const blockers = ctx.services.game.getReelsetById("base", "blocker")
+    ctx.services.board.tumbleBoardAndForget({
+      symbolsToDelete: [],
+      reels: blockers,
+      forcedStops: [0, 0, 0, 0, 0],
+    })
+
+    expect(ctx.services.board.getBoardReels()).toEqual([
+      [X, X, X, A, B],
+      [A, B, C, A, B],
+      [X, X, A, B, C],
+      [A, B, C, A, B],
+      [X, X, X, A, B],
+    ])
+
+    const symbolsToDelete = [
+      { reelIdx: 0, rowIdx: 1 },
+      { reelIdx: 1, rowIdx: 1 },
+      { reelIdx: 2, rowIdx: 1 },
+      { reelIdx: 3, rowIdx: 1 },
+      { reelIdx: 4, rowIdx: 1 },
+    ]
+
+    ctx.services.board.tumbleBoard(symbolsToDelete)
+
+    expect(ctx.services.board.getBoardReels()).toEqual([
+      [C, X, X, A, B],
+      [C, A, C, A, B],
+      [C, X, A, B, C],
+      [C, A, C, A, B],
+      [C, X, X, A, B],
+    ])
+
+    ctx.services.board.tumbleBoard(symbolsToDelete)
+
+    expect(ctx.services.board.getBoardReels()).toEqual([
+      [B, C, X, A, B],
+      [B, C, C, A, B],
+      [B, C, A, B, C],
+      [B, C, C, A, B],
+      [B, C, X, A, B],
+    ])
   })
 })

@@ -422,6 +422,9 @@ export class Simulation {
         criteria: ctx.state.currentResultSet.criteria,
       }),
     )
+    Object.values(ctx.config.gameModes).forEach((mode) => {
+      mode._resetTempValues()
+    })
   }
 
   protected resetState(ctx: GameContext) {

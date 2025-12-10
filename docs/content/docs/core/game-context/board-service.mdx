@@ -62,6 +62,51 @@ Returns the symbol at the specified position.
 
 Sets the symbol at the specified position.
 
+### removeSymbol()
+
+| Method                              | Type                               |
+| ----------------------------------- | ---------------------------------- |
+| `ctx.services.board.removeSymbol()` | `(reelIndex, rowIndex) => boolean` |
+
+#### Parameters [!toc]
+
+| Parameter   | Type     |
+| ----------- | -------- |
+| `reelIndex` | `number` |
+| `rowIndex`  | `number` |
+
+Removes the symbol from the board at the specified position. Returns a boolean, whether the symbol was removed.
+
+### setSymbolsPerReel()
+
+| Method                                   | Type                       |
+| ---------------------------------------- | -------------------------- |
+| `ctx.services.board.setSymbolsPerReel()` | `(symbolsPerReel) => void` |
+
+#### Parameters [!toc]
+
+| Parameter        | Type       |
+| ---------------- | ---------- |
+| `symbolsPerReel` | `number[]` |
+
+Sets a new temporary value for `symbolsPerReel`. The value will be persisted until changed by the user
+or until the simulation is reset or the next simulation starts.
+
+### setReelsAmount()
+
+| Method                                | Type                    |
+| ------------------------------------- | ----------------------- |
+| `ctx.services.board.setReelsAmount()` | `(reelsAmount) => void` |
+
+#### Parameters [!toc]
+
+| Parameter     | Type     |
+| ------------- | -------- |
+| `reelsAmount` | `number` |
+
+Sets a new temporary value for `reelsAmount`. The value will be persisted until changed by the user
+or until the simulation is reset or the next simulation starts.
+
 ### resetBoard()
 
 | Method                            | Type         |
@@ -301,3 +346,45 @@ The resulting symbol positions are safe to use for tumbling.
 The function returns the new symbols that were added to each reel.
 For example, `newBoardSymbols` will be an object where the keys are the reel indexes
 and the values are the added symbols for that reel.
+
+### tumbleBoardAndForget() - EXPERIMENTAL
+
+<Callout type="warn">
+This method is experimental and may be changed or replaced in the future.
+</Callout>
+
+| Method                                      | Type                                                  |
+| ------------------------------------------- | ----------------------------------------------------- |
+| `ctx.services.board.tumbleBoardAndForget()` | `(opts) => { newBoardSymbols, newPaddingTopSymbols }` |
+
+#### Parameters [!toc]
+
+| Parameter              | Type                                         |
+| ---------------------- | -------------------------------------------- |
+| `opts.symbolsToDelete` | `Array<{ reelIdx: number; rowIdx: number }>` |
+| `opts.reels`           | `Reels`                                      |
+| `opts.forcedStops`     | `number[]`                                   |
+
+#### Return Object [!toc]
+
+| Parameter              | Type                           |
+| ---------------------- | ------------------------------ |
+| `newBoardSymbols`      | `Record<string, GameSymbol[]>` |
+| `newPaddingTopSymbols` | `Record<string, GameSymbol[]>` |
+
+Tumbles the board similar to `tumbleBoard()`.
+
+While `tumbleBoard()` remembers the last tumble and can seamlessly tumble multiple times in a row,
+`tumbleBoardAndForget()` will not remember what it did. **This is useful to do a single one-off tumble.**
+
+While `tumbleBoard()` always uses the last used reel set that the board was drawn with,
+`tumbleBoardAndForget()` can tumble symbols from an arbitrary reel set
+and won't override any internal board state (besides the symbols on the reels).
+
+This can be particularly useful if you need to fill a part of the board with some blocker symbols
+(think of the game Templar Tumble, or Temple Tumble).
+
+<Callout type="warn">
+If you plan to use this method, ensure `padSymbols` is set to `0` in the game config
+or you will most likely experience bugs or unexpected behavior.
+</Callout>

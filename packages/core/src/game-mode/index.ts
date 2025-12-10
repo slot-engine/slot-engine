@@ -4,8 +4,10 @@ import { ReelSet } from "../reel-set"
 
 export class GameMode {
   readonly name: string
-  readonly reelsAmount: number
-  readonly symbolsPerReel: number[]
+  private readonly _reelsAmount: number
+  private readonly _symbolsPerReel: number[]
+  reelsAmount: number
+  symbolsPerReel: number[]
   readonly cost: number
   readonly rtp: number
   readonly reelSets: ReelSet[]
@@ -14,7 +16,9 @@ export class GameMode {
 
   constructor(opts: GameModeOpts) {
     this.name = opts.name
+    this._reelsAmount = opts.reelsAmount
     this.reelsAmount = opts.reelsAmount
+    this._symbolsPerReel = opts.symbolsPerReel
     this.symbolsPerReel = opts.symbolsPerReel
     this.cost = opts.cost
     this.rtp = opts.rtp
@@ -30,6 +34,32 @@ export class GameMode {
     )
 
     assert(this.reelSets.length > 0, "GameMode must have at least one ReelSet defined.")
+  }
+
+  /**
+   * Intended for internal use only.
+   */
+  _resetTempValues() {
+    this.reelsAmount = this._reelsAmount
+    this.symbolsPerReel = this._symbolsPerReel
+  }
+
+  /**
+   * Intended for internal use only.
+   */
+  _setSymbolsPerReel(symbolsPerReel: number[]) {
+    assert(
+      symbolsPerReel.length === this._reelsAmount,
+      "symbolsPerReel length must match reelsAmount.",
+    )
+    this.symbolsPerReel = symbolsPerReel
+  }
+
+  /**
+   * Intended for internal use only.
+   */
+  _setReelsAmount(reelsAmount: number) {
+    this.reelsAmount = reelsAmount
   }
 }
 
