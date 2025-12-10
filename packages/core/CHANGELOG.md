@@ -1,5 +1,17 @@
 # @slot-engine/core
 
+## 0.1.8
+
+### Patch Changes
+
+- Introduce some methods for board manipulation - Thanks @nordowl
+
+  The following methods have been added to the board service:
+  - `setSymbolsPerReel`
+  - `setReelsAmount`
+  - `removeSymbol`
+  - `tumbleBoardAndForget`
+
 ## 0.1.7
 
 ### Patch Changes
