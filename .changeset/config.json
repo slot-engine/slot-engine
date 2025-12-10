@@ -12,9 +12,6 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [
-    "(example-*)"
-  ],
   "privatePackages": {
     "version": false,
     "tag": false
