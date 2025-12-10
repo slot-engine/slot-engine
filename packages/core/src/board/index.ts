@@ -49,6 +49,12 @@ export class Board {
     this.reels[reelIndex]![rowIndex] = symbol
   }
 
+  removeSymbol(reelIndex: number, rowIndex: number) {
+    if (this.reels[reelIndex]) {
+      this.reels[reelIndex]!.splice(rowIndex, 1)
+    }
+  }
+
   makeEmptyReels(opts: { ctx: GameContext; reelsAmount?: number }) {
     const length =
       opts.reelsAmount ?? opts.ctx.services.game.getCurrentGameMode().reelsAmount
@@ -312,6 +318,10 @@ export class Board {
         this.reels[ridx]![row] = symbol
       }
     }
+
+    return {
+      stopPositions: this.lastDrawnReelStops,
+    }
   }
 
   tumbleBoard(opts: {
@@ -320,6 +330,8 @@ export class Board {
     reelsAmount?: number
     symbolsPerReel?: number[]
     padSymbols?: number
+    reels?: Reels
+    startingStops?: number[]
   }) {
     assert(this.lastDrawnReelStops.length > 0, "Cannot tumble board before drawing it.")
 
@@ -329,13 +341,33 @@ export class Board {
       opts.symbolsPerReel ?? opts.ctx.services.game.getCurrentGameMode().symbolsPerReel
     const padSymbols = opts.padSymbols ?? opts.ctx.config.padSymbols
 
+    // Some context:
+    // When startingStops and reels are given, we'll do a special tumble and drop down symbols
+    // from the given reels, starting at given stops. As this usage most likely indicated a one-off tumble,
+    // we will not store the new lastDrawnReelStops for future tumbles.
+    if (opts.startingStops) {
+      assert(
+        opts.startingStops.length === reelsAmount,
+        "Starting stops length does not match reels amount.",
+      )
+      assert(opts.reels, "Reels must be provided when using startingStops.")
+    }
+
+    if (opts.reels) {
+      assert(opts.startingStops, "Starting stops must be provided when using reels.")
+    }
+
     if (!opts.ctx && !reelsAmount && !symbolsPerReel) {
       throw new Error(
         "If ctx is not provided, reelsAmount and symbolsPerReel must be given.",
       )
     }
 
-    const reels = this.lastUsedReels
+    const reels = opts.reels || this.lastUsedReels
+    assert(
+      reels.length === reelsAmount,
+      "Given reels length does not match reels amount.",
+    )
 
     // Sort deletions by row index descending to avoid index shifting issues
     const sortedDeletions = [...opts.symbolsToDelete].sort((a, b) => b.rowIdx - a.rowIdx)
@@ -361,7 +393,7 @@ export class Board {
     for (let ridx = 0; ridx < reelsAmount; ridx++) {
       // Drop down padding symbols from top for as long as reel is not filled and padding top has symbols
       while (this.reels[ridx]!.length < symbolsPerReel[ridx]!) {
-        const padSymbol = this.paddingTop[ridx]!.pop()
+        const padSymbol = this.paddingTop[ridx]?.pop()
         if (padSymbol) {
           this.reels[ridx]!.unshift(padSymbol)
 
@@ -381,7 +413,18 @@ export class Board {
       // Drop rest of symbols
       for (let s = 0; s < symbolsNeeded; s++) {
         const symbolPos = (stopBeforePad - s + reels[ridx]!.length) % reels[ridx]!.length
-        const newSymbol = reels[ridx]![symbolPos]
+        let newSymbol = reels[ridx]![symbolPos]
+
+        // If we have starting stops, try to get the symbol from there
+        const startStops = opts.startingStops
+        if (startStops) {
+          const forcedSym = reels[ridx]![startStops?.[ridx]!]
+          assert(
+            forcedSym,
+            `Failed to get forced symbol for tumbling. Tried to get symbol for position ${startStops?.[ridx]!} on reel ${ridx}.`,
+          )
+          newSymbol = forcedSym
+        }
 
         assert(newSymbol, "Failed to get new symbol for tumbling.")
 
@@ -418,10 +461,13 @@ export class Board {
       }
     }
 
-    // Ensure future tumbles start from the new top positions
-    this.lastDrawnReelStops = this.lastDrawnReelStops.map((stop, ridx) => {
-      return newFirstSymbolPositions[ridx] ?? stop
-    })
+    // Ensure future tumbles start from the new top positions.
+    // But ONLY if no reels or startingStops were given (it should not remember special one-time tumbles)
+    if (!opts.reels && !opts.startingStops) {
+      this.lastDrawnReelStops = this.lastDrawnReelStops.map((stop, ridx) => {
+        return newFirstSymbolPositions[ridx] ?? stop
+      })
+    }
 
     return {
       newBoardSymbols,

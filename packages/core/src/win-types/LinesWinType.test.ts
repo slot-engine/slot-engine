@@ -3,19 +3,21 @@ import { createTestContext } from "../game-context"
 import { Reels } from "../types"
 import { GameSymbol } from "../game-symbol"
 import { LinesWinType } from "./LinesWinType"
+import { GameMode } from "../game-mode"
+import { ReelSet } from "../reel-set"
 
 const ctx = createTestContext({
   gameModes: {
-    base: {
+    base: new GameMode({
       name: "base",
       reelsAmount: 5,
       symbolsPerReel: [3, 3, 3, 3, 3],
       cost: 1,
-      reelSets: [],
+      reelSets: [new ReelSet({ id: "" })],
       resultSets: [],
-      rtp: 1,
+      rtp: 0.9,
       isBonusBuy: false,
-    },
+    }),
   },
 })
 
@@ -87,6 +89,32 @@ describe("LinesWinType", () => {
     expect(payout).toBe(4)
   })
 
+  it("does not count interrupted lines", () => {
+    reels = [
+      [A, C, B],
+      [A, B, B],
+      [A, C, B],
+      [C, B, C],
+      [A, B, B],
+    ]
+
+    const lines = new LinesWinType({
+      ctx,
+      wildSymbol: W,
+      lines: {
+        1: [0, 0, 0, 0, 0],
+        2: [2, 2, 2, 2, 2],
+      },
+    })
+
+    const { payout, winCombinations } = lines.evaluateWins(reels).getWins()
+
+    expect(winCombinations.length).toBe(2)
+    expect(winCombinations[0]?.kind).toBe(3)
+    expect(winCombinations[1]?.kind).toBe(3)
+    expect(payout).toBe(1)
+  })
+
   it("recognizes lines with starting wilds", () => {
     reels = [
       [W, C, B],
@@ -154,12 +182,12 @@ describe("LinesWinType", () => {
 
     const { payout, winCombinations } = lines
       .evaluateWins(reels)
-      .postProcess(wins => {
-        const newWins = wins.map(w => ({
+      .postProcess((wins) => {
+        const newWins = wins.map((w) => ({
           ...w,
           payout: w.payout * 2,
         }))
-        
+
         return {
           winCombinations: newWins,
         }

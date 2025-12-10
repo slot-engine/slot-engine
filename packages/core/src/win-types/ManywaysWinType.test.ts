@@ -3,19 +3,21 @@ import { createTestContext } from "../game-context"
 import { Reels } from "../types"
 import { GameSymbol } from "../game-symbol"
 import { ManywaysWinType } from "./ManywaysWinType"
+import { GameMode } from "../game-mode"
+import { ReelSet } from "../reel-set"
 
 const ctx = createTestContext({
   gameModes: {
-    base: {
+    base: new GameMode({
       name: "base",
       reelsAmount: 5,
       symbolsPerReel: [3, 3, 3, 3, 3],
       cost: 1,
-      reelSets: [],
+      reelSets: [new ReelSet({ id: "" })],
       resultSets: [],
-      rtp: 1,
+      rtp: 0.9,
       isBonusBuy: false,
-    },
+    }),
   },
 })
 

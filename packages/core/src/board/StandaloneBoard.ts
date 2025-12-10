@@ -57,6 +57,13 @@ export class StandaloneBoard {
     this.board.setSymbol(reelIndex, rowIndex, symbol)
   }
 
+  /**
+   * Removes the symbol at the specified reel and row index.
+   */
+  removeSymbol(reelIndex: number, rowIndex: number) {
+    this.board.removeSymbol(reelIndex, rowIndex)
+  }
+
   private resetReels() {
     this.board.resetReels({
       ctx: this.ctx,
@@ -151,14 +158,14 @@ export class StandaloneBoard {
     forcedStops: Record<string, number>
     randomOffset?: boolean
   }) {
-    this.drawBoardMixed(opts.reels, opts.forcedStops, opts.randomOffset)
+    return this.drawBoardMixed(opts.reels, opts.forcedStops, opts.randomOffset)
   }
 
   /**
    * Draws a board using random reel stops.
    */
   drawBoardWithRandomStops(reels: Reels) {
-    this.drawBoardMixed(reels)
+    return this.drawBoardMixed(reels)
   }
 
   private drawBoardMixed(
@@ -166,7 +173,7 @@ export class StandaloneBoard {
     forcedStops?: Record<string, number>,
     forcedStopsOffset?: boolean,
   ) {
-    this.board.drawBoardMixed({
+    return this.board.drawBoardMixed({
       ctx: this.ctx,
       reels,
       forcedStops,
@@ -191,14 +198,51 @@ export class StandaloneBoard {
   }
 
   /**
+   * **Experimental - May be changed or replaced in the future**
+   * 
+   * Tumbles the board normally like `tumbleBoard`, but allows specifying a different reel set to get symbols from.\
+   * Also requires specifying the starting stops from where the symbols will be tumbled.\
+   * **This method does not remember the last tumbled position. Use this if you need to do a singular one-off tumble.**
+   */
+  tumbleBoardAndForget(opts: {
+    symbolsToDelete: Array<{ reelIdx: number; rowIdx: number }>
+    reels: Reels
+    forcedStops: number[]
+  }) {
+    return this.board.tumbleBoard({
+      ctx: this.ctx,
+      symbolsToDelete: opts.symbolsToDelete,
+      reelsAmount: this.reelsAmount,
+      symbolsPerReel: this.symbolsPerReel,
+      padSymbols: this.padSymbols,
+      reels: opts.reels,
+      startingStops: opts.forcedStops,
+    })
+  }
+
+  /**
    * Dedupes win symbols for tumble.\
    * Returns a list of symbols to remove from the board based on the given win combinations.
-   * 
+   *
    * Since it may be possible that multiple win combinations include the same symbol (e.g. Wilds),\
    * this method ensures that each symbol is only listed once for removal. Otherwise tumbling may break.
    */
   dedupeWinSymbolsForTumble(winCombinations: WinCombination[]) {
     return this.board.dedupeWinSymbolsForTumble(winCombinations)
+  }
+
+  /**
+   * Sets symbolsPerReel.
+   */
+  setSymbolsPerReel(symbolsPerReel: number[]) {
+    this.symbolsPerReel = symbolsPerReel
+  }
+
+  /**
+   * Sets the reelsAmount.
+   */
+  setReelsAmount(reelsAmount: number) {
+    this.reelsAmount = reelsAmount
   }
 }
 

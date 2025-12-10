@@ -1,3 +1,6 @@
+> [!NOTE]
+> Slot Engine is a community project and is not affiliated with Stake.
+
 # Slot Engine
 
 TypeScript libraries for building slot games.
