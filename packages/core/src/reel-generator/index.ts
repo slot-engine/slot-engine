@@ -17,6 +17,15 @@ export interface ReelGeneratorOptions {
   symbols: Record<string, number[]>
   spaceBetweenSameSymbols?: number | Record<string, number>
   spaceBetweenSymbols?: Record<string, Record<string, number>>
+  /**
+   * Min and max stacking behavior for symbols.
+   *
+   * @example
+   * {
+   *   "A": { min: 2, max: 5 }, // "A" can stack between 2 and 5 symbols high
+   *   "B": { min: [1,2,3], max: [4,5,6] } // "B" has different stacking rules per reel
+   * }
+   */
   stacking?: Record<
     string,
     {
@@ -24,6 +33,22 @@ export interface ReelGeneratorOptions {
       max: number | number[]
     }
   >
+  /**
+   * Stacking weights control the likelihood of certain stack sizes for symbols on reels.
+   *
+   * If stacking weights for a symbol are provided, every stack size must be defined.\
+   * There cannot be any missing stack sizes.
+   *
+   * @example
+   * // In this example, "A" is more likely to form stacks of size 3 than size 2 on all reels.
+   * {
+   *   "A": {
+   *     "2": [1, 1, 1], // Weights for stack size 2 on reels 1, 2, and 3
+   *     "3": [2, 2, 3], // Weights for stack size 3 on reels 1, 2, and 3
+   *   }
+   * }
+   */
+  stackingWeights?: Record<string, Record<string, number[]>>
   /**
    * The seed for the random number generator.
    */
@@ -77,7 +102,8 @@ function validateStacking(opts: ReelGeneratorOptions) {
     const stacking = opts.stacking?.[symbol]
     if (!stacking) return
 
-    counts.forEach((count, ridx) => {
+    for (let ridx = 0; ridx < opts.reelsAmount; ridx++) {
+      const count = counts[ridx]!
       const minStack = Array.isArray(stacking.min)
         ? (stacking.min[ridx] ?? 1)
         : (stacking.min ?? 1)
@@ -89,16 +115,6 @@ function validateStacking(opts: ReelGeneratorOptions) {
         count >= minStack,
         `Symbol "${symbol}" on reel ${ridx} has count ${count}, which is less than the minimum stack size of ${minStack}.`,
       )
-    })
-
-    for (let ridx = 0; ridx < opts.reelsAmount; ridx++) {
-      const count = counts[ridx]!
-      const minStack = Array.isArray(stacking.min)
-        ? (stacking.min[ridx] ?? 1)
-        : (stacking.min ?? 1)
-      const maxStack = Array.isArray(stacking.max)
-        ? (stacking.max[ridx] ?? count)
-        : (stacking.max ?? count)
 
       assert(
         minStack <= maxStack,
@@ -124,12 +140,9 @@ function buildBlocksForReel(
   for (const [sym, count] of Object.entries(symbolCounts)) {
     if (count <= 0) continue
 
-    const minStack = Array.isArray(opts.stacking?.[sym]?.min)
-      ? opts.stacking?.[sym]?.min[ridx]
-      : opts.stacking?.[sym]?.min
-    const maxStack = Array.isArray(opts.stacking?.[sym]?.max)
-      ? opts.stacking?.[sym]?.max[ridx]
-      : opts.stacking?.[sym]?.max
+    const stackOpts = opts.stacking?.[sym]
+    const minStack = Array.isArray(stackOpts?.min) ? stackOpts?.min[ridx] : stackOpts?.min
+    const maxStack = Array.isArray(stackOpts?.max) ? stackOpts?.max[ridx] : stackOpts?.max
 
     if (minStack || maxStack) {
       assert(
@@ -139,13 +152,47 @@ function buildBlocksForReel(
 
       let remaining = count
       while (remaining >= minStack) {
-        const stackSize = Math.min(
-          maxStack,
-          Math.max(
-            minStack,
-            Math.floor(rng.randomFloat(minStack, Math.min(maxStack, remaining) + 1)),
-          ),
-        )
+        let stackSize = minStack
+        const stackingWeights = opts.stackingWeights?.[sym]
+
+        if (stackingWeights && Object.keys(stackingWeights).length > 0) {
+          // Validate and use stacking weights if configured
+          const possibleSizes: number[] = []
+          for (let size = minStack; size <= maxStack; size++) {
+            possibleSizes.push(size)
+          }
+          for (const size of possibleSizes) {
+            const weightsForSize = stackingWeights[size]
+            assert(
+              weightsForSize,
+              `Missing stacking weights for stack size ${size} of symbol "${sym}".`,
+            )
+
+            const weight = weightsForSize[ridx]
+            assert(
+              weight !== undefined,
+              `Missing stacking weight for stack size ${size} of symbol "${sym}" on reel ${ridx}.`,
+            )
+          }
+
+          const weights: Record<string, number> = Object.fromEntries(
+            Object.entries(stackingWeights).map(([s, w]) => [s, w[ridx]!]),
+          )
+
+          const chosenSize = rng.weightedRandom(weights)
+          const maxAllowed = Math.min(maxStack, remaining)
+          stackSize = Math.min(maxAllowed, Math.max(minStack, Number(chosenSize)))
+        } else {
+          // Randomly choose a stack size between min and max
+          stackSize = Math.min(
+            maxStack,
+            Math.max(
+              minStack,
+              Math.floor(rng.randomFloat(minStack, Math.min(maxStack, remaining) + 1)),
+            ),
+          )
+        }
+
         blocks.push({ symbol: sym, count: stackSize, id: `${sym}_${blocks.length}` })
         remaining -= stackSize
       }
@@ -166,6 +213,14 @@ function buildBlocksForReel(
     }
   }
   return blocks
+}
+
+function placeBlocksOnReel(
+  blocks: Block[],
+  opts: ReelGeneratorOptions,
+  rng: RandomNumberGenerator,
+) {
+  return {}
 }
 
 export function generateReels(opts: ReelGeneratorOptions) {
@@ -196,19 +251,27 @@ export function generateReels(opts: ReelGeneratorOptions) {
     })
 
     const blocks = buildBlocksForReel(ridx, symbolCounts, opts, rng)
-    console.log(blocks)
+
+    const {} = placeBlocksOnReel(blocks, opts, rng)
   }
 }
 
 generateReels({
   reelsAmount: 5,
   symbols: {
-    A: [20, 20, 20, 20, 20],
-    B: [20, 20, 20, 20, 20],
-    C: [20, 20, 20, 20, 20],
+    A: [30, 30, 30, 30, 30],
+    B: [30, 30, 30, 30, 30],
+    C: [30, 30, 30, 30, 30],
   },
   stacking: {
-    A: { min: 2, max: 6 },
-    B: { min: 2, max: 6 },
+    A: { min: 2, max: 4 },
+    B: { min: 2, max: 4 },
   },
+  stackingWeights: {
+    "A": {
+      "2": [1, 1, 3, 1, 1],
+      "3": [3, 3, 1, 3, 3],
+      "4": [1, 1, 3, 1, 1],
+    }
+  }
 })
