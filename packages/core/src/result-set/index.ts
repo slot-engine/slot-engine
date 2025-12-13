@@ -4,7 +4,6 @@ import { GameContext } from "../game-context"
 import { Simulation } from "../simulation"
 import { RandomNumberGenerator } from "../service/rng"
 import { copy } from "../../utils"
-import { Wallet } from "../wallet"
 import { SPIN_TYPE } from "../constants"
 
 export class ResultSet<TUserState extends AnyUserData> {

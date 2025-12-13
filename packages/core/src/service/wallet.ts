@@ -1,7 +1,7 @@
 import assert from "assert"
 import { AbstractService } from "."
 import { GameContext } from "../game-context"
-import { AnyGameModes, AnySymbols, AnyUserData, SpinType } from "../types"
+import { AnyGameModes, AnySymbols, AnyUserData } from "../types"
 import { Wallet } from "../wallet"
 
 export class WalletService<
