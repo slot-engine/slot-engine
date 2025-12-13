@@ -1,5 +1,11 @@
 # @slot-engine/core
 
+## 0.1.9
+
+### Patch Changes
+
+- Fix bug in GeneratedReelSet causing internal reel data to duplicate - Thanks @nordowl
+
 ## 0.1.8
 
 ### Patch Changes

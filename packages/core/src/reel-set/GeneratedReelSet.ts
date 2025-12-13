@@ -4,6 +4,7 @@ import { isMainThread } from "worker_threads"
 import { ReelSet, ReelSetOptions } from "."
 import { GameConfig } from "../game-config"
 import { GameSymbol } from "../game-symbol"
+import { createDirIfNotExists } from "../../utils"
 
 /**
  * This class is responsible for generating reel sets for slot games based on specified configurations.
@@ -200,9 +201,10 @@ export class GeneratedReelSet extends ReelSet {
       )
     }
 
+    const outputDir = path.join(config.rootDir, config.outputDir)
+
     const filePath = path.join(
-      config.rootDir,
-      config.outputDir,
+      outputDir,
       `reels_${this.associatedGameModeName}-${this.id}.csv`,
     )
 
@@ -414,13 +416,15 @@ export class GeneratedReelSet extends ReelSet {
     const csvString = csvRows.map((row) => row.join(",")).join("\n")
 
     if (isMainThread) {
+      createDirIfNotExists(outputDir)
       fs.writeFileSync(filePath, csvString)
 
-      this.reels = this.parseReelsetCSV(filePath, config)
       console.log(
         `Generated reelset ${this.id} for game mode ${this.associatedGameModeName}`,
       )
     }
+    
+    this.reels = this.parseReelsetCSV(filePath, config)
 
     return this
   }
