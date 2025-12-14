@@ -1,4 +1,5 @@
 import assert from "assert"
+import chalk from "chalk"
 import { RandomNumberGenerator } from "../service/rng"
 
 export interface ReelGeneratorOptions {
@@ -175,11 +176,6 @@ function validateStacking(opts: ReelGeneratorOptions) {
       assert(
         minStack <= maxStack,
         `For symbol "${symbol}" on reel ${ridx + 1}, the minimum stack size of ${minStack} exceeds the maximum stack size of ${maxStack}.`,
-      )
-
-      assert(
-        count % minStack === 0,
-        `Symbol "${symbol}" on reel ${ridx + 1} has count ${count}, which is not divisible by the minimum stack size of ${minStack}.`,
       )
     }
   })
@@ -442,6 +438,154 @@ function placeBlocksOnReel(
   return { positions: null, stackStarts }
 }
 
+function costReel(ridx: number, reel: SymbolId[], opts: ReelGeneratorOptions): number {
+  const L = reel.length
+  if (L === 0) return 0
+
+  let cost = 0
+
+  // Tunable weights (optionally read from opts.generator?.cost later)
+  const INTER_SYMBOL_WEIGHT = 1
+  const STACK_SIZE_WEIGHT = 10
+  const STACK_SPACING_WEIGHT = 10
+
+  // --- Inter-symbol spacing (still pairwise / adjacency-based) ---
+  for (let i = 0; i < L; i++) {
+    const a = reel[i]!
+    const b = reel[(i + 1) % L]!
+
+    // Only for different symbols
+    if (a !== b) {
+      const dAB = opts.spaceBetweenSymbols?.[a]?.[b] ?? 0
+      const dBA = opts.spaceBetweenSymbols?.[b]?.[a] ?? 0
+      const interMin = Math.max(dAB, dBA)
+      if (interMin > 0) {
+        cost += INTER_SYMBOL_WEIGHT
+      }
+    }
+  }
+
+  // --- Build circular runs of identical symbols (for stacking + same-symbol spacing) ---
+  type Run = { symbol: SymbolId; length: number; start: number }
+  const runs: Run[] = []
+
+  let currentSym = reel[0]!
+  let currentStart = 0
+  let currentLen = 1
+
+  for (let i = 1; i < L; i++) {
+    const sym = reel[i]!
+    if (sym === currentSym) {
+      currentLen++
+    } else {
+      runs.push({ symbol: currentSym, length: currentLen, start: currentStart })
+      currentSym = sym
+      currentStart = i
+      currentLen = 1
+    }
+  }
+  runs.push({ symbol: currentSym, length: currentLen, start: currentStart })
+
+  // Merge first and last run if they are the same symbol (circular reel)
+  if (runs.length > 1 && runs[0]!.symbol === runs[runs.length - 1]!.symbol) {
+    runs[0]!.length += runs[runs.length - 1]!.length
+    runs.pop()
+  }
+
+  // --- Stack size penalties (don’t break legal stacks, punish too short/too long) ---
+  if (opts.stacking) {
+    for (const run of runs) {
+      const stackOpts = opts.stacking[run.symbol]
+      if (!stackOpts) continue
+
+      const minStack = Array.isArray(stackOpts.min)
+        ? (stackOpts.min[ridx] ?? 1)
+        : (stackOpts.min ?? 1)
+      const maxStack = Array.isArray(stackOpts.max)
+        ? (stackOpts.max[ridx] ?? run.length)
+        : (stackOpts.max ?? run.length)
+
+      if (run.length < minStack) {
+        cost += STACK_SIZE_WEIGHT * (minStack - run.length)
+      } else if (run.length > maxStack) {
+        cost += STACK_SIZE_WEIGHT * (run.length - maxStack)
+      }
+    }
+  }
+
+  // --- Same-symbol spacing between *different stacks* of the same symbol ---
+  // We now enforce spaceBetweenSameSymbols between runs, not inside a run,
+  // so stacks are free to be contiguous, but separate stacks must be spaced.
+  const lastEndBySymbol = new Map<SymbolId, number>()
+
+  for (const run of runs) {
+    const sameMin = sameSpacing(run.symbol, opts)
+    if (sameMin > 0 && lastEndBySymbol.has(run.symbol)) {
+      const prevEnd = lastEndBySymbol.get(run.symbol)! // index of last cell of previous run
+      const thisStart = run.start
+      const dist = circularDistance(prevEnd, thisStart, L)
+
+      if (dist <= sameMin) {
+        // Penalize lack of gap between stacks of the same symbol
+        cost += STACK_SPACING_WEIGHT * (sameMin - dist + 1)
+      }
+    }
+
+    const thisEnd = (run.start + run.length - 1) % L
+    lastEndBySymbol.set(run.symbol, thisEnd)
+  }
+
+  return cost
+}
+
+function optimizeReelWithSA(
+  ridx: number,
+  initial: SymbolId[],
+  opts: ReelGeneratorOptions,
+  rng: RandomNumberGenerator,
+): SymbolId[] {
+  const reel = [...initial]
+  let best = [...reel]
+  let bestCost = costReel(ridx, reel, opts)
+
+  const sa = opts.generator?.sa ?? {}
+  let T = sa.temperature ?? 1.0
+  const cooling = sa.cooling ?? 0.9995
+  const iterations = sa.iterations ?? 100_000
+
+  for (let it = 0; it < iterations && bestCost > 0; it++) {
+    const i = Math.floor(rng.randomFloat(0, reel.length))
+    let j = Math.floor(rng.randomFloat(0, reel.length))
+    if (j === i) j = (j + 1) % reel.length
+
+    const tmp = reel[i]!
+    reel[i] = reel[j]!
+    reel[j] = tmp
+
+    const newCost = costReel(ridx, reel, opts)
+    const delta = newCost - bestCost
+
+    if (
+      newCost < bestCost ||
+      Math.exp(-delta / Math.max(T, 1e-9)) > rng.randomFloat(0, 1)
+    ) {
+      // accept move
+      if (newCost < bestCost) {
+        bestCost = newCost
+        best = [...reel]
+      }
+    } else {
+      // revert move
+      reel[j] = reel[i]!
+      reel[i] = tmp
+    }
+
+    T *= cooling
+  }
+
+  return best
+}
+
 export function generateReels(opts: ReelGeneratorOptions) {
   const diagnostics: GenerationResult["diagnostics"] = { success: false, reasons: [] }
 
@@ -458,7 +602,7 @@ export function generateReels(opts: ReelGeneratorOptions) {
   let currentSeed = opts.seed ?? 1
   rng.setSeed(currentSeed)
 
-  console.log("Generating reels. This may take a while...")
+  console.log(chalk.bold("Generating reels. This may take a while..."))
 
   for (let ridx = 0; ridx < opts.reelsAmount; ridx++) {
     console.log(`Generating reel ${ridx + 1}/${opts.reelsAmount}...`)
@@ -484,19 +628,35 @@ export function generateReels(opts: ReelGeneratorOptions) {
     while (attemptsLeft-- > 0) {
       const { positions, stackStarts } = placeBlocksOnReel(ridx, blocks, opts, rng)
 
-      // Failed, set new RNG seed and retry
       if (!positions) {
-        console.log(
-          `Retrying with new RNG seed (${attempts - attemptsLeft}/${attempts})...`,
-        )
-        currentSeed += 1
-        rng.setSeed(currentSeed)
-        continue
+        // Try simulated annealing
+        const flat: SymbolId[] = []
+        for (const [symbol, count] of Object.entries(symbolCounts)) {
+          for (let k = 0; k < count; k++) flat.push(symbol)
+        }
+        shuffleInPlace(flat, rng)
+
+        const optimized = optimizeReelWithSA(ridx, flat, opts, rng)
+        const finalCost = costReel(ridx, optimized, opts)
+
+        if (finalCost === 0) {
+          console.log(optimized)
+          reelPositions = optimized
+          break
+        } else {
+          // everything failed, try with new seed
+          console.log(
+            chalk.gray(
+              `Retrying with new RNG seed (${attempts - attemptsLeft}/${attempts})...`,
+            ),
+          )
+          currentSeed += 1
+          rng.setSeed(currentSeed)
+          continue
+        }
       }
 
-      // Success
       reelPositions = positions
-      finalStackStarts = stackStarts
       break
     }
 
@@ -504,9 +664,13 @@ export function generateReels(opts: ReelGeneratorOptions) {
     diagnostics.reasons = warnings.length ? warnings : undefined
 
     if (reelPositions.length === 0) {
-      console.log(`Reel ${ridx + 1}: Failed to generate after multiple attempts.`)
       console.log(
-        "Try setting a different seed for the generator or loosening constraints.",
+        chalk.red(`Reel ${ridx + 1}: Failed to generate after multiple attempts.`),
+      )
+      console.log(
+        chalk.red(
+          "Try setting a different seed for the generator or loosening constraints.",
+        ),
       )
       warnings.push(`Reel ${ridx + 1}: Failed to generate`)
       break
@@ -515,18 +679,16 @@ export function generateReels(opts: ReelGeneratorOptions) {
     reels.push(reelPositions.map((s) => s!))
   }
 
-  console.log(reels)
-
-  if (diagnostics.reasons) {
+  if (diagnostics.reasons && diagnostics.reasons.length > 0) {
     console.log("Notes:", diagnostics.reasons)
   }
 }
 
 generateReels({
-  seed: 180,
   reelsAmount: 5,
   symbols: {
-    H1: [5, 10, 20, 10, 5],
+    S: [2, 1, 2, 1, 2],
+    H1: [8, 10, 20, 10, 8],
     H2: [10, 15, 5, 15, 10],
     H3: [15, 20, 20, 10, 20],
     L1: [20, 30, 10, 10, 20],
@@ -544,8 +706,10 @@ generateReels({
       "1": [1, 1, 1, 1, 1],
       "2": [1, 1, 3, 1, 1],
       "3": [3, 3, 1, 3, 3],
-      "4": [1, 1, 3, 1, 1],
     },
   },
-  spaceBetweenSameSymbols: 1,
+  spaceBetweenSameSymbols: 2,
+  spaceBetweenSymbols: {
+    S: { S: 10 },
+  },
 })
