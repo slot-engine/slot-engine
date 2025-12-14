@@ -15,7 +15,30 @@ export interface ReelGeneratorOptions {
    * }
    */
   symbols: Record<string, number[]>
+  /**
+   * Minimum space between same symbols on a reel.
+   *
+   * Can be a single number applied to all symbols, or a mapping of symbol IDs to their respective minimum spaces.
+   *
+   * @example
+   * 3 // All symbols must have at least 3 symbols between them on the same reel
+   *
+   * @example
+   * {
+   *   "A": 2, // "A" must have at least 2 symbols between them on the same reel
+   *   "B": 4, // "B" must have at least 4 symbols between them on the same reel
+   * }
+   */
   spaceBetweenSameSymbols?: number | Record<string, number>
+  /**
+   * Minimum space between different symbols on a reel.
+   *
+   * @example
+   * {
+   *   "A": { "B": 2, "C": 3 }, // "A" must have at least 2 symbols between "B" and 3 symbols between "C" on the same reel
+   *   "B": { "A": 2, "C": 1 }, // "B" must have at least 2 symbols between "A" and 1 symbol between "C" on the same reel
+   * }
+   */
   spaceBetweenSymbols?: Record<string, Record<string, number>>
   /**
    * Min and max stacking behavior for symbols.
@@ -93,6 +116,39 @@ interface Block {
   id: string
 }
 
+function getStripLengths(opts: ReelGeneratorOptions) {
+  const lengths: number[] = []
+  for (let ridx = 0; ridx < opts.reelsAmount; ridx++) {
+    let length = 0
+    for (const counts of Object.values(opts.symbols)) {
+      length += counts[ridx]!
+    }
+    lengths.push(length)
+  }
+  return lengths
+}
+
+function circularDistance(a: number, b: number, L: number): number {
+  const d = Math.abs(a - b)
+  return Math.min(d, L - d)
+}
+
+function indicesForBlock(start: number, len: number, L: number): number[] {
+  const out: number[] = []
+  for (let k = 0; k < len; k++) out.push((start + k) % L)
+  return out
+}
+
+function shuffleInPlace<T>(arr: T[], rng: RandomNumberGenerator) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const randFloat = rng.randomFloat(0, 1)
+    const j = Math.floor(randFloat * (i + 1))
+    const tmp = arr[i]!
+    arr[i] = arr[j]!
+    arr[j] = tmp
+  }
+}
+
 function isReelsAmountValid(opts: ReelGeneratorOptions) {
   return Object.values(opts.symbols).every((counts) => counts.length === opts.reelsAmount)
 }
@@ -113,17 +169,17 @@ function validateStacking(opts: ReelGeneratorOptions) {
 
       assert(
         count >= minStack,
-        `Symbol "${symbol}" on reel ${ridx} has count ${count}, which is less than the minimum stack size of ${minStack}.`,
+        `Symbol "${symbol}" on reel ${ridx + 1} has count ${count}, which is less than the minimum stack size of ${minStack}.`,
       )
 
       assert(
         minStack <= maxStack,
-        `For symbol "${symbol}" on reel ${ridx}, the minimum stack size of ${minStack} exceeds the maximum stack size of ${maxStack}.`,
+        `For symbol "${symbol}" on reel ${ridx + 1}, the minimum stack size of ${minStack} exceeds the maximum stack size of ${maxStack}.`,
       )
 
       assert(
         count % minStack === 0,
-        `Symbol "${symbol}" on reel ${ridx} has count ${count}, which is not divisible by the minimum stack size of ${minStack}.`,
+        `Symbol "${symbol}" on reel ${ridx + 1} has count ${count}, which is not divisible by the minimum stack size of ${minStack}.`,
       )
     }
   })
@@ -215,12 +271,175 @@ function buildBlocksForReel(
   return blocks
 }
 
+function sameSpacing(sym: string, opts: ReelGeneratorOptions) {
+  const s = opts.spaceBetweenSameSymbols
+  if (!s) return 0
+  return typeof s === "number" ? s : (s[sym] ?? 0)
+}
+
+function otherSpacing(
+  sym: string,
+  opts: ReelGeneratorOptions,
+  symbolsOnReel: Set<string>,
+) {
+  // Get max spacing requirement between this and all other symbols
+  const spacings = opts.spaceBetweenSymbols?.[sym]
+  if (!spacings) return 0
+  let highest = 0
+  for (const other of symbolsOnReel) {
+    const space = spacings[other]
+    if (typeof space === "number" && space > highest) highest = space
+  }
+  return highest
+}
+
 function placeBlocksOnReel(
+  ridx: number,
   blocks: Block[],
   opts: ReelGeneratorOptions,
   rng: RandomNumberGenerator,
 ) {
-  return {}
+  const MAX_BACKTRACKS = 500_000
+
+  // Precompute symbols present on this reel for inter-symbol spacing difficulty
+  const symbolsOnReel = new Set(blocks.map((b) => b.symbol))
+
+  const difficulty = (b: Block) => {
+    const spacingSame = sameSpacing(b.symbol, opts)
+    const spacingInter = otherSpacing(b.symbol, opts, symbolsOnReel)
+    const stacking = b.count > 1 ? b.count : 0
+    // Weighting: inter-symbol constraints are typically harder than same-spacing,
+    // and stacking increases difficulty linearly with stack size.
+    return spacingInter * 1.5 + spacingSame + stacking
+  }
+
+  blocks.sort((a, b) => difficulty(b) - difficulty(a))
+
+  const stripLength = getStripLengths(opts)[ridx]!
+  const positions: (SymbolId | null)[] = Array(stripLength).fill(null)
+  const placedBlocks: { block: Block; start: number }[] = []
+  let backtracks = 0
+
+  function canPlaceAt(start: number, block: Block): boolean {
+    // Block occupies indices start..start+count-1 mod stripLength
+    const indices = indicesForBlock(start, block.count, stripLength)
+
+    // Must be empty
+    for (const idx of indices) {
+      if (positions[idx] !== null) return false
+    }
+
+    // Enforce spacing to same symbol
+    const sameMin = sameSpacing(block.symbol, opts)
+    if (sameMin > 0) {
+      for (let p = 0; p < stripLength; p++) {
+        if (positions[p] === block.symbol) {
+          for (const idx of indices) {
+            if (circularDistance(p, idx, stripLength) <= sameMin) return false
+          }
+        }
+      }
+    }
+
+    // Enforce spacing to different symbols (bidirectional)
+    // Use the max of A->B and B->A if both are defined.
+    for (let p = 0; p < stripLength; p++) {
+      const placedSym = positions[p]
+      if (placedSym === null) continue
+
+      const dAB = opts.spaceBetweenSymbols?.[block.symbol]?.[placedSym!] ?? 0
+      const dBA = opts.spaceBetweenSymbols?.[placedSym!]?.[block.symbol] ?? 0
+      const interMin = Math.max(dAB, dBA)
+
+      if (interMin > 0) {
+        for (const idx of indices) {
+          if (circularDistance(p, idx, stripLength) <= interMin) return false
+        }
+      }
+    }
+
+    return true
+  }
+
+  const used = new Array(blocks.length).fill(false)
+
+  function backtrack(placedCount: number): boolean {
+    if (placedCount >= blocks.length) return true
+    backtracks++
+    if (backtracks > MAX_BACKTRACKS) return false
+
+    // 1) Choose next block via MRV
+    let bestIdx = -1
+    let bestOptions: { pos: number; score: number }[] | null = null
+
+    for (let i = 0; i < blocks.length; i++) {
+      if (used[i]) continue
+      const b = blocks[i]!
+
+      const candidates: { pos: number; score: number }[] = []
+      for (let s = 0; s < stripLength; s++) {
+        if (!canPlaceAt(s, b)) continue
+
+        let score = 0
+        const left = positions[(s - 1 + stripLength) % stripLength]
+        const right = positions[(s + b.count) % stripLength]
+        if (left !== null) score += 10
+        if (right !== null) score += 10
+        score += rng.randomFloat(0, 1)
+
+        candidates.push({ pos: s, score })
+      }
+
+      if (candidates.length === 0) {
+        // This block cannot be placed given current partial layout → dead end
+        return false
+      }
+
+      if (bestOptions === null || candidates.length < bestOptions.length) {
+        bestIdx = i
+        bestOptions = candidates
+      }
+    }
+
+    // 2) Place the “most constrained” block first
+    const b = blocks[bestIdx]!
+    const candidates = bestOptions!.sort((a, c) => c.score - a.score)
+
+    used[bestIdx!] = true
+    for (const { pos: start } of candidates) {
+      // place
+      for (const idx of indicesForBlock(start, b.count, stripLength)) {
+        positions[idx] = b.symbol
+      }
+      placedBlocks.push({ block: b, start })
+
+      if (backtrack(placedCount + 1)) return true
+
+      // undo
+      placedBlocks.pop()
+      for (const idx of indicesForBlock(start, b.count, stripLength)) {
+        positions[idx] = null
+      }
+    }
+    used[bestIdx!] = false
+    return false
+  }
+
+  const ok = backtrack(0)
+  const stackStarts = new Set<number>()
+  if (ok) {
+    // detect stack starts (runs of >1 identical caused by blocks of length>1)
+    for (let i = 0; i < stripLength; i++) {
+      const cur = positions[i]
+      if (!cur) continue
+      const next = positions[(i + 1) % stripLength]
+      if (next === cur && positions[(i - 1 + stripLength) % stripLength] !== cur) {
+        stackStarts.add(i)
+      }
+    }
+    return { positions, stackStarts }
+  }
+  return { positions: null, stackStarts }
 }
 
 export function generateReels(opts: ReelGeneratorOptions) {
@@ -236,9 +455,14 @@ export function generateReels(opts: ReelGeneratorOptions) {
   const reels: SymbolId[][] = []
   const warnings: string[] = []
   const rng = new RandomNumberGenerator()
-  if (opts.seed) rng.setSeed(opts.seed)
+  let currentSeed = opts.seed ?? 1
+  rng.setSeed(currentSeed)
+
+  console.log("Generating reels. This may take a while...")
 
   for (let ridx = 0; ridx < opts.reelsAmount; ridx++) {
+    console.log(`Generating reel ${ridx + 1}/${opts.reelsAmount}...`)
+
     const symbolCounts = Object.fromEntries(
       Object.entries(opts.symbols).map(([symbol, counts]) => [symbol, counts[ridx]!]),
     )
@@ -252,26 +476,76 @@ export function generateReels(opts: ReelGeneratorOptions) {
 
     const blocks = buildBlocksForReel(ridx, symbolCounts, opts, rng)
 
-    const {} = placeBlocksOnReel(blocks, opts, rng)
+    let reelPositions: (SymbolId | null)[] = []
+    let finalStackStarts: Set<number> = new Set()
+    const attempts = 15
+    let attemptsLeft = attempts
+
+    while (attemptsLeft-- > 0) {
+      const { positions, stackStarts } = placeBlocksOnReel(ridx, blocks, opts, rng)
+
+      // Failed, set new RNG seed and retry
+      if (!positions) {
+        console.log(
+          `Retrying with new RNG seed (${attempts - attemptsLeft}/${attempts})...`,
+        )
+        currentSeed += 1
+        rng.setSeed(currentSeed)
+        continue
+      }
+
+      // Success
+      reelPositions = positions
+      finalStackStarts = stackStarts
+      break
+    }
+
+    diagnostics.success = true
+    diagnostics.reasons = warnings.length ? warnings : undefined
+
+    if (reelPositions.length === 0) {
+      console.log(`Reel ${ridx + 1}: Failed to generate after multiple attempts.`)
+      console.log(
+        "Try setting a different seed for the generator or loosening constraints.",
+      )
+      warnings.push(`Reel ${ridx + 1}: Failed to generate`)
+      break
+    }
+
+    reels.push(reelPositions.map((s) => s!))
+  }
+
+  console.log(reels)
+
+  if (diagnostics.reasons) {
+    console.log("Notes:", diagnostics.reasons)
   }
 }
 
 generateReels({
+  seed: 180,
   reelsAmount: 5,
   symbols: {
-    A: [30, 30, 30, 30, 30],
-    B: [30, 30, 30, 30, 30],
-    C: [30, 30, 30, 30, 30],
+    H1: [5, 10, 20, 10, 5],
+    H2: [10, 15, 5, 15, 10],
+    H3: [15, 20, 20, 10, 20],
+    L1: [20, 30, 10, 10, 20],
+    L2: [25, 30, 30, 20, 10],
   },
   stacking: {
-    A: { min: 2, max: 4 },
-    B: { min: 2, max: 4 },
+    H1: { min: 1, max: 3 },
+    H2: { min: 1, max: 3 },
+    H3: { min: 1, max: 3 },
+    L1: { min: 1, max: 3 },
+    L2: { min: 1, max: 3 },
   },
   stackingWeights: {
-    "A": {
+    L1: {
+      "1": [1, 1, 1, 1, 1],
       "2": [1, 1, 3, 1, 1],
       "3": [3, 3, 1, 3, 3],
       "4": [1, 1, 3, 1, 1],
-    }
-  }
+    },
+  },
+  spaceBetweenSameSymbols: 1,
 })
