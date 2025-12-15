@@ -1,5 +1,5 @@
-# Slot Engine LGS
+# Slot Engine Panel
 
-Local gaming server. Test your game locally without uploading to Stake Engine and save time during development.
+TBA
 
-[📖 Documentation](https://slot-engine.dev/docs/lgs)
+[📖 Documentation](https://slot-engine.dev/docs/panel)

@@ -1,0 +1,21 @@
+@import "@fontsource-variable/archivo";
+@import "tailwindcss";
+
+@theme {
+  --color-*: initial;
+  --color-ui-50: #e8f1f6;
+  --color-ui-500: #808d96;
+  --color-ui-700: #434c53;
+  --color-ui-800: #2f3236;
+  --color-ui-900: #1b1d20;
+  --color-ui-950: #131619;
+}
+
+@layer base {
+  html,
+  body {
+    font-family: "Archivo Variable", sans-serif;
+    background-color: var(--color-ui-950);
+    color: var(--color-ui-50);
+  }
+}
