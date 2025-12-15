@@ -1,0 +1,54 @@
+{
+  "name": "@slot-engine/panel",
+  "version": "0.0.0",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/slot-engine/slot-engine"
+  },
+  "homepage": "https://slot-engine.dev/docs/panel",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build-server": "tsup ./server/index.ts --dts --format cjs,esm --sourcemap",
+    "build-client": "cd ./client && tsc -b && vite build",
+    "build": "pnpm run build-server && pnpm run build-client",
+    "dev-server": "tsx watch ./server/index.ts",
+    "dev-client": "cd ./client && vite",
+    "dev": "concurrently \"pnpm run dev-server\" \"pnpm run dev-client\""
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "module": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@hono/node-server":"1.19.7",
+    "hono":"4.11.1",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "concurrently": "9.2.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vite": "^7.2.4"
+  }
+}
