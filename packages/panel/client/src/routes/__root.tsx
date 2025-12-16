@@ -10,7 +10,9 @@ function RootComponent() {
   return (
     <>
       <Navigation />
-      <Outlet />
+      <main className="px-4 py-8 max-w-page-width mx-auto w-full border-x border-ui-700 min-h-content-height">
+        <Outlet />
+      </main>
     </>
   )
 }

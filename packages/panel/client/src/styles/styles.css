@@ -9,6 +9,10 @@
   --color-ui-800: #2f3236;
   --color-ui-900: #1b1d20;
   --color-ui-950: #131619;
+
+  --spacing-page-width: 1400px;
+  --spacing-nav-height: 57px;
+  --spacing-content-height: calc(100vh - var(--spacing-nav-height));
 }
 
 @layer base {
@@ -17,5 +21,9 @@
     font-family: "Archivo Variable", sans-serif;
     background-color: var(--color-ui-950);
     color: var(--color-ui-50);
+  }
+
+  h1 {
+    font-size: var(--text-5xl);
   }
 }
