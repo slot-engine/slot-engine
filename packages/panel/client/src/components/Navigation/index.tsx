@@ -1,6 +1,10 @@
 import SlotEngineIcon from "@/assets/slot-engine-icon.png"
 
 export const Navigation = () => {
+  const navLinks: NavLink[] = [
+    { label: "Games", href: "/games" },
+  ]
+
   return (
     <div className="px-8 py-6 flex gap-8 justify-between border-b border-ui-700">
       <div className="flex items-center gap-4">
@@ -13,4 +17,10 @@ export const Navigation = () => {
       </div>
     </div>
   )
+}
+
+interface NavLink {
+  label: string
+  href: string
+  icon?: React.ReactNode
 }
