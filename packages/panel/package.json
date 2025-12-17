@@ -12,7 +12,7 @@
     "build-server": "tsup ./server/index.ts --dts --format cjs,esm --sourcemap",
     "build-client": "cd ./client && tsc -b && vite build",
     "build": "pnpm run build-server && pnpm run build-client",
-    "dev-server": "tsx watch ./index.ts",
+    "dev-server": "tsx watch ./dev.ts",
     "dev-client": "cd ./client && vite",
     "dev": "concurrently \"pnpm run dev-server\" \"pnpm run dev-client\""
   },

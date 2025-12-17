@@ -4,11 +4,16 @@
 @theme {
   --color-*: initial;
   --color-ui-50: #e8f1f6;
+  --color-ui-100: #d3dce0;
   --color-ui-500: #808d96;
   --color-ui-700: #434c53;
   --color-ui-800: #2f3236;
   --color-ui-900: #1b1d20;
   --color-ui-950: #131619;
+
+  --color-red-500: #f55d42;
+  --color-red-600: #bd4833;
+  --color-red-700: #8f3627;
 
   --spacing-page-width: 1400px;
   --spacing-nav-height: 57px;
@@ -25,5 +30,17 @@
 
   h1 {
     font-size: var(--text-5xl);
+  }
+
+  h2 {
+    font-size: var(--text-4xl);
+  }
+
+  code {
+    padding: 0.1rem 0.25rem;
+    background-color: var(--color-ui-900);
+    border: 1px solid var(--color-ui-700);
+    border-radius: var(--radius-sm);
+    color: var(--color-ui-100);
   }
 }

@@ -3,19 +3,38 @@ import chalk from "chalk"
 import { Hono } from "hono"
 import { serve } from "@hono/node-server"
 import { serveStatic } from "@hono/node-server/serve-static"
-import { type InferGameType } from "@slot-engine/core"
-import { api } from "./api"
+import {
+  AnyGameModes,
+  AnySymbols,
+  AnyUserData,
+  type InferGameType,
+} from "@slot-engine/core"
+import { gamesHandler } from "./api/games"
+import { statusHandler } from "./api/status"
 
 const DEFAULT_CONFIG: PanelConfig = {
   port: 7770,
   games: [],
 }
 
-export function createPanel(config: PanelConfig = DEFAULT_CONFIG): Panel {
-  const app = new Hono()
+export type Variables = {
+  config: PanelConfig
+}
 
-  // Serve API
-  app.route("/api", api)
+export const app = new Hono<{ Variables: Variables }>()
+
+export function createPanel(opts?: PanelOptions): Panel {
+  const panelConfig = { ...DEFAULT_CONFIG, ...opts }
+
+  // Add config to context
+  app.use("*", async (c, next) => {
+    c.set("config", panelConfig)
+    await next()
+  })
+
+  // API routes
+  app.get("/api/status", ...statusHandler)
+  app.get("/api/games", ...gamesHandler)
 
   // Serve frontend assets
   app.use(
@@ -41,23 +60,26 @@ export function createPanel(config: PanelConfig = DEFAULT_CONFIG): Panel {
   const run = () => {
     serve({
       fetch: app.fetch,
-      port: config.port,
+      port: panelConfig.port,
     })
 
     console.log("\n")
     console.log(
-      `⚡️ ${chalk.cyan("Slot Engine Panel")} is running on ${chalk.cyan(`http://localhost:${config.port}`)}`,
+      `⚡️ ${chalk.cyan("Slot Engine Panel")} is running on ${chalk.cyan(`http://localhost:${panelConfig.port}`)}`,
     )
   }
 
   return { run }
 }
 
-type SlotGame = InferGameType<any, any, any>
-
-export interface PanelConfig {
+interface PanelOptions {
   port?: number
-  games?: SlotGame[]
+  games?: Array<InferGameType<any, any, any>>
+}
+
+interface PanelConfig {
+  port: number
+  games: Array<InferGameType<AnyGameModes, AnySymbols, AnyUserData>>
 }
 
 export interface Panel {

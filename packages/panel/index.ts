@@ -1,6 +1,1 @@
-// starts dev server
-
-import { createPanel } from "./server"
-
-const panel = createPanel()
-panel.run()
+export { createPanel, type Panel } from "./server"

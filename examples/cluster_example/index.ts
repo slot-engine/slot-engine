@@ -275,6 +275,7 @@ export const game = createSlotGame<GameType>({
   hooks: {
     onHandleGameFlow,
   },
+  rootDir: __dirname, // optional, but required if connecting this game to @slot-engine/panel
 })
 
 game.configureSimulation({

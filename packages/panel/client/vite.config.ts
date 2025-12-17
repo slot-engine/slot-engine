@@ -14,6 +14,14 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:7770",
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     outDir: "../dist-client",
   },
