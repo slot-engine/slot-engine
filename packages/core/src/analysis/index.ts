@@ -1,6 +1,6 @@
 import fs from "fs"
 import path from "path"
-import { GameConfig } from "../game-config"
+import { GameConfig, GameMetadata } from "../game-config"
 import { Optimizer, OptimzierGameModeConfig } from "../optimizer"
 import assert from "assert"
 import {
@@ -25,11 +25,13 @@ import { isMainThread } from "worker_threads"
 
 export class Analysis {
   protected readonly gameConfig: GameConfig
+  protected readonly gameMeta: GameMetadata
   protected readonly optimizerConfig: OptimzierGameModeConfig
   protected filePaths: Record<string, FilePaths>
 
   constructor(optimizer: Optimizer) {
     this.gameConfig = optimizer.getGameConfig()
+    this.gameMeta = optimizer.getGameMeta()
     this.optimizerConfig = optimizer.getOptimizerGameModes()
     this.filePaths = {}
   }
@@ -45,34 +47,34 @@ export class Analysis {
   }
 
   private getPathsForModes(gameModes: string[]) {
-    const rootPath = this.gameConfig.rootDir
+    const rootPath = this.gameMeta.rootDir
     const paths: Record<string, FilePaths> = {}
 
     for (const modeStr of gameModes) {
       const lut = path.join(
         rootPath,
-        this.gameConfig.outputDir,
+        this.gameMeta.outputDir,
         `lookUpTable_${modeStr}.csv`,
       )
       const lutSegmented = path.join(
         rootPath,
-        this.gameConfig.outputDir,
+        this.gameMeta.outputDir,
         `lookUpTableSegmented_${modeStr}.csv`,
       )
       const lutOptimized = path.join(
         rootPath,
-        this.gameConfig.outputDir,
+        this.gameMeta.outputDir,
         "publish_files",
         `lookUpTable_${modeStr}_0.csv`,
       )
       const booksJsonl = path.join(
         rootPath,
-        this.gameConfig.outputDir,
+        this.gameMeta.outputDir,
         `books_${modeStr}.jsonl`,
       )
       const booksJsonlCompressed = path.join(
         rootPath,
-        this.gameConfig.outputDir,
+        this.gameMeta.outputDir,
         "publish_files",
         `books_${modeStr}.jsonl.zst`,
       )
@@ -126,7 +128,7 @@ export class Analysis {
     }
 
     writeJsonFile(
-      path.join(this.gameConfig.rootDir, this.gameConfig.outputDir, "stats_summary.json"),
+      path.join(this.gameMeta.rootDir, this.gameMeta.outputDir, "stats_summary.json"),
       stats,
     )
   }
@@ -232,7 +234,7 @@ export class Analysis {
     }
 
     writeJsonFile(
-      path.join(this.gameConfig.rootDir, this.gameConfig.outputDir, "stats_payouts.json"),
+      path.join(this.gameMeta.rootDir, this.gameMeta.outputDir, "stats_payouts.json"),
       payoutRanges,
     )
   }

@@ -5,7 +5,12 @@ import zlib from "zlib"
 import readline from "readline"
 import { buildSync } from "esbuild"
 import { Worker, isMainThread, parentPort, workerData } from "worker_threads"
-import { createGameConfig, GameConfigOptions, GameConfig } from "../game-config"
+import {
+  createGameConfig,
+  GameConfigOptions,
+  GameConfig,
+  GameMetadata,
+} from "../game-config"
 import { createGameContext, GameContext } from "../game-context"
 import { createDirIfNotExists, JSONL, writeFile } from "../../utils"
 import { SPIN_TYPE } from "../constants"
@@ -21,7 +26,7 @@ const TEMP_FOLDER = "temp_files"
 
 export class Simulation {
   readonly gameConfigOpts: GameConfigOptions
-  readonly gameConfig: GameConfig
+  readonly gameConfig: GameConfig & GameMetadata
   readonly simRunsAmount: Partial<Record<string, number>>
   readonly concurrency: number
   private debug = false
@@ -32,7 +37,8 @@ export class Simulation {
   private hasWrittenRecord = false
 
   constructor(opts: SimulationOptions, gameConfigOpts: GameConfigOptions) {
-    this.gameConfig = createGameConfig(gameConfigOpts)
+    const { config, metadata } = createGameConfig(gameConfigOpts)
+    this.gameConfig = { ...config, ...metadata }
     this.gameConfigOpts = gameConfigOpts
     this.simRunsAmount = opts.simRunsAmount || {}
     this.concurrency = (opts.concurrency || 6) >= 2 ? opts.concurrency || 6 : 2

@@ -117,6 +117,10 @@ export class SlotGame<
    * Gets the game configuration.
    */
   getConfig() {
-    return createGameConfig(this.configOpts)
+    return createGameConfig(this.configOpts).config
+  }
+
+  getMetadata() {
+    return createGameConfig(this.configOpts).metadata
   }
 }

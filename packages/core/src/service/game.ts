@@ -1,5 +1,4 @@
 import { AbstractService } from "."
-import { GameConfig } from "../game-config"
 import { GameContext } from "../game-context"
 import { AnyGameModes, AnySymbols, AnyUserData, SpinType } from "../types"
 import { WinCombination } from "../win-types"

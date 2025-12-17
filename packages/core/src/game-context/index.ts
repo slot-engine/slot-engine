@@ -1,4 +1,9 @@
-import { createGameConfig, GameConfig, GameConfigOptions } from "../game-config"
+import {
+  createGameConfig,
+  GameConfig,
+  GameConfigOptions,
+  GameMetadata,
+} from "../game-config"
 import { createGameState, GameState } from "../game-state"
 import { Recorder } from "../recorder"
 import { BoardService } from "../service/board"
@@ -13,7 +18,7 @@ export interface GameContextOptions<
   TSymbols extends AnySymbols,
   TUserState extends AnyUserData,
 > {
-  config: GameConfig<TGameModes, TSymbols, TUserState>
+  config: GameConfig<TGameModes, TSymbols, TUserState> & GameMetadata
   state?: Partial<GameState<TUserState>>
   services?: Partial<GameContextServices>
 }
@@ -93,20 +98,22 @@ export interface GameContextServices {
  * Intended for testing purposes only.\
  * Creates a game context with a minimal configuration.
  */
-export function createTestContext(config?: Partial<GameConfigOptions>) {
+export function createTestContext(opts?: Partial<GameConfigOptions>) {
+  const { config, metadata } = createGameConfig({
+    id: "",
+    name: "",
+    gameModes: {},
+    symbols: {},
+    scatterToFreespins: {},
+    maxWinX: 10000,
+    hooks: {
+      onHandleGameFlow() {},
+    },
+    ...opts,
+  })
+
   const ctx = createGameContext({
-    config: createGameConfig({
-      id: "",
-      name: "",
-      gameModes: {},
-      symbols: {},
-      scatterToFreespins: {},
-      maxWinX: 10000,
-      hooks: {
-        onHandleGameFlow() {},
-      },
-      ...config,
-    }),
+    config: { ...config, ...metadata },
   })
 
   // it needs a recorder to work properly

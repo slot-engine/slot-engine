@@ -8,14 +8,16 @@ import { OptimizationParameters } from "./OptimizationParameters"
 import { OptimizationConditions } from "./OptimizationConditions"
 import { OptimizationScaling } from "./OptimizationScaling"
 import { SlotGame } from "../slot-game"
-import { GameConfig } from "../game-config"
+import { GameConfig, GameMetadata } from "../game-config"
 
 export class Optimizer {
   protected readonly gameConfig: GameConfig
+  protected readonly gameMeta: GameMetadata
   protected readonly gameModes: OptimzierGameModeConfig
 
   constructor(opts: OptimizerOpts) {
     this.gameConfig = opts.game.getConfig()
+    this.gameMeta = opts.game.getMetadata()
     this.gameModes = opts.gameModes
     this.verifyConfig()
   }
@@ -80,6 +82,10 @@ export class Optimizer {
 
   getGameConfig() {
     return this.gameConfig
+  }
+
+  getGameMeta() {
+    return this.gameMeta
   }
 
   getOptimizerGameModes() {
