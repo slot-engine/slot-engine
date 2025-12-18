@@ -1,11 +1,10 @@
 import { Variables } from "../.."
-import { createFactory } from "hono/factory"
-import { APIGamesResponse } from "../../types"
-import path from "path"
+import { APIGamesResponse, APIGameDetailResponse, APIMessageResponse } from "../../types"
+import { Hono } from "hono"
 
-const factory = createFactory<{ Variables: Variables }>()
+const app = new Hono<{ Variables: Variables }>()
 
-export const gamesHandler = factory.createHandlers((c) => {
+app.get("/", (c) => {
   const games = c.get("config").games
 
   const data = games.map((game) => {
@@ -17,9 +16,32 @@ export const gamesHandler = factory.createHandlers((c) => {
       name: conf.name,
       modes: Object.keys(conf.gameModes).length,
       isValid: meta.isCustomRoot,
-      path: meta.rootDir
+      path: meta.rootDir,
     }
   })
 
   return c.json<APIGamesResponse>({ games: data })
 })
+
+app.get("/:id", (c) => {
+  const gameId = c.req.param("id")
+  const games = c.get("config").games
+  const game = games.find((g) => g.getConfig().id === gameId)
+
+  if (!game) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  const conf = game.getConfig()
+  const meta = game.getMetadata()
+
+  const data = {
+    id: conf.id,
+    name: conf.name,
+    path: meta.rootDir,
+  }
+
+  return c.json<APIGameDetailResponse>(data)
+})
+
+export default app

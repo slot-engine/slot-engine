@@ -3,6 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import { query, type APIResponse } from "../../lib/queries"
 import { cva } from "../../lib/cn"
 import { IconArrowRight, IconCheck, IconX } from "@tabler/icons-react"
+import { ErrorDisplay } from "../../components/Error"
+import { Loading } from "../../components/Loading"
 
 export const Route = createFileRoute("/games/")({
   component: GamesPage,
@@ -16,11 +18,14 @@ function GamesPage() {
     },
   })
 
+  if (error) return <ErrorDisplay error={error} />
+  if (!data) return <Loading isLoading={isLoading} />
+
   return (
     <div>
       <h1 className="mb-8">Games</h1>
 
-      {data && data.games.length > 0 && <GamesList {...data} />}
+      <GamesList {...data} />
     </div>
   )
 }
@@ -40,7 +45,12 @@ function GamesList(data: APIResponse<"games">) {
     <div className="space-y-4">
       {data.games.map((game) =>
         game.isValid ? (
-          <Link to="/games/:id" className={boxStyles({ isValid: game.isValid })} key={game.id}>
+          <Link
+            to="/games/$gameId"
+            params={{ gameId: game.id }}
+            className={boxStyles({ isValid: game.isValid })}
+            key={game.id}
+          >
             <div>
               <div className="text-ui-500">{game.id}</div>
               <h2>{game.name}</h2>

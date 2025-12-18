@@ -7,7 +7,13 @@ export const Route = createRootRoute({
   component: RootComponent,
 })
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+    }
+  }
+})
 
 function RootComponent() {
   return (

@@ -9,7 +9,7 @@ import {
   AnyUserData,
   type InferGameType,
 } from "@slot-engine/core"
-import { gamesHandler } from "./api/games"
+import gamesHandler from "./api/games"
 import { statusHandler } from "./api/status"
 
 const DEFAULT_CONFIG: PanelConfig = {
@@ -34,7 +34,7 @@ export function createPanel(opts?: PanelOptions): Panel {
 
   // API routes
   app.get("/api/status", ...statusHandler)
-  app.get("/api/games", ...gamesHandler)
+  app.route("/api/games", gamesHandler)
 
   // Serve frontend assets
   app.use(
