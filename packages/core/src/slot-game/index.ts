@@ -124,3 +124,9 @@ export class SlotGame<
     return createGameConfig(this.configOpts).metadata
   }
 }
+
+export type SlotGameType<
+  TGameModes extends AnyGameModes = AnyGameModes,
+  TSymbols extends AnySymbols = AnySymbols,
+  TUserState extends AnyUserData = AnyUserData,
+> = SlotGame<TGameModes, TSymbols, TUserState>

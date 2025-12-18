@@ -17,6 +17,8 @@ export {
   defineUserState,
 } from "./src/createSlotGame"
 
+export { type SlotGameType as SlotGame } from "./src/slot-game"
+
 export { GameMode } from "./src/game-mode"
 export { GameSymbol } from "./src/game-symbol"
 export { ResultSet } from "./src/result-set"
