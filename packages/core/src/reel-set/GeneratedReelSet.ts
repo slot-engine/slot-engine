@@ -314,19 +314,6 @@ export class GeneratedReelSet extends ReelSet {
           }
         }
 
-        // Check for stacking preference
-        if (this.preferStackedSymbols && reel.length > 0) {
-          const prevSymbol = r - 1 >= 0 ? reel[r - 1] : reel[reel.length - 1]
-
-          if (
-            Math.round(this.rng.randomFloat(1, 100)) <= this.preferStackedSymbols &&
-            (!this.spaceBetweenSameSymbols ||
-              !this.violatesSpacing(reel, prevSymbol!.id, r))
-          ) {
-            chosenSymbolId = prevSymbol!.id
-          }
-        }
-
         // If symbol has stack config, try to place a stack (ignore spacing)
         const stackCfg = this.resolveStacking(chosenSymbolId, ridx)
         if (stackCfg && this.isSymbolAllowedOnReel(chosenSymbolId, ridx)) {
