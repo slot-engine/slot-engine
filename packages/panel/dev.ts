@@ -1,4 +1,4 @@
-// starts dev server
+// starts dev server for testing purposes
 
 import { createPanel } from "./server"
 import { game as ClusterGame } from "../../examples/cluster_example"

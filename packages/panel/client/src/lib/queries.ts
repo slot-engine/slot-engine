@@ -1,7 +1,8 @@
 import {
   type APIGamesResponse,
   type APIStatusResponse,
-  type APIGameDetailResponse,
+  type APIGameResponse,
+  type APIGameInfoResponse,
 } from "../../../server/types"
 
 export class FetchError extends Error {
@@ -26,7 +27,8 @@ export async function api<TData>(endpoint: string, opts?: RequestInit) {
 export const query = {
   status: () => api<APIStatusResponse>("status"),
   games: () => api<APIGamesResponse>("games"),
-  game: (id: string) => api<APIGameDetailResponse>(`games/${id}`),
+  game: (id: string) => api<APIGameResponse>(`games/${id}`),
+  gameInfo: (id: string) => api<APIGameInfoResponse>(`games/${id}/info`),
 }
 
 export type APIResponse<T> = T extends keyof typeof query

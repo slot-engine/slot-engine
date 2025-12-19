@@ -3,12 +3,7 @@ import chalk from "chalk"
 import { Hono } from "hono"
 import { serve } from "@hono/node-server"
 import { serveStatic } from "@hono/node-server/serve-static"
-import {
-  AnyGameModes,
-  AnySymbols,
-  AnyUserData,
-  type InferGameType,
-} from "@slot-engine/core"
+import { SlotGame } from "@slot-engine/core"
 import gamesHandler from "./api/games"
 import { statusHandler } from "./api/status"
 
@@ -67,6 +62,7 @@ export function createPanel(opts?: PanelOptions): Panel {
     console.log(
       `⚡️ ${chalk.cyan("Slot Engine Panel")} is running on ${chalk.cyan(`http://localhost:${panelConfig.port}`)}`,
     )
+    console.log(`:: ${panelConfig.games.length} games loaded`)
   }
 
   return { run }
@@ -74,12 +70,12 @@ export function createPanel(opts?: PanelOptions): Panel {
 
 interface PanelOptions {
   port?: number
-  games?: Array<InferGameType<any, any, any>>
+  games?: Array<SlotGame<any, any, any>>
 }
 
 interface PanelConfig {
   port: number
-  games: Array<InferGameType<AnyGameModes, AnySymbols, AnyUserData>>
+  games: Array<SlotGame<any, any, any>>
 }
 
 export interface Panel {

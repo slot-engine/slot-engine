@@ -14,10 +14,22 @@ export interface APIGamesResponse {
   }>
 }
 
-export interface APIGameDetailResponse {
+export interface APIGameResponse {
   id: string
   name: string
   path: string
+}
+
+export interface APIGameInfoResponse {
+  id: string
+  name: string
+  path: string
+  maxWin: number
+  modes: Array<{
+    name: string
+    cost: number
+    rtp: number
+  }>
 }
 
 export interface APIStatusResponse {

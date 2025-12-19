@@ -1,6 +1,12 @@
+import { SlotGame } from "@slot-engine/core"
 import { Variables } from "../.."
-import { APIGamesResponse, APIGameDetailResponse, APIMessageResponse } from "../../types"
-import { Hono } from "hono"
+import {
+  APIGamesResponse,
+  APIGameResponse,
+  APIMessageResponse,
+  APIGameInfoResponse,
+} from "../../types"
+import { Context, Hono } from "hono"
 
 const app = new Hono<{ Variables: Variables }>()
 
@@ -25,8 +31,7 @@ app.get("/", (c) => {
 
 app.get("/:id", (c) => {
   const gameId = c.req.param("id")
-  const games = c.get("config").games
-  const game = games.find((g) => g.getConfig().id === gameId)
+  const game = getGameById(gameId, c)
 
   if (!game) {
     return c.json<APIMessageResponse>({ message: "Not found" }, 404)
@@ -41,7 +46,42 @@ app.get("/:id", (c) => {
     path: meta.rootDir,
   }
 
-  return c.json<APIGameDetailResponse>(data)
+  return c.json<APIGameResponse>(data)
+})
+
+app.get("/:id/info", (c) => {
+  const gameId = c.req.param("id")
+  const game = getGameById(gameId, c)
+
+  if (!game) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  const data = getGameInfo(game)
+
+  return c.json<APIGameInfoResponse>(data)
 })
 
 export default app
+
+function getGameById(gameId: string, c: Context<{ Variables: Variables }>) {
+  const games = c.get("config").games
+  return games.find((g) => g.getConfig().id === gameId)
+}
+
+function getGameInfo(game: SlotGame) {
+  const conf = game.getConfig()
+  const meta = game.getMetadata()
+
+  return {
+    id: conf.id,
+    name: conf.name,
+    path: meta.rootDir,
+    maxWin: conf.maxWinX,
+    modes: Object.values(conf.gameModes).map((mode) => ({
+      name: mode.name,
+      cost: mode.cost,
+      rtp: mode.rtp,
+    })),
+  }
+}
