@@ -1,5 +1,11 @@
 # @slot-engine/core
 
+## 0.1.10
+
+### Patch Changes
+
+- Fix bug in GeneratedReelSet - Thanks @nordowl
+
 ## 0.1.9
 
 ### Patch Changes
