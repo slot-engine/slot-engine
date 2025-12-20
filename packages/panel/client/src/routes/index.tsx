@@ -40,7 +40,7 @@ function RouteComponent() {
               <div>
                 {link.label}
                 {link.description && (
-                  <p className="text-sm text-ui-400">{link.description}</p>
+                  <p className="text-sm text-ui-100">{link.description}</p>
                 )}
               </div>
             </Link>

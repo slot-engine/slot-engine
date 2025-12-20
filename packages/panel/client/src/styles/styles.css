@@ -4,7 +4,7 @@
 @theme {
   --color-*: initial;
   --color-ui-50: #e8f1f6;
-  --color-ui-100: #d3dce0;
+  --color-ui-100: #ced7db;
   --color-ui-500: #808d96;
   --color-ui-700: #434c53;
   --color-ui-800: #2f3236;
@@ -34,6 +34,10 @@
 
   h2 {
     font-size: var(--text-4xl);
+  }
+
+  h3 {
+    font-size: var(--text-3xl);
   }
 
   code {
