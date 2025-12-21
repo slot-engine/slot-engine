@@ -93,7 +93,7 @@ export class SlotGame<
       ])
 
       // Require flag to run tasks. This is needed to prevent accidental runs
-      // when importing the SlotGame class, e.g. when importing a game for usage with Panel.
+      // e.g. when importing a game for usage with Panel.
       const argvParser = yargs(hideBin(process.argv)).options({
         [CLI_ARGS.RUN]: { type: "boolean", default: false },
       })
