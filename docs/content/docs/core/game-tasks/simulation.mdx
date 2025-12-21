@@ -14,7 +14,7 @@ Simulating your game is quite simple:
 
 <Steps>
 <Step>
-Call `configureSimulation()` on your game
+### Call `configureSimulation()` on your game
 
 ```ts lineNumbers
 const game = createSlotGame({ /* ... */ })
@@ -35,13 +35,28 @@ to simulate certain game modes, just exclude them from `simRunsAmount`.
 </Step>
 
 <Step>
-Finally call `runTasks()` on your game
+### Call `runTasks()` on your game
 
 ```ts lineNumbers=11
 game.runTasks({
   doSimulation: true,
 })
 ```
+</Step>
+<Step>
+### Run simulations
+
+Running simulations will generate JSONL and CSV files containing the results of your simulated spins.
+The easiest way to do this is by using the [`tsx` library](https://tsx.is/).
+
+```sh
+cd ./path-to/your-game
+pnpm tsx ./index.ts --slot-engine-run
+```
+
+<Callout title="Important">
+  For technical reasons, the flag `--slot-engine-run` is required when running your game
+</Callout>
 </Step>
 </Steps>
 
@@ -102,5 +117,10 @@ to achieve a specific target RTP with high precision.
     - Make it easier for the program to simulate rare outcomes, for example by using a dedicated
     reel set with more wilds and generally higher symbols.
     - Programmatically force the desired outcome (board setup, multipliers, etc.)
+  </Accordion>
+  <Accordion title="I'm getting 'Module not found' errors when running the game">
+    Ensure you `cd`'ed into the game directory where your game file is.
+
+    If you're running the game from a different directory, add `rootDir: __dirname` to your game configuration.
   </Accordion>
 </Accordions>

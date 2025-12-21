@@ -1,0 +1,8 @@
+{
+  "title": "Slot Engine Panel",
+  "root": true,
+  "pages": [
+    "---Introduction---",
+    "index"
+  ]
+}

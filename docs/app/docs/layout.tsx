@@ -1,7 +1,7 @@
 import { DocsLayout } from "fumadocs-ui/layouts/docs"
 import { baseOptions } from "@/lib/layout.shared"
 import { source } from "@/lib/source"
-import { CircuitBoard, Server } from "lucide-react"
+import { CircuitBoard, LayoutDashboard, Server } from "lucide-react"
 
 export default function Layout({ children }: LayoutProps<"/docs">) {
   return (
@@ -15,6 +15,12 @@ export default function Layout({ children }: LayoutProps<"/docs">) {
             description: "Game logic and simulations",
             url: "/docs/core",
             icon: <CircuitBoard size={20} className="text-fd-primary" />,
+          },
+          {
+            title: "Slot Engine Panel",
+            description: "Web GUI for interacting with Slot Engine",
+            url: "/docs/panel",
+            icon: <LayoutDashboard size={20} className="text-fd-primary" />,
           },
           {
             title: "Slot Engine LGS",
