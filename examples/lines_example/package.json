@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "tsx ./run.ts"
+    "build": "tsx ./index.ts"
   },
   "dependencies": {
     "@slot-engine/core": "0.1.10"

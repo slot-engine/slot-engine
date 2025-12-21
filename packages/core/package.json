@@ -29,6 +29,10 @@
     }
   },
   "dependencies": {
-    "esbuild": "0.25.9"
+    "esbuild": "0.25.9",
+    "yargs": "18.0.0"
+  },
+  "devDependencies": {
+    "@types/yargs": "17.0.35"
   }
 }

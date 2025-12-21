@@ -4,6 +4,7 @@ import { Simulation, SimulationConfigOptions, SimulationOptions } from "../simul
 import { Analysis, AnalysisOpts } from "../analysis"
 import { OptimizationOpts, Optimizer, OptimizerOpts } from "../optimizer"
 import { isMainThread } from "worker_threads"
+import { CLI_ARGS } from "../constants"
 
 /**
  * SlotGame class that encapsulates the game configuration and state.\
@@ -84,16 +85,23 @@ export class SlotGame<
   /**
    * Runs the configured tasks: simulation, optimization, and/or analysis.
    */
-  async runTasks(
-    opts: {
-      doSimulation?: boolean
-      doOptimization?: boolean
-      doAnalysis?: boolean
-      simulationOpts?: SimulationConfigOptions
-      optimizationOpts?: OptimizationOpts
-      analysisOpts?: AnalysisOpts
-    } = {},
-  ) {
+  async runTasks(opts: TaskOptions = {}) {
+    if (isMainThread && !opts._internal_ignore_args) {
+      const [{ default: yargs }, { hideBin }] = await Promise.all([
+        import("yargs"),
+        import("yargs/helpers"),
+      ])
+
+      // Require flag to run tasks. This is needed to prevent accidental runs
+      // when importing the SlotGame class, e.g. when importing a game for usage with Panel.
+      const argvParser = yargs(hideBin(process.argv)).options({
+        [CLI_ARGS.RUN]: { type: "boolean", default: false },
+      })
+      const argv = await argvParser.parse()
+
+      if (!argv[CLI_ARGS.RUN]) return
+    }
+
     if (!opts.doSimulation && !opts.doOptimization && !opts.doAnalysis) {
       console.log("No tasks to run. Enable either simulation, optimization or analysis.")
     }
@@ -123,6 +131,16 @@ export class SlotGame<
   getMetadata() {
     return createGameConfig(this.configOpts).metadata
   }
+}
+
+interface TaskOptions {
+  _internal_ignore_args?: boolean
+  doSimulation?: boolean
+  doOptimization?: boolean
+  doAnalysis?: boolean
+  simulationOpts?: SimulationConfigOptions
+  optimizationOpts?: OptimizationOpts
+  analysisOpts?: AnalysisOpts
 }
 
 export type SlotGameType<

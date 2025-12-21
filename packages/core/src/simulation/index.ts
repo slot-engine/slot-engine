@@ -52,10 +52,6 @@ export class Simulation {
         .every((v) => v === true),
       "Game mode name must match its key in the gameModes object.",
     )
-
-    if (isMainThread) {
-      this.preprocessFiles()
-    }
   }
 
   async runSimulation(opts: SimulationConfigOptions) {
@@ -74,6 +70,8 @@ export class Simulation {
     // Code that runs when the user executes the simulations.
     // This spawns individual processes and merges the results afterwards.
     if (isMainThread) {
+      this.preprocessFiles()
+
       const debugDetails: Record<string, Record<string, any>> = {}
 
       for (const mode of gameModesToSimulate) {
@@ -656,7 +654,7 @@ export class Simulation {
         this.gameConfig.outputDir,
         TEMP_FILENAME,
       ),
-      external: ["esbuild"],
+      external: ["esbuild", "yargs"],
     })
   }
 
