@@ -11,6 +11,10 @@ import {
   IconRepeat,
 } from "@tabler/icons-react"
 import { z } from "zod"
+import { GameInformation } from "../../components/GameInformation"
+import type { PropsWithGameId } from "../../lib/types"
+import { GameSimulation } from "../../components/GameSimulation"
+import { GameProvider, useGameContext } from "../../context/GameContext"
 
 const tabsNames = {
   info: "info",
@@ -32,7 +36,7 @@ function RouteComponent() {
   const { tab } = Route.useSearch()
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["games", gameId],
+    queryKey: ["game", gameId],
     queryFn: async () => {
       return await query.game(gameId)
     },
@@ -48,7 +52,7 @@ function RouteComponent() {
   }
 
   return (
-    <div>
+    <GameProvider gameId={gameId}>
       <h1 className="mb-8">{data.name}</h1>
 
       <Tabs defaultValue={tab}>
@@ -92,13 +96,13 @@ function RouteComponent() {
           <ExplorerTab />
         </TabsContent>
       </Tabs>
-    </div>
+    </GameProvider>
   )
 }
 
 const TabContentHeader = (props: { title: string; description: string }) => {
   return (
-    <div className="pt-4 pb-8">
+    <div className="py-4">
       <h3>{props.title}</h3>
       <p className="text-ui-100">{props.description}</p>
     </div>
@@ -112,6 +116,7 @@ const InfoTab = () => {
         title="Game Information"
         description="Basic information about the game."
       />
+      <GameInformation />
     </div>
   )
 }
@@ -120,6 +125,7 @@ const SimulationTab = () => {
   return (
     <div>
       <TabContentHeader title="Simulation" description="Run simulations for this game." />
+      <GameSimulation />
     </div>
   )
 }

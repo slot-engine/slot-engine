@@ -5,3 +5,7 @@ export interface LinkItem {
   icon?: React.ReactNode
   target?: string
 }
+
+export interface PropsWithGameId {
+  gameId: string
+}
