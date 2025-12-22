@@ -1,20 +1,20 @@
 import { cn } from "../../lib/cn"
-import { Tabs as ArkComponent } from "@ark-ui/react/tabs"
+import { Tabs as Primitive } from "@base-ui/react/tabs"
 
-export const Tabs = ArkComponent.Root
+export const Tabs = Primitive.Root
 
-export const TabsList = (props: ArkComponent.ListProps) => {
+export const TabsList = (props: Primitive.List.Props) => {
   return (
-    <ArkComponent.List
+    <Primitive.List
       {...props}
       className={cn("border-b border-ui-700 flex", props.className)}
     />
   )
 }
 
-export const TabsTrigger = (props: ArkComponent.TriggerProps) => {
+export const TabsTrigger = (props: Primitive.Tab.Props) => {
   return (
-    <ArkComponent.Trigger
+    <Primitive.Tab
       {...props}
       className={cn(
         "px-4 py-2 flex items-center gap-2 rounded-t-lg hover:bg-ui-800 data-selected:bg-ui-700",
@@ -24,4 +24,4 @@ export const TabsTrigger = (props: ArkComponent.TriggerProps) => {
   )
 }
 
-export const TabsContent = ArkComponent.Content
+export const TabsContent = Primitive.Panel
