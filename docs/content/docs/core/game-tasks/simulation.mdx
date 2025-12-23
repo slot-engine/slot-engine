@@ -17,7 +17,9 @@ Simulating your game is quite simple:
 ### Call `configureSimulation()` on your game
 
 ```ts lineNumbers
-const game = createSlotGame({ /* ... */ })
+const game = createSlotGame({
+  /* ... */
+})
 
 game.configureSimulation({
   simRunsAmount: {
@@ -29,9 +31,12 @@ game.configureSimulation({
 ```
 
 - `simRunsAmount` defines the amount of simulations for each game mode. For quick and dirty testing
-you can do 10_000 simulations, but for production a minimum of 500_000 is recommended. If you do not wish
-to simulate certain game modes, just exclude them from `simRunsAmount`.
+  you can do 10_000 simulations, but for production a minimum of 500_000 is recommended. If you do not wish
+  to simulate certain game modes, just exclude them from `simRunsAmount`.
 - `concurrency` controls the amount of threads (Node workers) used for simulation.
+
+[See all options](#options)
+
 </Step>
 
 <Step>
@@ -42,6 +47,7 @@ game.runTasks({
   doSimulation: true,
 })
 ```
+
 </Step>
 <Step>
 ### Run simulations
@@ -63,12 +69,28 @@ pnpm tsx ./index.ts --slot-engine-run
 Simulation time can range from a few seconds to several minutes, depending on game modes,
 simulation count, thread concurrency, and your hardware.
 
+<Callout type="warn" title="Note">
+  **Ensure sufficient disk space** for large and complex games with many events. Slot
+  Engine offloads in-memory data to temporary files which grow in size as your game is
+  simulating. **Large games with 5+ million simulations can temporarily take up 10-20 GB
+  of disk space.**
+</Callout>
+
+### configureSimulation() options [#options]
+
+| Property         | Type                     | Description                                                                                                                                                          | Required |
+| ---------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `simRunsAmount`  | `Record<string, number>` | List of game modes and their simulation count.                                                                                                                       | yes      |
+| `concurrency`    | `number`                 | Number of threads (Node worker threads) to use. More threads = faster simulation, but higher CPU usage.<br/>Default: 6                                               |          |
+| `maxPendingSims` | `number`                 | The maximum number of simulation results to keep pending in memory before writing to disk. Higher values may speed up simulations but use more RAM.<br/>Default: 250 |          |
+| `maxDiskBuffer`  | `number`                 | The maximum data buffer in MB for writing simulation results to disk. Higher values may speed up simulations but use more RAM.<br/>Default: 50                       |          |
+
 ## Output Files / Publish Files
 
 The output will be written to the `__build__/publish_files` directory. Those are the **final files**
 that can be uploaded to Stake Engine as the "math" part.
 
-### books_\<gameMode>.jsonl.zst [!toc]
+### books\_\<gameMode>.jsonl.zst [!toc]
 
 For each game mode a books file is generated which contains a list of all books (simulations).
 That file is compressed using Zstandard compression, because book files tend to get quite large the more events you have.
@@ -84,7 +106,7 @@ That file is compressed using Zstandard compression, because book files tend to 
 
 An overview of all simulated game modes and their corresponding file names.
 
-### lookUpTable_\<gameMode>_0.csv [!toc]
+### lookUpTable\_\<gameMode>\_0.csv [!toc]
 
 The lookup table contains a list of all book IDs, a weight, and the payout multiplier (scaled by 100).
 
@@ -122,5 +144,12 @@ to achieve a specific target RTP with high precision.
     Ensure you `cd`'ed into the game directory where your game file is.
 
     If you're running the game from a different directory, add `rootDir: __dirname` to your game configuration.
+  </Accordion>
+  <Accordion title="JavaScript heap out of memory">
+    If Node runs out of memory, you have a few options to consider:
+
+    - Reduce the amount of simulations for a game mode. You generally don't need more than 1-2 million simulations per game mode
+    - Increase memory limit in Node
+    - Tune the simulation options, specifically `maxPendingSims` and/or `maxDiskBuffer`
   </Accordion>
 </Accordions>

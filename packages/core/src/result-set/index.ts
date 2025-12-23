@@ -28,7 +28,7 @@ export class ResultSet<TUserState extends AnyUserData> {
     this.evaluate = opts.evaluate
   }
 
-  static assignCriteriaToSimulations(ctx: Simulation, gameModeName: string) {
+  static getNumberOfSimsForCriteria(ctx: Simulation, gameModeName: string) {
     const rng = new RandomNumberGenerator()
     rng.setSeed(0)
 
@@ -58,14 +58,13 @@ export class ResultSet<TUserState extends AnyUserData> {
       (sum, num) => sum + num,
       0,
     )
-
     let reduceSims = totalSims > simNums
 
     const criteriaToWeights = Object.fromEntries(
       resultSets.map((rs) => [rs.criteria, rs.quota]),
     )
 
-    while (totalSims != simNums) {
+    while (totalSims !== simNums) {
       const rs = rng.weightedRandom(criteriaToWeights)
       if (reduceSims && numberOfSimsForCriteria[rs]! > 1) {
         numberOfSimsForCriteria[rs]! -= 1
@@ -80,22 +79,7 @@ export class ResultSet<TUserState extends AnyUserData> {
       reduceSims = totalSims > simNums
     }
 
-    let allCriteria: string[] = []
-    const simNumsToCriteria: Record<number, string> = {}
-
-    Object.entries(numberOfSimsForCriteria).forEach(([criteria, num]) => {
-      for (let i = 0; i <= num; i++) {
-        allCriteria.push(criteria)
-      }
-    })
-
-    allCriteria = rng.shuffle(allCriteria)
-
-    for (let i = 1; i <= Math.min(simNums, allCriteria.length); i++) {
-      simNumsToCriteria[i] = allCriteria[i]!
-    }
-
-    return simNumsToCriteria
+    return numberOfSimsForCriteria
   }
 
   /**

@@ -39,18 +39,6 @@ export class Book {
       freespinsWins: this.freespinsWins,
     }
   }
-
-  /**
-   * Intended for internal use only.
-   */
-  static fromSerialized(data: ReturnType<Book["serialize"]>) {
-    const book = new Book({ id: data.id, criteria: data.criteria })
-    book.events = data.events
-    book.payout = data.payout
-    book.basegameWins = data.basegameWins
-    book.freespinsWins = data.freespinsWins
-    return book
-  }
 }
 
 export interface BookEvent {

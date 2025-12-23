@@ -12,18 +12,35 @@ import {
   GameMetadata,
 } from "../game-config"
 import { createGameContext, GameContext } from "../game-context"
-import { createDirIfNotExists, JSONL, writeFile } from "../../utils"
+import { createDirIfNotExists, JSONL, round, writeFile } from "../../utils"
 import { SPIN_TYPE } from "../constants"
 import { Book } from "../book"
 import { Recorder, RecordItem } from "../recorder"
 import { Wallet } from "../wallet"
 import { ResultSet } from "../result-set"
 import { pipeline } from "stream/promises"
+import { createCriteriaSampler, hashStringToInt, splitCountsAcrossChunks } from "./utils"
 
 let completedSimulations = 0
 const TEMP_FILENAME = "__temp_compiled_src_IGNORE.js"
 const TEMP_FOLDER = "temp_files"
 
+/**
+ * Class for handling simulations of the slot game.
+ * 
+ * High level overview:
+ * - Main thread compiles user code to JS and spawns workers
+ * - Workers run compiled code to execute simulations
+ * - Workers send data to main thread
+ * - Main thread merges data and writes files
+ * 
+ * Notes:
+ * - Backpressure system with credits to avoid overwhelming the main thread
+ * - Limited amount of credits
+ * - Worker uses credit to return data to main thread
+ * - After writing data, main thread gives worker new credit
+ * - Prevents workers sending more data than the main thread can write in time
+ */
 export class Simulation {
   readonly gameConfigOpts: GameConfigOptions
   readonly gameConfig: GameConfig & GameMetadata
@@ -31,10 +48,33 @@ export class Simulation {
   readonly concurrency: number
   private debug = false
   private actualSims = 0
-  private library: Map<number, Book>
   private wallet: Wallet
   private recordsWriteStream: fs.WriteStream | undefined
   private hasWrittenRecord = false
+  private readonly maxPendingSims: number
+  private readonly maxHighWaterMark: number
+
+  private PATHS = {} as {
+    base: string
+    books: (mode: string) => string
+    booksCompressed: (mode: string) => string
+    tempBooks: (mode: string, i: number) => string
+    lookupTable: (mode: string) => string
+    tempLookupTable: (mode: string, i: number) => string
+    lookupTableSegmented: (mode: string) => string
+    tempLookupTableSegmented: (mode: string, i: number) => string
+    lookupTablePublish: (mode: string) => string
+    tempRecords: (mode: string) => string
+    forceRecords: (mode: string) => string
+    indexJson: string
+    publishFiles: string
+    optimizationFiles: string
+  }
+
+  // Worker related
+  private credits = 0
+  private creditWaiters: Array<() => void> = []
+  private creditListenerInit = false
 
   constructor(opts: SimulationOptions, gameConfigOpts: GameConfigOptions) {
     const { config, metadata } = createGameConfig(gameConfigOpts)
@@ -42,8 +82,9 @@ export class Simulation {
     this.gameConfigOpts = gameConfigOpts
     this.simRunsAmount = opts.simRunsAmount || {}
     this.concurrency = (opts.concurrency || 6) >= 2 ? opts.concurrency || 6 : 2
-    this.library = new Map()
     this.wallet = new Wallet()
+    this.maxPendingSims = Math.max(10, opts.maxPendingSims ?? 250)
+    this.maxHighWaterMark = (opts.maxDiskBuffer ?? 50) * 1024 * 1024
 
     const gameModeKeys = Object.keys(this.gameConfig.gameModes)
     assert(
@@ -52,6 +93,34 @@ export class Simulation {
         .every((v) => v === true),
       "Game mode name must match its key in the gameModes object.",
     )
+
+    this.PATHS.base = path.join(this.gameConfig.rootDir, this.gameConfig.outputDir)
+
+    this.PATHS = {
+      ...this.PATHS,
+      books: (mode: string) => path.join(this.PATHS.base, `books_${mode}.jsonl`),
+      booksCompressed: (mode: string) =>
+        path.join(this.PATHS.base, "publish_files", `books_${mode}.jsonl.zst`),
+      tempBooks: (mode: string, i: number) =>
+        path.join(this.PATHS.base, TEMP_FOLDER, `temp_books_${mode}_${i}.jsonl`),
+      lookupTable: (mode: string) =>
+        path.join(this.PATHS.base, `lookUpTable_${mode}.csv`),
+      tempLookupTable: (mode: string, i: number) =>
+        path.join(this.PATHS.base, TEMP_FOLDER, `temp_lookup_${mode}_${i}.csv`),
+      lookupTableSegmented: (mode: string) =>
+        path.join(this.PATHS.base, `lookUpTableSegmented_${mode}.csv`),
+      tempLookupTableSegmented: (mode: string, i: number) =>
+        path.join(this.PATHS.base, TEMP_FOLDER, `temp_lookup_segmented_${mode}_${i}.csv`),
+      lookupTablePublish: (mode: string) =>
+        path.join(this.PATHS.base, "publish_files", `lookUpTable_${mode}_0.csv`),
+      tempRecords: (mode: string) =>
+        path.join(this.PATHS.base, TEMP_FOLDER, `temp_records_${mode}.jsonl`),
+      forceRecords: (mode: string) =>
+        path.join(this.PATHS.base, `force_record_${mode}.json`),
+      indexJson: path.join(this.PATHS.base, "publish_files", "index.json"),
+      optimizationFiles: path.join(this.PATHS.base, "optimization_files"),
+      publishFiles: path.join(this.PATHS.base, "publish_files"),
+    }
   }
 
   async runSimulation(opts: SimulationConfigOptions) {
@@ -77,7 +146,6 @@ export class Simulation {
       for (const mode of gameModesToSimulate) {
         completedSimulations = 0
         this.wallet = new Wallet()
-        this.library = new Map()
         this.hasWrittenRecord = false
 
         debugDetails[mode] = {}
@@ -86,7 +154,6 @@ export class Simulation {
         console.time(mode)
 
         const runs = this.simRunsAmount[mode] || 0
-
         if (runs <= 0) continue
 
         if (!configuredGameModes.includes(mode)) {
@@ -95,45 +162,46 @@ export class Simulation {
           )
         }
 
-        const booksPath = path.join(
-          this.gameConfig.rootDir,
-          this.gameConfig.outputDir,
-          `books_${mode}.jsonl`,
+        const booksPath = this.PATHS.books(mode)
+        const tempRecordsPath = this.PATHS.tempRecords(mode)
+
+        createDirIfNotExists(this.PATHS.base)
+        createDirIfNotExists(path.join(this.PATHS.base, TEMP_FOLDER))
+
+        this.recordsWriteStream = fs.createWriteStream(tempRecordsPath, {
+          highWaterMark: this.maxHighWaterMark,
+        })
+
+        const criteriaCounts = ResultSet.getNumberOfSimsForCriteria(this, mode)
+        const totalSims = Object.values(criteriaCounts).reduce((a, b) => a + b, 0)
+        assert(
+          totalSims === runs,
+          `Criteria mismatch for mode "${mode}". Expected ${runs}, got ${totalSims}`,
         )
 
-        const tempRecordsPath = path.join(
-          this.gameConfig.rootDir,
-          this.gameConfig.outputDir,
-          TEMP_FOLDER,
-          `temp_records_${mode}.jsonl`,
+        const chunks = this.getSimRangesForChunks(totalSims, this.concurrency!)
+        const chunkSizes = chunks.map(([s, e]) => Math.max(0, e - s + 1))
+        const chunkCriteriaCounts = splitCountsAcrossChunks(criteriaCounts, chunkSizes)
+
+        await this.spawnWorkersForGameMode({
+          mode,
+          chunks,
+          chunkCriteriaCounts,
+          totalSims,
+        })
+
+        createDirIfNotExists(this.PATHS.optimizationFiles)
+        createDirIfNotExists(this.PATHS.publishFiles)
+
+        console.log(
+          `Writing final files for game mode "${mode}". This may take a while...`,
         )
-
-        createDirIfNotExists(
-          path.join(this.gameConfig.rootDir, this.gameConfig.outputDir),
-        )
-        createDirIfNotExists(
-          path.join(this.gameConfig.rootDir, this.gameConfig.outputDir, TEMP_FOLDER),
-        )
-
-        this.recordsWriteStream = fs.createWriteStream(tempRecordsPath)
-
-        const simNumsToCriteria = ResultSet.assignCriteriaToSimulations(this, mode)
-
-        await this.spawnWorkersForGameMode({ mode, simNumsToCriteria })
 
         // Merge temporary book files into the final sorted file
         const finalBookStream = fs.createWriteStream(booksPath)
-        const numSims = Object.keys(simNumsToCriteria).length
-        const chunks = this.getSimRangesForChunks(numSims, this.concurrency!)
-
         let isFirstChunk = true
         for (let i = 0; i < chunks.length; i++) {
-          const tempBookPath = path.join(
-            this.gameConfig.rootDir,
-            this.gameConfig.outputDir,
-            TEMP_FOLDER,
-            `temp_books_${mode}_${i}.jsonl`,
-          )
+          const tempBookPath = this.PATHS.tempBooks(mode, i)
 
           if (fs.existsSync(tempBookPath)) {
             if (!isFirstChunk) {
@@ -150,6 +218,19 @@ export class Simulation {
         finalBookStream.end()
         await new Promise<void>((resolve) => finalBookStream.on("finish", resolve))
 
+        // Merge temporary LUTs
+        const lutPath = this.PATHS.lookupTable(mode)
+        const lutPathPublish = this.PATHS.lookupTablePublish(mode)
+        const lutSegmentedPath = this.PATHS.lookupTableSegmented(mode)
+
+        await this.mergeCsv(chunks, lutPath, (i) => `temp_lookup_${mode}_${i}.csv`)
+        fs.copyFileSync(lutPath, lutPathPublish)
+        await this.mergeCsv(
+          chunks,
+          lutSegmentedPath,
+          (i) => `temp_lookup_segmented_${mode}_${i}.csv`,
+        )
+
         if (this.recordsWriteStream) {
           await new Promise<void>((resolve) => {
             this.recordsWriteStream!.end(() => {
@@ -159,30 +240,23 @@ export class Simulation {
           this.recordsWriteStream = undefined
         }
 
-        createDirIfNotExists(
-          path.join(
-            this.gameConfig.rootDir,
-            this.gameConfig.outputDir,
-            "optimization_files",
-          ),
-        )
-        createDirIfNotExists(
-          path.join(this.gameConfig.rootDir, this.gameConfig.outputDir, "publish_files"),
-        )
-
-        console.log(`Writing final files for game mode: ${mode} ...`)
-        this.writeLookupTableCSV(mode)
-        this.writeLookupTableSegmentedCSV(mode)
-        this.writeRecords(mode)
+        await this.writeRecords(mode)
         await this.writeBooksJson(mode)
         this.writeIndexJson()
         console.log(`Mode ${mode} done!`)
 
-        debugDetails[mode].rtp =
-          this.wallet.getCumulativeWins() / (runs * this.gameConfig.gameModes[mode]!.cost)
-
-        debugDetails[mode].wins = this.wallet.getCumulativeWins()
-        debugDetails[mode].winsPerSpinType = this.wallet.getCumulativeWinsPerSpinType()
+        debugDetails[mode].rtp = round(
+          this.wallet.getCumulativeWins() /
+            (runs * this.gameConfig.gameModes[mode]!.cost),
+          3,
+        )
+        debugDetails[mode].wins = round(this.wallet.getCumulativeWins(), 3)
+        debugDetails[mode].winsPerSpinType = Object.fromEntries(
+          Object.entries(this.wallet.getCumulativeWinsPerSpinType()).map(([k, v]) => [
+            k,
+            round(v, 3),
+          ]),
+        )
 
         console.timeEnd(mode)
       }
@@ -197,19 +271,26 @@ export class Simulation {
 
     // Code that runs for individual processes
     if (!isMainThread) {
-      const { mode, simStart, simEnd, index } = workerData
+      const { mode, simStart, simEnd, index, criteriaCounts } = workerData as {
+        mode: string
+        simStart: number
+        simEnd: number
+        index: number
+        criteriaCounts: Record<string, number>
+      }
 
-      const simNumsToCriteria = ResultSet.assignCriteriaToSimulations(this, mode)
+      const seed = (hashStringToInt(mode) + index) >>> 0
+      const nextCriteria = createCriteriaSampler(criteriaCounts, seed)
 
       // Run each simulation until the criteria is met.
       for (let simId = simStart; simId <= simEnd; simId++) {
         if (this.debug) desiredSims++
 
-        const criteria = simNumsToCriteria[simId] || "N/A"
+        const criteria = nextCriteria()
 
-        if (!criteriaToRetries[criteria]) {
-          criteriaToRetries[criteria] = 0
-        }
+        if (!criteriaToRetries[criteria]) criteriaToRetries[criteria] = 0
+
+        await this.acquireCredit()
 
         this.runSingleSimulation({ simId, mode, criteria, index })
 
@@ -228,6 +309,8 @@ export class Simulation {
         type: "done",
         workerNum: index,
       })
+
+      parentPort?.close()
     }
   }
 
@@ -236,22 +319,22 @@ export class Simulation {
    */
   async spawnWorkersForGameMode(opts: {
     mode: string
-    simNumsToCriteria: Record<number, string>
+    chunks: [number, number][]
+    chunkCriteriaCounts: Array<Record<string, number>>
+    totalSims: number
   }) {
-    const { mode, simNumsToCriteria } = opts
-
-    const numSims = Object.keys(simNumsToCriteria).length
-    const simRangesPerChunk = this.getSimRangesForChunks(numSims, this.concurrency!)
+    const { mode, chunks, chunkCriteriaCounts, totalSims } = opts
 
     await Promise.all(
-      simRangesPerChunk.map(([simStart, simEnd], index) => {
+      chunks.map(([simStart, simEnd], index) => {
         return this.callWorker({
-          basePath: path.join(this.gameConfig.rootDir, this.gameConfig.outputDir),
+          basePath: this.PATHS.base,
           mode,
           simStart,
           simEnd,
           index,
-          totalSims: numSims,
+          totalSims,
+          criteriaCounts: chunkCriteriaCounts[index]!,
         })
       }),
     )
@@ -264,8 +347,9 @@ export class Simulation {
     simEnd: number
     index: number
     totalSims: number
+    criteriaCounts: Record<string, number>
   }) {
-    const { mode, simEnd, simStart, basePath, index, totalSims } = opts
+    const { mode, simEnd, simStart, basePath, index, totalSims, criteriaCounts } = opts
 
     function logArrowProgress(current: number, total: number) {
       const percentage = (current / total) * 100
@@ -278,6 +362,12 @@ export class Simulation {
       }
     }
 
+    const write = async (stream: fs.WriteStream, chunk: string) => {
+      if (!stream.write(chunk)) {
+        await new Promise<void>((resolve) => stream.once("drain", resolve))
+      }
+    }
+
     return new Promise((resolve, reject) => {
       const scriptPath = path.join(basePath, TEMP_FILENAME)
 
@@ -287,51 +377,95 @@ export class Simulation {
           simStart,
           simEnd,
           index,
+          criteriaCounts,
         },
       })
 
-      const tempBookPath = path.join(
-        basePath,
-        TEMP_FOLDER,
-        `temp_books_${mode}_${index}.jsonl`,
-      )
-      const bookStream = fs.createWriteStream(tempBookPath)
+      worker.postMessage({ type: "credit", amount: this.maxPendingSims })
+
+      const tempBookPath = this.PATHS.tempBooks(mode, index)
+      const bookStream = fs.createWriteStream(tempBookPath, {
+        highWaterMark: this.maxHighWaterMark,
+      })
+
+      const tempLookupPath = this.PATHS.tempLookupTable(mode, index)
+      const lookupStream = fs.createWriteStream(tempLookupPath, {
+        highWaterMark: this.maxHighWaterMark,
+      })
+
+      const tempLookupSegPath = this.PATHS.tempLookupTableSegmented(mode, index)
+      const lookupSegmentedStream = fs.createWriteStream(tempLookupSegPath, {
+        highWaterMark: this.maxHighWaterMark,
+      })
+
+      let writeChain: Promise<void> = Promise.resolve()
 
       worker.on("message", (msg) => {
         if (msg.type === "log") {
-        } else if (msg.type === "complete") {
-          completedSimulations++
+          return
+        }
 
-          if (completedSimulations % 250 === 0) {
-            logArrowProgress(completedSimulations, totalSims)
-          }
+        if (msg.type === "complete") {
+          writeChain = writeChain
+            .then(async () => {
+              completedSimulations++
+              if (completedSimulations % 250 === 0) {
+                logArrowProgress(completedSimulations, totalSims)
+              }
 
-          // Write data to global library
-          const book = Book.fromSerialized(msg.book)
+              const book = msg.book as ReturnType<Book["serialize"]>
+              const bookData = {
+                id: book.id,
+                payoutMultiplier: book.payout,
+                events: book.events,
+              }
 
-          const bookData = {
-            id: book.id,
-            payoutMultiplier: book.payout,
-            events: book.events,
-          }
+              const prefix = book.id === simStart ? "" : "\n"
+              await write(bookStream, prefix + JSONL.stringify([bookData]))
+              await write(lookupStream, `${book.id},1,${Math.round(book.payout)}\n`)
+              await write(
+                lookupSegmentedStream,
+                `${book.id},${book.criteria},${book.basegameWins},${book.freespinsWins}\n`,
+              )
 
-          const prefix = book.id === simStart ? "" : "\n"
-          bookStream.write(prefix + JSONL.stringify([bookData]))
+              if (this.recordsWriteStream) {
+                for (const record of msg.records) {
+                  const recordPrefix = this.hasWrittenRecord ? "\n" : ""
+                  await write(
+                    this.recordsWriteStream,
+                    recordPrefix + JSONL.stringify([record]),
+                  )
+                  this.hasWrittenRecord = true
+                }
+              }
 
-          book.events = []
-          this.library.set(book.id, book)
+              this.wallet.mergeSerialized(msg.wallet)
 
-          if (this.recordsWriteStream) {
-            for (const record of msg.records) {
-              const recordPrefix = this.hasWrittenRecord ? "\n" : ""
-              this.recordsWriteStream.write(recordPrefix + JSONL.stringify([record]))
-              this.hasWrittenRecord = true
-            }
-          }
+              worker.postMessage({ type: "credit", amount: 1 })
+            })
+            .catch(reject)
 
-          this.wallet.mergeSerialized(msg.wallet)
-        } else if (msg.type === "done") {
-          resolve(true)
+          return
+        }
+
+        if (msg.type === "done") {
+          writeChain
+            .then(async () => {
+              bookStream.end()
+              lookupStream.end()
+              lookupSegmentedStream.end()
+
+              await Promise.all([
+                new Promise<void>((r) => bookStream.on("finish", () => r())),
+                new Promise<void>((r) => lookupStream.on("finish", () => r())),
+                new Promise<void>((r) => lookupSegmentedStream.on("finish", () => r())),
+              ])
+
+              resolve(true)
+            })
+            .catch(reject)
+
+          return
         }
       })
 
@@ -410,6 +544,38 @@ export class Simulation {
     })
   }
 
+  private initCreditListener() {
+    if (this.creditListenerInit) return
+    this.creditListenerInit = true
+
+    parentPort?.on("message", (msg: any) => {
+      if (msg?.type !== "credit") return
+      const amount = Number(msg?.amount ?? 0)
+      if (!Number.isFinite(amount) || amount <= 0) return
+
+      this.credits += amount
+
+      while (this.credits > 0 && this.creditWaiters.length > 0) {
+        this.credits -= 1
+        const resolve = this.creditWaiters.shift()!
+        resolve()
+      }
+    })
+  }
+
+  private acquireCredit() {
+    this.initCreditListener()
+
+    if (this.credits > 0) {
+      this.credits -= 1
+      return Promise.resolve()
+    }
+
+    return new Promise<void>((resolve) => {
+      this.creditWaiters.push(resolve)
+    })
+  }
+
   /**
    * If a simulation does not meet the required criteria, reset the state to run it again.
    *
@@ -455,77 +621,9 @@ export class Simulation {
     this.gameConfig.hooks.onHandleGameFlow(ctx)
   }
 
-  /**
-   * Creates a CSV file in the format "simulationId,weight,payout".
-   *
-   * `weight` defaults to 1.
-   */
-  private writeLookupTableCSV(gameMode: string) {
-    const rows: string[] = []
-
-    for (const [bookId, book] of this.library.entries()) {
-      rows.push(`${book.id},1,${Math.round(book.payout)}`)
-    }
-
-    rows.sort((a, b) => Number(a.split(",")[0]) - Number(b.split(",")[0]))
-
-    let outputFileName = `lookUpTable_${gameMode}.csv`
-    let outputFilePath = path.join(
-      this.gameConfig.rootDir,
-      this.gameConfig.outputDir,
-      outputFileName,
-    )
-    writeFile(outputFilePath, rows.join("\n"))
-
-    outputFileName = `lookUpTable_${gameMode}_0.csv`
-    outputFilePath = path.join(
-      this.gameConfig.rootDir,
-      this.gameConfig.outputDir,
-      "publish_files",
-      outputFileName,
-    )
-    writeFile(outputFilePath, rows.join("\n"))
-
-    return outputFilePath
-  }
-
-  /**
-   * Creates a CSV file in the format "simulationId,criteria,payoutBase,payoutFreespins".
-   */
-  private writeLookupTableSegmentedCSV(gameMode: string) {
-    const rows: string[] = []
-
-    for (const [bookId, book] of this.library.entries()) {
-      rows.push(`${book.id},${book.criteria},${book.basegameWins},${book.freespinsWins}`)
-    }
-
-    rows.sort((a, b) => Number(a.split(",")[0]) - Number(b.split(",")[0]))
-
-    const outputFileName = `lookUpTableSegmented_${gameMode}.csv`
-
-    const outputFilePath = path.join(
-      this.gameConfig.rootDir,
-      this.gameConfig.outputDir,
-      outputFileName,
-    )
-    writeFile(outputFilePath, rows.join("\n"))
-
-    return outputFilePath
-  }
-
   private async writeRecords(mode: string) {
-    const tempRecordsPath = path.join(
-      this.gameConfig.rootDir,
-      this.gameConfig.outputDir,
-      TEMP_FOLDER,
-      `temp_records_${mode}.jsonl`,
-    )
-
-    const forceRecordsPath = path.join(
-      this.gameConfig.rootDir,
-      this.gameConfig.outputDir,
-      `force_record_${mode}.json`,
-    )
+    const tempRecordsPath = this.PATHS.tempRecords(mode)
+    const forceRecordsPath = this.PATHS.forceRecords(mode)
 
     // Use a local Map to aggregate records efficiently without cluttering the main Recorder
     // Key is the stringified search criteria
@@ -588,12 +686,7 @@ export class Simulation {
   }
 
   private writeIndexJson() {
-    const outputFilePath = path.join(
-      this.gameConfig.rootDir,
-      this.gameConfig.outputDir,
-      "publish_files",
-      "index.json",
-    )
+    const outputFilePath = this.PATHS.indexJson
 
     const modes = Object.keys(this.simRunsAmount).map((id) => {
       const mode = this.gameConfig.gameModes[id]
@@ -611,18 +704,8 @@ export class Simulation {
   }
 
   private async writeBooksJson(gameMode: string) {
-    const outputFilePath = path.join(
-      this.gameConfig.rootDir,
-      this.gameConfig.outputDir,
-      `books_${gameMode}.jsonl`,
-    )
-
-    const compressedFilePath = path.join(
-      this.gameConfig.rootDir,
-      this.gameConfig.outputDir,
-      "publish_files",
-      `books_${gameMode}.jsonl.zst`,
-    )
+    const outputFilePath = this.PATHS.books(gameMode)
+    const compressedFilePath = this.PATHS.booksCompressed(gameMode)
 
     fs.rmSync(compressedFilePath, { force: true })
 
@@ -659,20 +742,19 @@ export class Simulation {
   }
 
   private getSimRangesForChunks(total: number, chunks: number): [number, number][] {
-    const base = Math.floor(total / chunks)
-    const remainder = total % chunks
+    const realChunks = Math.min(chunks, Math.max(total, 1))
+    const base = Math.floor(total / realChunks)
+    const remainder = total % realChunks
     const result: [number, number][] = []
 
     let current = 1
-
-    for (let i = 0; i < chunks; i++) {
+    for (let i = 0; i < realChunks; i++) {
       const size = base + (i < remainder ? 1 : 0)
       const start = current
       const end = current + size - 1
       result.push([start, end])
       current = end + 1
     }
-
     return result
   }
 
@@ -692,6 +774,27 @@ export class Simulation {
         )
       }
     }
+  }
+
+  private async mergeCsv(
+    chunks: [number, number][],
+    outPath: string,
+    tempName: (i: number) => string,
+  ) {
+    fs.rmSync(outPath, { force: true })
+    const out = fs.createWriteStream(outPath)
+    let wroteAny = false
+    for (let i = 0; i < chunks.length; i++) {
+      const p = path.join(this.PATHS.base, TEMP_FOLDER, tempName(i))
+      if (!fs.existsSync(p)) continue
+      if (wroteAny) out.write("")
+      const rs = fs.createReadStream(p)
+      for await (const buf of rs) out.write(buf)
+      fs.rmSync(p)
+      wroteAny = true
+    }
+    out.end()
+    await new Promise<void>((resolve) => out.on("finish", resolve))
   }
 
   /**
@@ -735,13 +838,29 @@ export type SimulationOptions = {
   /**
    * Object containing the game modes and their respective simulation runs amount.
    */
-  simRunsAmount: Partial<Record<string, number>>
+  simRunsAmount: Record<string, number>
   /**
    * Number of concurrent processes to use for simulations.
    *
    * Default: 6
    */
   concurrency?: number
+  /**
+   * The maximum number of simulation results to keep pending in memory before writing to disk.
+   *
+   * Higher values may speed up simulations but use more RAM.
+   *
+   * Default: 250
+   */
+  maxPendingSims?: number
+  /**
+   * The maximum data buffer in MB for writing simulation results to disk.
+   *
+   * Higher values may speed up simulations but use more RAM.
+   *
+   * Default: 50
+   */
+  maxDiskBuffer?: number
 }
 
 export type SimulationConfigOptions = {
