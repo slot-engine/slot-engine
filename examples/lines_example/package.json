@@ -6,7 +6,7 @@
     "build": "tsx ./index.ts"
   },
   "dependencies": {
-    "@slot-engine/core": "0.1.10"
+    "@slot-engine/core": "0.1.11"
   },
   "devDependencies": {
     "@types/node": "^24.7.2",
