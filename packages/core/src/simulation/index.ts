@@ -7,7 +7,7 @@ import { buildSync } from "esbuild"
 import { Worker, isMainThread, parentPort, workerData } from "worker_threads"
 import { createGameConfig, GameConfigOptions, GameConfig } from "../game-config"
 import { createGameContext, GameContext } from "../game-context"
-import { createDirIfNotExists, JSONL, writeFile } from "../../utils"
+import { createDirIfNotExists, JSONL, round, writeFile } from "../../utils"
 import { SPIN_TYPE } from "../constants"
 import { Book } from "../book"
 import { Recorder, RecordItem } from "../recorder"
@@ -20,6 +20,22 @@ let completedSimulations = 0
 const TEMP_FILENAME = "__temp_compiled_src_IGNORE.js"
 const TEMP_FOLDER = "temp_files"
 
+/**
+ * Class for handling simulations of the slot game.
+ * 
+ * High level overview:
+ * - Main thread compiles user code to JS and spawns workers
+ * - Workers run compiled code to execute simulations
+ * - Workers send data to main thread
+ * - Main thread merges data and writes files
+ * 
+ * Notes:
+ * - Backpressure system with credits to avoid overwhelming the main thread
+ * - Limited amount of credits
+ * - Worker uses credit to return data to main thread
+ * - After writing data, main thread gives worker new credit
+ * - Prevents workers sending more data than the main thread can write in time
+ */
 export class Simulation {
   readonly gameConfigOpts: GameConfigOptions
   readonly gameConfig: GameConfig
@@ -171,6 +187,10 @@ export class Simulation {
         createDirIfNotExists(this.PATHS.optimizationFiles)
         createDirIfNotExists(this.PATHS.publishFiles)
 
+        console.log(
+          `Writing final files for game mode "${mode}". This may take a while...`,
+        )
+
         // Merge temporary book files into the final sorted file
         const finalBookStream = fs.createWriteStream(booksPath)
         let isFirstChunk = true
@@ -214,16 +234,23 @@ export class Simulation {
           this.recordsWriteStream = undefined
         }
 
-        console.log(`Writing final files for game mode: ${mode} ...`)
         await this.writeRecords(mode)
         await this.writeBooksJson(mode)
         this.writeIndexJson()
         console.log(`Mode ${mode} done!`)
 
-        debugDetails[mode].rtp =
-          this.wallet.getCumulativeWins() / (runs * this.gameConfig.gameModes[mode]!.cost)
-        debugDetails[mode].wins = this.wallet.getCumulativeWins()
-        debugDetails[mode].winsPerSpinType = this.wallet.getCumulativeWinsPerSpinType()
+        debugDetails[mode].rtp = round(
+          this.wallet.getCumulativeWins() /
+            (runs * this.gameConfig.gameModes[mode]!.cost),
+          3,
+        )
+        debugDetails[mode].wins = round(this.wallet.getCumulativeWins(), 3)
+        debugDetails[mode].winsPerSpinType = Object.fromEntries(
+          Object.entries(this.wallet.getCumulativeWinsPerSpinType()).map(([k, v]) => [
+            k,
+            round(v, 3),
+          ]),
+        )
 
         console.timeEnd(mode)
       }
@@ -805,7 +832,7 @@ export type SimulationOptions = {
   /**
    * Object containing the game modes and their respective simulation runs amount.
    */
-  simRunsAmount: Partial<Record<string, number>>
+  simRunsAmount: Record<string, number>
   /**
    * Number of concurrent processes to use for simulations.
    *
@@ -815,13 +842,15 @@ export type SimulationOptions = {
   /**
    * The maximum number of simulation results to keep pending in memory before writing to disk.
    *
-   * Higher values speed up simulations but use more RAM.
+   * Higher values may speed up simulations but use more RAM.
    *
    * Default: 250
    */
   maxPendingSims?: number
   /**
    * The maximum data buffer in MB for writing simulation results to disk.
+   *
+   * Higher values may speed up simulations but use more RAM.
    *
    * Default: 50
    */

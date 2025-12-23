@@ -25,6 +25,7 @@ export function splitCountsAcrossChunks(
 
   const perChunk: Array<Record<string, number>> = chunkSizes.map(() => ({}))
 
+  // First pass
   for (const criteria of allCriteria) {
     const count = totalCounts[criteria] ?? 0
     if (count <= 0) {
@@ -53,20 +54,17 @@ export function splitCountsAcrossChunks(
     }
   }
 
-  // Second pass: enforce per-chunk totals exactly match chunkSizes
+  // Second pass, try to fix any rounding issues
   const chunkTotals = () =>
     perChunk.map((m) => Object.values(m).reduce((s, v) => s + v, 0))
-
   let totals = chunkTotals()
 
   const getDeficits = () => totals.map((t, i) => chunkSizes[i]! - t)
-
   let deficits = getDeficits()
 
-  // Move counts from surplus chunks to deficit chunks (deterministic order)
-  for (let dst = 0; dst < chunkSizes.length; dst++) {
-    while (deficits[dst]! > 0) {
-      // find a donor chunk with surplus
+  for (let target = 0; target < chunkSizes.length; target++) {
+    while (deficits[target]! > 0) {
+      // find a chunk with surplus
       const src = deficits.findIndex((d) => d < 0)
       assert(src !== -1, "No surplus chunk found, but deficits remain.")
 
@@ -75,16 +73,15 @@ export function splitCountsAcrossChunks(
       assert(crit, `No movable criteria found from surplus chunk ${src}.`)
 
       perChunk[src]![crit]! -= 1
-      perChunk[dst]![crit] = (perChunk[dst]![crit] ?? 0) + 1
+      perChunk[target]![crit] = (perChunk[target]![crit] ?? 0) + 1
 
       totals[src]! -= 1
-      totals[dst]! += 1
+      totals[target]! += 1
       deficits[src]! += 1
-      deficits[dst]! -= 1
+      deficits[target]! -= 1
     }
   }
 
-  // Final sanity
   totals = chunkTotals()
   for (let i = 0; i < chunkSizes.length; i++) {
     assert(
