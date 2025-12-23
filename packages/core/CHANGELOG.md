@@ -1,5 +1,11 @@
 # @slot-engine/core
 
+## 0.1.11
+
+### Patch Changes
+
+- Greatly improve memory usage using backpressure - Thanks @nordowl
+
 ## 0.1.10
 
 ### Patch Changes
