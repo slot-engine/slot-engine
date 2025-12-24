@@ -1,32 +1,32 @@
-import { NumberInput as ArkComponent } from "@ark-ui/react/number-input"
+import { NumberField as Primitive } from "@base-ui/react/number-field"
 import { IconMinus, IconPlus } from "@tabler/icons-react"
 import { Button } from "../Button"
 
-interface NumberInputProps extends ArkComponent.RootProps {
+interface NumberInputProps extends Primitive.Root.Props {
   label?: string
 }
 
 export const NumberInput = (props: NumberInputProps) => (
-  <ArkComponent.Root {...props}>
-    {props.label && <ArkComponent.Label className="block mb-1">{props.label}</ArkComponent.Label>}
-    <ArkComponent.Control className="flex">
-      <ArkComponent.DecrementTrigger
+  <Primitive.Root {...props}>
+    {props.label && <div className="block mb-1">{props.label}</div>}
+    <Primitive.Control className="flex">
+      <Primitive.DecrementTrigger
         asChild
         className="cursor-pointer p-2 rounded-r-none"
       >
         <Button variant="secondary" isIconButton>
           <IconMinus />
         </Button>
-      </ArkComponent.DecrementTrigger>
-      <ArkComponent.Input className="w-full px-4 border-y border-ui-700" />
-      <ArkComponent.IncrementTrigger
+      </Primitive.DecrementTrigger>
+      <Primitive.Input className="w-full px-4 border-y border-ui-700" />
+      <Primitive.IncrementTrigger
         asChild
         className="cursor-pointer p-2 rounded-l-none"
       >
         <Button variant="secondary" isIconButton>
           <IconPlus />
         </Button>
-      </ArkComponent.IncrementTrigger>
-    </ArkComponent.Control>
-  </ArkComponent.Root>
+      </Primitive.IncrementTrigger>
+    </Primitive.Control>
+  </Primitive.Root>
 )

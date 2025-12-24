@@ -185,7 +185,7 @@ importers:
         version: 5.2.8
       '@slot-engine/core':
         specifier: 0.1.10
-        version: link:../core
+        version: 0.1.10
       '@tailwindcss/vite':
         specifier: 4.1.18
         version: 4.1.18(vite@7.3.0(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6))
@@ -1546,6 +1546,9 @@ packages:
 
   '@shikijs/vscode-textmate@10.0.2':
     resolution: {integrity: sha512-83yeghZ2xxin3Nj8z1NMd/NCuca+gsYXswywDy5bHvwlWL8tpTQmzGeUuHd9FC3E/SBEMvzJRwWEOz5gGes9Qg==}
+
+  '@slot-engine/core@0.1.10':
+    resolution: {integrity: sha512-GfSGgojQwG0S+6q2nn+nI1+sQqIeGn15iEuz8KLoY7sj/DnSpES/u2ayMgWIctgJ0mF05jklakBXAAS9bAtPPA==}
 
   '@standard-schema/spec@1.0.0':
     resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
@@ -5099,6 +5102,10 @@ snapshots:
       '@types/hast': 3.0.4
 
   '@shikijs/vscode-textmate@10.0.2': {}
+
+  '@slot-engine/core@0.1.10':
+    dependencies:
+      esbuild: 0.25.9
 
   '@standard-schema/spec@1.0.0': {}
 
