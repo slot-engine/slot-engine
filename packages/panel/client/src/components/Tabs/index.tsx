@@ -17,7 +17,7 @@ export const TabsTrigger = (props: Primitive.Tab.Props) => {
     <Primitive.Tab
       {...props}
       className={cn(
-        "px-4 py-2 flex items-center gap-2 rounded-t-lg hover:bg-ui-800 data-selected:bg-ui-700",
+        "px-4 py-2 flex items-center gap-2 rounded-t-lg hover:bg-ui-800 data-active:bg-ui-700",
         props.className,
       )}
     />

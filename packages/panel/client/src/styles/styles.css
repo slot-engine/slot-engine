@@ -28,6 +28,12 @@
     color: var(--color-ui-50);
   }
 
+  /* Required by base-ui */
+  .root {
+    isolation: isolate;
+    position: relative;
+  }
+
   h1 {
     font-size: var(--text-5xl);
   }

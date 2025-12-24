@@ -48,7 +48,7 @@
   },
   "devDependencies": {
     "@fontsource-variable/archivo": "5.2.8",
-    "@slot-engine/core": "0.1.10",
+    "@slot-engine/core": "0.1.11",
     "@tailwindcss/vite": "4.1.18",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",

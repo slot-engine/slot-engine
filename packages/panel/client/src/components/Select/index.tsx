@@ -29,7 +29,7 @@ export const SelectTrigger = ({
   return (
     <Primitive.Trigger
       className={cn(
-        "w-full px-4 py-2 border border-ui-700 rounded-lg flex items-center justify-between",
+        "w-full px-4 py-2 border border-ui-700 hover:bg-ui-800 rounded-lg flex items-center justify-between",
         className,
       )}
       {...props}
@@ -45,12 +45,9 @@ export const SelectTrigger = ({
 export const SelectContent = (props: Primitive.List.Props) => {
   return (
     <Primitive.Portal>
-      <Primitive.Positioner>
-        <Primitive.Popup>
-          <Primitive.List
-            {...props}
-            className={cn("bg-ui-900 border border-ui-700 rounded-lg", props.className)}
-          />
+      <Primitive.Positioner alignItemWithTrigger={false} className="min-w-(--anchor-width)">
+        <Primitive.Popup className="p-1 border border-ui-700 rounded-lg shadow-lg bg-ui-900">
+          <Primitive.List {...props} className={cn("w-full", props.className)} />
         </Primitive.Popup>
       </Primitive.Positioner>
     </Primitive.Portal>
@@ -59,7 +56,10 @@ export const SelectContent = (props: Primitive.List.Props) => {
 
 export const SelectItem = ({ children, className, ...props }: Primitive.Item.Props) => {
   return (
-    <Primitive.Item {...props}>
+    <Primitive.Item
+      {...props}
+      className={cn("px-2 py-1 rounded-sm hover:bg-ui-800", className)}
+    >
       {children}
       <Primitive.ItemIndicator className="size-2 rounded-full bg-red-500" />
     </Primitive.Item>

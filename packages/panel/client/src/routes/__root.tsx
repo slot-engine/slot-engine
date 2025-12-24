@@ -18,10 +18,12 @@ const queryClient = new QueryClient({
 function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Navigation />
-      <main className="px-4 py-8 max-w-page-width mx-auto w-full border-x border-ui-700 min-h-content-height">
-        <Outlet />
-      </main>
+      <div className="root">
+        <Navigation />
+        <main className="px-4 py-8 max-w-page-width mx-auto w-full border-x border-ui-700 min-h-content-height">
+          <Outlet />
+        </main>
+      </div>
     </QueryClientProvider>
   )
 }

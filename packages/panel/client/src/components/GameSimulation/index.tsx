@@ -2,12 +2,12 @@ import { useQuery } from "@tanstack/react-query"
 import { query } from "../../lib/queries"
 import { useState } from "react"
 import { Button } from "../Button"
-import { IconPlus, IconSettings, IconTrash } from "@tabler/icons-react"
+import { IconLock, IconPlus, IconSettings, IconTrash } from "@tabler/icons-react"
 import { useGameContext } from "../../context/GameContext"
 import { ErrorDisplay } from "../Error"
 import { Loading } from "../Loading"
 import { NumberInput } from "../NumberInput"
-import { Select } from "../Select"
+import { Select, SelectContent, SelectItem, SelectTrigger } from "../Select"
 
 export const GameSimulation = () => {
   const { gameId } = useGameContext()
@@ -36,7 +36,8 @@ export const GameSimulation = () => {
     ])
   }
 
-  function updateModeAmount(name: string, amount: number) {
+  function updateModeAmount(name: string, amount: number | null) {
+    if (amount === null) return
     setModesToSimulate((prev) =>
       prev.map((m) => (m.name === name ? { ...m, amount } : m)),
     )
@@ -86,19 +87,25 @@ export const GameSimulation = () => {
               <Select
                 label="Mode"
                 value={mode.name}
-                multiple={false}  
+                multiple={false}
                 onValueChange={(v) => changeMode(mode.name, v)}
-                items={availableModes.map((m) => ({
-                  value: m,
-                  label: m,
-                }))}
-              />
+              >
+                <SelectTrigger className="w-64" />
+                <SelectContent>
+                  {availableModes.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           ) : (
             <div>
               <div className="mb-1">Mode</div>
-              <div className="px-3 py-2 bg-ui-950 rounded-lg w-64 truncate">
+              <div className="pl-3 pr-2 py-2 bg-ui-950 rounded-lg w-64 truncate flex gap-4 justify-between items-center">
                 {mode.name}
+                <IconLock className="text-ui-700" />
               </div>
             </div>
           )}
@@ -107,12 +114,9 @@ export const GameSimulation = () => {
               label="Number of Simulations"
               step={1}
               inputMode="numeric"
-              formatOptions={{
-                maximumFractionDigits: 0,
-              }}
               className="w-64"
-              value={mode.amount.toString()}
-              onValueChange={(v) => updateModeAmount(mode.name, v.valueAsNumber)}
+              value={mode.amount}
+              onValueChange={(v) => updateModeAmount(mode.name, v)}
             />
           </div>
           <div className="flex grow items-center justify-end">

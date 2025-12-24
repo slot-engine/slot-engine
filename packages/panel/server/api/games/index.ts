@@ -62,6 +62,32 @@ app.get("/:id/info", (c) => {
   return c.json<APIGameInfoResponse>(data)
 })
 
+app.get("/:id/sim-conf", (c) => {
+  const gameId = c.req.param("id")
+  const game = getGameById(gameId, c)
+
+  if (!game) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  const data = getGameInfo(game)
+
+  return c.json<APIGameGetSimConfResponse>(data)
+})
+
+app.post("/:id/sim-conf", (c) => {
+  const gameId = c.req.param("id")
+  const game = getGameById(gameId, c)
+
+  if (!game) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  const data = getGameInfo(game)
+
+  return c.json<APIGamePostSimConfResponse>(data)
+})
+
 export default app
 
 function getGameById(gameId: string, c: Context<{ Variables: Variables }>) {
