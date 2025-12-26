@@ -1,0 +1,12 @@
+{
+  "id": "example-02",
+  "simulation": {
+    "concurrency": 12,
+    "simRunsAmount": {
+      "base": 10000,
+      "bonus": 10000
+    },
+    "maxPendingSims": 250,
+    "maxDiskBuffer": 50
+  }
+}

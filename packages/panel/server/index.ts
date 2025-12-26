@@ -6,6 +6,7 @@ import { serveStatic } from "@hono/node-server/serve-static"
 import { SlotGame } from "@slot-engine/core"
 import gamesHandler from "./api/games"
 import { statusHandler } from "./api/status"
+import { syncData } from "./middleware/sync-data"
 
 const DEFAULT_CONFIG: PanelConfig = {
   port: 7770,
@@ -28,6 +29,7 @@ export function createPanel(opts?: PanelOptions): Panel {
   })
 
   // API routes
+  app.use("/api/*", syncData)
   app.get("/api/status", ...statusHandler)
   app.route("/api/games", gamesHandler)
 

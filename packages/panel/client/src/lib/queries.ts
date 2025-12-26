@@ -3,6 +3,8 @@ import {
   type APIStatusResponse,
   type APIGameResponse,
   type APIGameInfoResponse,
+  type APIGameGetSimConfResponse,
+  type PanelGameConfig,
 } from "../../../server/types"
 
 export class FetchError extends Error {
@@ -29,6 +31,18 @@ export const query = {
   games: () => api<APIGamesResponse>("games"),
   game: (id: string) => api<APIGameResponse>(`games/${id}`),
   gameInfo: (id: string) => api<APIGameInfoResponse>(`games/${id}/info`),
+  gameSimConf: (id: string) => api<APIGameGetSimConfResponse>(`games/${id}/sim-conf`),
+}
+
+export const mutation = {
+  gameSimConf: (id: string, data: PanelGameConfig["simulation"]) =>
+    api<APIGameGetSimConfResponse>(`games/${id}/sim-conf`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }),
 }
 
 export type APIResponse<T> = T extends keyof typeof query

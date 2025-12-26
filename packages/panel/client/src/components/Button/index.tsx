@@ -13,7 +13,10 @@ export const Button = ({
   ...props
 }: ButtonProps) => {
   const styles = cva({
-    base: ["cursor-pointer flex items-center gap-2 rounded-lg py-2", props.className],
+    base: [
+      "cursor-pointer flex items-center gap-2 rounded-lg py-2 disabled:cursor-not-allowed disabled:opacity-50",
+      props.className,
+    ],
     variants: {
       variant: {
         primary: "bg-ui-50 text-ui-950 hover:bg-ui-100",

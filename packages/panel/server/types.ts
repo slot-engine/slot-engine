@@ -35,3 +35,17 @@ export interface APIGameInfoResponse {
 export interface APIStatusResponse {
   ok: boolean
 }
+
+export interface PanelGameConfig {
+  id: string
+  simulation: {
+    concurrency: number
+    simRunsAmount: Record<string, number>
+    maxPendingSims: number
+    maxDiskBuffer: number
+  }
+}
+
+export type APIGameGetSimConfResponse = PanelGameConfig["simulation"]
+
+export type APIGamePostSimConfResponse = PanelGameConfig["simulation"]

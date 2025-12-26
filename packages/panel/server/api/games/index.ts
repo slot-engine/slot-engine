@@ -1,12 +1,21 @@
-import { SlotGame } from "@slot-engine/core"
 import { Variables } from "../.."
 import {
   APIGamesResponse,
   APIGameResponse,
   APIMessageResponse,
   APIGameInfoResponse,
+  APIGamePostSimConfResponse,
+  APIGameGetSimConfResponse,
 } from "../../types"
-import { Context, Hono } from "hono"
+import { Hono } from "hono"
+import {
+  getGameById,
+  getGameInfo,
+  loadOrCreatePanelGameConfig,
+  savePanelGameConfig,
+} from "../../lib/utils"
+import { zValidator } from "@hono/zod-validator"
+import z from "zod"
 
 const app = new Hono<{ Variables: Variables }>()
 
@@ -70,44 +79,40 @@ app.get("/:id/sim-conf", (c) => {
     return c.json<APIMessageResponse>({ message: "Not found" }, 404)
   }
 
-  const data = getGameInfo(game)
+  const config = loadOrCreatePanelGameConfig(game)
 
-  return c.json<APIGameGetSimConfResponse>(data)
+  return c.json<APIGameGetSimConfResponse>(config.simulation)
 })
 
-app.post("/:id/sim-conf", (c) => {
-  const gameId = c.req.param("id")
-  const game = getGameById(gameId, c)
+app.post(
+  "/:id/sim-conf",
+  zValidator(
+    "json",
+    z.object({
+      concurrency: z.number().min(1).max(100),
+      simRunsAmount: z.record(z.string(), z.number().int()),
+      maxPendingSims: z.number().int(),
+      maxDiskBuffer: z.number().int(),
+    }),
+  ),
+  (c) => {
+    const gameId = c.req.param("id")
+    const game = getGameById(gameId, c)
 
-  if (!game) {
-    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
-  }
+    if (!game) {
+      return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+    }
 
-  const data = getGameInfo(game)
+    const data = c.req.valid("json")
+    const config = loadOrCreatePanelGameConfig(game)
 
-  return c.json<APIGamePostSimConfResponse>(data)
-})
+    savePanelGameConfig(game, {
+      ...config,
+      simulation: data,
+    })
+
+    return c.json<APIGamePostSimConfResponse>(data)
+  },
+)
 
 export default app
-
-function getGameById(gameId: string, c: Context<{ Variables: Variables }>) {
-  const games = c.get("config").games
-  return games.find((g) => g.getConfig().id === gameId)
-}
-
-function getGameInfo(game: SlotGame) {
-  const conf = game.getConfig()
-  const meta = game.getMetadata()
-
-  return {
-    id: conf.id,
-    name: conf.name,
-    path: meta.rootDir,
-    maxWin: conf.maxWinX,
-    modes: Object.values(conf.gameModes).map((mode) => ({
-      name: mode.name,
-      cost: mode.cost,
-      rtp: mode.rtp,
-    })),
-  }
-}
