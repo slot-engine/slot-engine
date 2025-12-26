@@ -58,6 +58,6 @@
   }
 
   a.link {
-    @apply flex items-center gap-1 mb-4 text-sm text-ui-500 hover:text-emerald underline;
+    @apply flex items-center gap-1 mb-4 text-sm text-ui-500 hover:text-ui-100 underline;
   }
 }

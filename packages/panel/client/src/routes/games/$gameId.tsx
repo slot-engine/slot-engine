@@ -12,9 +12,8 @@ import {
 } from "@tabler/icons-react"
 import { z } from "zod"
 import { GameInformation } from "../../components/GameInformation"
-import type { PropsWithGameId } from "../../lib/types"
 import { GameSimulation } from "../../components/GameSimulation"
-import { GameProvider, useGameContext } from "../../context/GameContext"
+import { GameProvider } from "../../context/GameContext"
 
 const tabsNames = {
   info: "info",

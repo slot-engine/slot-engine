@@ -25,6 +25,7 @@ export interface APIGameInfoResponse {
   name: string
   path: string
   maxWin: number
+  isValid: boolean
   modes: Array<{
     name: string
     cost: number

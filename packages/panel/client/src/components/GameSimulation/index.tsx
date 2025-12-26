@@ -269,7 +269,10 @@ export const GameSimulation = () => {
               setSimSettings((prev) => ({ ...prev!, maxDiskBuffer: v ?? 0 }))
             }}
           />
-          <Button className="mt-4" disabled={modesToSimulate.length === 0}>
+          <Button
+            className="mt-4"
+            disabled={modesToSimulate.length === 0 || updateConfMutation.isPending}
+          >
             <IconPlayerPlay />
             Start Simulation
           </Button>

@@ -49,6 +49,10 @@ app.get("/:id", (c) => {
   const conf = game.getConfig()
   const meta = game.getMetadata()
 
+  if (!meta.isCustomRoot) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
   const data = {
     id: conf.id,
     name: conf.name,
@@ -74,12 +78,11 @@ app.get("/:id/info", (c) => {
 app.get("/:id/sim-conf", (c) => {
   const gameId = c.req.param("id")
   const game = getGameById(gameId, c)
+  const config = loadOrCreatePanelGameConfig(game)
 
-  if (!game) {
+  if (!game || !config) {
     return c.json<APIMessageResponse>({ message: "Not found" }, 404)
   }
-
-  const config = loadOrCreatePanelGameConfig(game)
 
   return c.json<APIGameGetSimConfResponse>(config.simulation)
 })
@@ -98,13 +101,13 @@ app.post(
   (c) => {
     const gameId = c.req.param("id")
     const game = getGameById(gameId, c)
+    const config = loadOrCreatePanelGameConfig(game)
 
-    if (!game) {
+    if (!game || !config) {
       return c.json<APIMessageResponse>({ message: "Not found" }, 404)
     }
 
     const data = c.req.valid("json")
-    const config = loadOrCreatePanelGameConfig(game)
 
     savePanelGameConfig(game, {
       ...config,
@@ -114,5 +117,17 @@ app.post(
     return c.json<APIGamePostSimConfResponse>(data)
   },
 )
+
+app.post("/:id/sim-run", async (c) => {
+  const gameId = c.req.param("id")
+  const game = getGameById(gameId, c)
+  const config = loadOrCreatePanelGameConfig(game)
+
+  if (!game || !config) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  return c.json<APIMessageResponse>({ message: "Done" })
+})
 
 export default app

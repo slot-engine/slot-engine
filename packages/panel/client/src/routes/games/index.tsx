@@ -5,6 +5,7 @@ import { cva } from "../../lib/cn"
 import { IconArrowRight, IconCheck, IconX } from "@tabler/icons-react"
 import { ErrorDisplay } from "../../components/Error"
 import { Loading } from "../../components/Loading"
+import { GameNotConfigured } from "../../components/Error/GameNotConfigured"
 
 export const Route = createFileRoute("/games/")({
   component: GamesPage,
@@ -73,11 +74,7 @@ function GamesList(data: APIResponse<"games">) {
                 {game.path}
               </div>
             </div>
-            <div className="max-w-xl p-2 bg-red-700 rounded-sm">
-              Uh-oh! <b>This game is not properly configured</b>. Please make sure you
-              have configured <code>rootDir: __dirname</code> when calling{" "}
-              <code>createSlotGame()</code>.
-            </div>
+            <GameNotConfigured />
           </div>
         ),
       )}

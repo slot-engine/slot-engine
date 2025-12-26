@@ -7,6 +7,8 @@ import { SlotGame } from "@slot-engine/core"
 import gamesHandler from "./api/games"
 import { statusHandler } from "./api/status"
 import { syncData } from "./middleware/sync-data"
+import { startWsServer } from "../ws/server"
+import { Server } from "node:http"
 
 const DEFAULT_CONFIG: PanelConfig = {
   port: 7770,
@@ -55,10 +57,12 @@ export function createPanel(opts?: PanelOptions): Panel {
   })
 
   const run = () => {
-    serve({
+    const server = serve({
       fetch: app.fetch,
       port: panelConfig.port,
     })
+
+    startWsServer(server as Server)
 
     console.log("\n")
     console.log(

@@ -3,6 +3,7 @@ import { query } from "../../lib/queries"
 import { ErrorDisplay } from "../Error"
 import { Loading } from "../Loading"
 import { useGameContext } from "../../context/GameContext"
+import { GameNotConfigured } from "../Error/GameNotConfigured"
 
 export const GameInformation = () => {
   const { gameId } = useGameContext()
@@ -26,6 +27,7 @@ export const GameInformation = () => {
 
   return (
     <div>
+      {!data.isValid && <GameNotConfigured />}
       <div>
         {basicInfo.map((info, i) => (
           <div key={i} className="flex gap-2 py-2 border-b border-ui-700 hover:bg-ui-800">

@@ -21,6 +21,7 @@ export function getGameInfo(game: SlotGame) {
     name: conf.name,
     path: meta.rootDir,
     maxWin: conf.maxWinX,
+    isValid: meta.isCustomRoot,
     modes: Object.values(conf.gameModes).map((mode) => ({
       name: mode.name,
       cost: mode.cost,
@@ -29,7 +30,9 @@ export function getGameInfo(game: SlotGame) {
   }
 }
 
-export function loadOrCreatePanelGameConfig(game: SlotGame) {
+export function loadOrCreatePanelGameConfig(game: SlotGame | undefined) {
+  if (!game?.getMetadata().isCustomRoot) return
+
   const filePath = path.join(game.getMetadata().rootDir, PANEL_GAME_CONFIG_FILE)
   const exists = fs.existsSync(filePath)
   let isFileBroken = false
