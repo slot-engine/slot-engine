@@ -149,25 +149,28 @@ export class Simulation {
       this.panelPort = opts.panelPort || 7770
       this.panelWsUrl = `http://localhost:${this.panelPort}`
 
-      await new Promise<void>((resolve, reject) => {
+      await new Promise<void>((resolve) => {
         try {
           this.socket = io(this.panelWsUrl, {
             path: "/ws",
             transports: ["websocket", "polling"],
             withCredentials: true,
             autoConnect: false,
-            reconnection: true,
-            reconnectionAttempts: 3,
-            reconnectionDelay: 1000,
+            reconnection: false,
           })
-          this.socket!.connect()
-          this.socket!.once("connect", () => {
+          this.socket.connect()
+          this.socket.once("connect", () => {
             this.panelActive = true
             resolve()
           })
-          this.socket!.once("connect_error", reject)
+          this.socket.once("connect_error", () => {
+            this.socket?.close()
+            this.socket = undefined
+            resolve()
+          })
         } catch (error) {
-          reject(error)
+          this.socket = undefined
+          resolve()
         }
       })
 
@@ -448,15 +451,13 @@ export class Simulation {
                 logArrowProgress(completedSimulations, totalSims)
               }
 
-              if (completedSimulations % 1000 === 0) {
-                if (this.socket && this.panelActive) {
-                  this.socket.emit("simulationProgress", {
-                    mode,
-                    percentage: (completedSimulations / totalSims) * 100,
-                    current: completedSimulations,
-                    total: totalSims,
-                  })
-                }
+              if (completedSimulations % 1000 === 0 && this.socket && this.panelActive) {
+                this.socket.emit("simulationProgress", {
+                  mode,
+                  percentage: (completedSimulations / totalSims) * 100,
+                  current: completedSimulations,
+                  total: totalSims,
+                })
               }
 
               const book = msg.book as ReturnType<Book["serialize"]>

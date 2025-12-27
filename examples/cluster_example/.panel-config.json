@@ -6,7 +6,7 @@
       "base": 50000,
       "bonus": 50000
     },
-    "maxPendingSims": 250,
+    "maxPendingSims": 10,
     "maxDiskBuffer": 150
   }
 }
