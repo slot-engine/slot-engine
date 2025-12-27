@@ -5,6 +5,7 @@ import { ErrorDisplay } from "../../components/Error"
 import { Loading } from "../../components/Loading"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/Tabs"
 import {
+  IconCoin,
   IconColumns3,
   IconFileSearch,
   IconInfoCircle,
@@ -18,6 +19,7 @@ import { GameProvider } from "../../context/GameContext"
 const tabsNames = {
   info: "info",
   simulation: "simulation",
+  betSimulation: "bet-simulation",
   "reelset-designer": "reelset-designer",
   explorer: "explorer",
 }
@@ -65,7 +67,14 @@ function RouteComponent() {
             onClick={() => setUrlTab(tabsNames.simulation)}
           >
             <IconRepeat />
-            Simulation
+            Game Simulation
+          </TabsTrigger>
+          <TabsTrigger
+            value={tabsNames.betSimulation}
+            onClick={() => setUrlTab(tabsNames.betSimulation)}
+          >
+            <IconCoin />
+            Bet Simulation
           </TabsTrigger>
           <TabsTrigger
             value={tabsNames["reelset-designer"]}

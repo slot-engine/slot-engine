@@ -129,6 +129,11 @@ app.post("/:id/sim-run", async (c) => {
     return c.json<APIMessageResponse>({ message: "Not found" }, 404)
   }
 
+  savePanelGameConfig(origGame, {
+    ...config,
+    forceStop: false,
+  })
+
   // Clone game to avoid mutating the original
   const game = origGame.clone()
 
@@ -139,6 +144,24 @@ app.post("/:id/sim-run", async (c) => {
     simulationOpts: {
       panelPort: c.get("config").port,
     },
+  })
+
+  return c.json<APIMessageResponse>({ message: "Done" })
+})
+
+app.post("/:id/sim-stop", (c) => {
+  const gameId = c.req.param("id")
+  const game = getGameById(gameId, c)
+  const config = loadOrCreatePanelGameConfig(game)
+
+  if (!game || !config) {
+    console.warn(chalk.yellow(`Game with ID ${gameId} not found for simulation stop`))
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  savePanelGameConfig(game, {
+    ...config,
+    forceStop: true,
   })
 
   return c.json<APIMessageResponse>({ message: "Done" })

@@ -45,6 +45,7 @@ export interface PanelGameConfig {
     maxPendingSims: number
     maxDiskBuffer: number
   }
+  forceStop: boolean
 }
 
 export type APIGameGetSimConfResponse = PanelGameConfig["simulation"]

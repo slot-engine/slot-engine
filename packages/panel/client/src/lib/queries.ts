@@ -52,6 +52,10 @@ export const mutation = {
       },
       body: JSON.stringify(opts),
     }),
+  stopSimulation: (gameId: string) =>
+    api<void>(`games/${gameId}/sim-stop`, {
+      method: "POST",
+    }),
 }
 
 export type APIResponse<T> = T extends keyof typeof query

@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from "react"
 import { Button } from "../Button"
 import {
   IconExternalLink,
+  IconLoader2,
   IconLock,
   IconPlayerPlay,
+  IconPlayerStop,
   IconPlus,
   IconSettings,
   IconTrash,
@@ -55,6 +57,13 @@ export const GameSimulation = () => {
           return acc
         }, {}),
       })
+    },
+  })
+
+  const stopMutation = useMutation({
+    mutationKey: ["game", "simulation", "stop", gameId],
+    mutationFn: async () => {
+      return await mutation.stopSimulation(gameId)
     },
   })
 
@@ -173,9 +182,7 @@ export const GameSimulation = () => {
     updateConfMutation.isPending ||
     simulationMutation.isPending
 
-  function triggerSimulation() {
-    simulationMutation.mutate()
-  }
+  const isBusy = updateConfMutation.isPending || simulationMutation.isPending
 
   return (
     <div className="grid grid-cols-[2fr_1fr] gap-8 items-start">
@@ -314,14 +321,18 @@ export const GameSimulation = () => {
               setSimSettings((prev) => ({ ...prev!, maxDiskBuffer: v ?? 0 }))
             }}
           />
-          <Button
-            className="mt-6"
-            disabled={canNotSimulate}
-            onClick={() => triggerSimulation()}
-          >
-            <IconPlayerPlay />
-            Start Simulation
-          </Button>
+          <div className="flex mt-6 gap-2">
+            <Button disabled={canNotSimulate} onClick={() => simulationMutation.mutate()}>
+              {isBusy ? <IconLoader2 className="animate-spin" /> : <IconPlayerPlay />}
+              Start Simulation
+            </Button>
+            {simulationMutation.isPending && (
+              <Button variant="destructive" onClick={() => stopMutation.mutate()}>
+                <IconPlayerStop />
+                Force Stop
+              </Button>
+            )}
+          </div>
           <div className="text-sm mt-2 text-ui-500">
             Simulation will be started without confirmation. This will override the output
             files in your game directory. Proceed only if you are aware of this.

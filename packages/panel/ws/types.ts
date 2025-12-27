@@ -4,6 +4,7 @@ export interface ServerToClientEvents {
 
 export interface ClientToServerEvents {
   simulationProgress: SimulationProgress
+  simulationShouldStop: (gameId: string, response: (stop: boolean) => void) => void
 }
 
 type SimulationProgress = (data: {

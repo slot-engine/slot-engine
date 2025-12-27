@@ -21,6 +21,7 @@ import { ResultSet } from "../result-set"
 import { pipeline } from "stream/promises"
 import { createCriteriaSampler, hashStringToInt, splitCountsAcrossChunks } from "./utils"
 import { io, Socket } from "socket.io-client"
+import chalk from "chalk"
 
 let completedSimulations = 0
 const TEMP_FILENAME = "__temp_compiled_src_IGNORE.js"
@@ -87,7 +88,7 @@ export class Simulation {
     this.gameConfigOpts = gameConfigOpts
     this.simRunsAmount = opts.simRunsAmount || {}
     this.concurrency = (opts.concurrency || 6) >= 2 ? opts.concurrency || 6 : 2
-    this.maxPendingSims = Math.max(10, opts.maxPendingSims ?? 250)
+    this.maxPendingSims = opts.maxPendingSims ?? 250
     this.maxHighWaterMark = (opts.maxDiskBuffer ?? 50) * 1024 * 1024
 
     const gameModeKeys = Object.keys(this.gameConfig.gameModes)
@@ -184,7 +185,7 @@ export class Simulation {
         debugDetails[mode] = {}
 
         console.log(`\nSimulating game mode: ${mode}`)
-        console.time(mode)
+        const startTime = Date.now()
 
         const runs = this.simRunsAmount[mode] || 0
         if (runs <= 0) continue
@@ -291,7 +292,9 @@ export class Simulation {
           ]),
         )
 
-        console.timeEnd(mode)
+        const endTime = Date.now()
+        const prettyTime = new Date(endTime - startTime).toISOString().slice(11, -1)
+        console.log(`Time taken for mode "${mode}": ${prettyTime}`)
       }
 
       console.log("\n=== SIMULATION SUMMARY ===")
@@ -451,13 +454,25 @@ export class Simulation {
                 logArrowProgress(completedSimulations, totalSims)
               }
 
-              if (completedSimulations % 1000 === 0 && this.socket && this.panelActive) {
-                this.socket.emit("simulationProgress", {
-                  mode,
-                  percentage: (completedSimulations / totalSims) * 100,
-                  current: completedSimulations,
-                  total: totalSims,
-                })
+              if (this.socket && this.panelActive) {
+                if (completedSimulations % 1000 === 0) {
+                  this.socket.emit("simulationProgress", {
+                    mode,
+                    percentage: (completedSimulations / totalSims) * 100,
+                    current: completedSimulations,
+                    total: totalSims,
+                  })
+
+                  this.socket.emit(
+                    "simulationShouldStop",
+                    this.gameConfig.id,
+                    (shouldStop: boolean) => {
+                      if (shouldStop) {
+                        worker.terminate()
+                      }
+                    },
+                  )
+                }
               }
 
               const book = msg.book as ReturnType<Book["serialize"]>
@@ -524,7 +539,8 @@ export class Simulation {
 
       worker.on("exit", (code) => {
         if (code !== 0) {
-          reject(new Error(`Worker stopped with exit code ${code}`))
+          console.log(chalk.yellow(`\nWorker stopped with exit code ${code}`))
+          reject()
         }
       })
     })

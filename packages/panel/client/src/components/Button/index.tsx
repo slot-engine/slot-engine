@@ -1,7 +1,7 @@
 import { cva } from "../../lib/cn"
 
 interface ButtonProps extends React.ComponentPropsWithoutRef<"button"> {
-  variant?: "primary" | "secondary" | "ghost"
+  variant?: "primary" | "secondary" | "ghost" | "destructive"
   size?: "sm" | "md" | "lg"
   isIconButton?: boolean
 }
@@ -22,6 +22,7 @@ export const Button = ({
         primary: "bg-ui-50 text-ui-950 hover:bg-ui-100",
         secondary: "bg-ui-700 hover:bg-ui-800",
         ghost: "bg-transparent hover:bg-ui-800",
+        destructive: "bg-red-600 text-white hover:bg-red-700",
       },
       isIconButton: {
         true: "px-2",

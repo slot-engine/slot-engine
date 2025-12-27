@@ -51,6 +51,7 @@ export function loadOrCreatePanelGameConfig(game: SlotGame | undefined) {
       config.simulation?.maxPendingSims,
       config.simulation?.maxDiskBuffer,
       config.simulation?.simRunsAmount,
+      config.forceStop,
     ]
 
     isFileBroken = propsToCheck.some((p) => p === undefined)
@@ -65,10 +66,11 @@ export function loadOrCreatePanelGameConfig(game: SlotGame | undefined) {
     id: game.getConfig().id,
     simulation: {
       simRunsAmount: {},
-      concurrency: 6,
-      maxPendingSims: 250,
-      maxDiskBuffer: 50,
+      concurrency: 8,
+      maxPendingSims: 25,
+      maxDiskBuffer: 150,
     },
+    forceStop: false,
   }
 
   fs.writeFileSync(filePath, JSON.stringify(defaultConfig, null, 2), "utf-8")
