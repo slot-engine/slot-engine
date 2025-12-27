@@ -16,6 +16,7 @@ import {
 } from "../../lib/utils"
 import { zValidator } from "@hono/zod-validator"
 import z from "zod"
+import chalk from "chalk"
 
 const app = new Hono<{ Variables: Variables }>()
 
@@ -120,12 +121,25 @@ app.post(
 
 app.post("/:id/sim-run", async (c) => {
   const gameId = c.req.param("id")
-  const game = getGameById(gameId, c)
-  const config = loadOrCreatePanelGameConfig(game)
+  const origGame = getGameById(gameId, c)
+  const config = loadOrCreatePanelGameConfig(origGame)
 
-  if (!game || !config) {
+  if (!origGame || !config) {
+    console.warn(chalk.yellow(`Game with ID ${gameId} not found for simulation start`))
     return c.json<APIMessageResponse>({ message: "Not found" }, 404)
   }
+
+  // Clone game to avoid mutating the original
+  const game = origGame.clone()
+
+  game.configureSimulation(config.simulation)
+  await game.runTasks({
+    _internal_ignore_args: true,
+    doSimulation: true,
+    simulationOpts: {
+      panelPort: c.get("config").port,
+    },
+  })
 
   return c.json<APIMessageResponse>({ message: "Done" })
 })

@@ -118,7 +118,7 @@ export class SlotGame<
       await this.runAnalysis(opts.analysisOpts || { gameModes: [] })
     }
 
-    if (isMainThread) console.log("Finishing up...")
+    if (isMainThread) console.log("Done!")
   }
 
   /**
@@ -130,6 +130,10 @@ export class SlotGame<
 
   getMetadata() {
     return createGameConfig(this.configOpts).metadata
+  }
+
+  clone() {
+    return new SlotGame<TGameModes, TSymbols, TUserState>(this.configOpts)
   }
 }
 

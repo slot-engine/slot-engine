@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "esbuild": "0.25.9",
+    "socket.io-client": "4.8.3",
     "yargs": "18.0.0"
   },
   "devDependencies": {

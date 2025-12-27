@@ -62,7 +62,7 @@ export function createPanel(opts?: PanelOptions): Panel {
       port: panelConfig.port,
     })
 
-    startWsServer(server as Server)
+    startWsServer(server as Server, panelConfig)
 
     console.log("\n")
     console.log(
@@ -79,7 +79,7 @@ interface PanelOptions {
   games?: Array<SlotGame<any, any, any>>
 }
 
-interface PanelConfig {
+export interface PanelConfig {
   port: number
   games: Array<SlotGame<any, any, any>>
 }

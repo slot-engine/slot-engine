@@ -1,16 +1,21 @@
 import { Server } from "socket.io"
 import type { Server as HTTPServer } from "node:http"
-import { ClientToServerEvents, ServerToClientEvents } from "../types"
+import { type ClientToServerEvents, type ServerToClientEvents } from "../types"
+import { PanelConfig } from "../../server"
 
 export const io = new Server<ClientToServerEvents, ServerToClientEvents>({
   path: "/ws",
   transports: ["websocket", "polling"],
 })
 
-export function startWsServer(httpServer: HTTPServer) {
+export function startWsServer(httpServer: HTTPServer, panelConfig: PanelConfig) {
   io.attach(httpServer)
 
+  const games = panelConfig.games
+
   io.on("connection", (socket) => {
-    socket.on("joinRoom", async (room, respond) => {})
+    socket.on("simulationProgress", (data) => {
+      io.emit("simulationProgress", data)
+    })
   })
 }

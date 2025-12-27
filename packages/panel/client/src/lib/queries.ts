@@ -6,6 +6,7 @@ import {
   type APIGameGetSimConfResponse,
   type PanelGameConfig,
 } from "../../../server/types"
+import type { SimulationOptions } from "./types"
 
 export class FetchError extends Error {
   code: number
@@ -42,6 +43,14 @@ export const mutation = {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
+    }),
+  startSimulation: (gameId: string, opts: SimulationOptions) =>
+    api<void>(`games/${gameId}/sim-run`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(opts),
     }),
 }
 

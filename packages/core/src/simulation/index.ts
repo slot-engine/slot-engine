@@ -20,6 +20,7 @@ import { Wallet } from "../wallet"
 import { ResultSet } from "../result-set"
 import { pipeline } from "stream/promises"
 import { createCriteriaSampler, hashStringToInt, splitCountsAcrossChunks } from "./utils"
+import { io, Socket } from "socket.io-client"
 
 let completedSimulations = 0
 const TEMP_FILENAME = "__temp_compiled_src_IGNORE.js"
@@ -27,13 +28,13 @@ const TEMP_FOLDER = "temp_files"
 
 /**
  * Class for handling simulations of the slot game.
- * 
+ *
  * High level overview:
  * - Main thread compiles user code to JS and spawns workers
  * - Workers run compiled code to execute simulations
  * - Workers send data to main thread
  * - Main thread merges data and writes files
- * 
+ *
  * Notes:
  * - Backpressure system with credits to avoid overwhelming the main thread
  * - Limited amount of credits
@@ -48,11 +49,15 @@ export class Simulation {
   readonly concurrency: number
   private debug = false
   private actualSims = 0
-  private wallet: Wallet
+  private wallet: Wallet = new Wallet()
   private recordsWriteStream: fs.WriteStream | undefined
   private hasWrittenRecord = false
   private readonly maxPendingSims: number
   private readonly maxHighWaterMark: number
+  private panelPort: number = 7770
+  private panelActive: boolean = false
+  private panelWsUrl: string | undefined
+  private socket: Socket | undefined
 
   private PATHS = {} as {
     base: string
@@ -82,7 +87,6 @@ export class Simulation {
     this.gameConfigOpts = gameConfigOpts
     this.simRunsAmount = opts.simRunsAmount || {}
     this.concurrency = (opts.concurrency || 6) >= 2 ? opts.concurrency || 6 : 2
-    this.wallet = new Wallet()
     this.maxPendingSims = Math.max(10, opts.maxPendingSims ?? 250)
     this.maxHighWaterMark = (opts.maxDiskBuffer ?? 50) * 1024 * 1024
 
@@ -140,6 +144,32 @@ export class Simulation {
     // This spawns individual processes and merges the results afterwards.
     if (isMainThread) {
       this.preprocessFiles()
+
+      // Workers can use websocket to send data to panel if configured
+      this.panelPort = opts.panelPort || 7770
+      this.panelWsUrl = `http://localhost:${this.panelPort}`
+
+      await new Promise<void>((resolve, reject) => {
+        try {
+          this.socket = io(this.panelWsUrl, {
+            path: "/ws",
+            transports: ["websocket", "polling"],
+            withCredentials: true,
+            autoConnect: false,
+            reconnection: true,
+            reconnectionAttempts: 3,
+            reconnectionDelay: 1000,
+          })
+          this.socket!.connect()
+          this.socket!.once("connect", () => {
+            this.panelActive = true
+            resolve()
+          })
+          this.socket!.once("connect_error", reject)
+        } catch (error) {
+          reject(error)
+        }
+      })
 
       const debugDetails: Record<string, Record<string, any>> = {}
 
@@ -312,6 +342,10 @@ export class Simulation {
 
       parentPort?.close()
     }
+
+    if (this.socket && this.panelActive) {
+      this.socket?.close()
+    }
   }
 
   /**
@@ -409,8 +443,20 @@ export class Simulation {
           writeChain = writeChain
             .then(async () => {
               completedSimulations++
+
               if (completedSimulations % 250 === 0) {
                 logArrowProgress(completedSimulations, totalSims)
+              }
+
+              if (completedSimulations % 1000 === 0) {
+                if (this.socket && this.panelActive) {
+                  this.socket.emit("simulationProgress", {
+                    mode,
+                    percentage: (completedSimulations / totalSims) * 100,
+                    current: completedSimulations,
+                    total: totalSims,
+                  })
+                }
               }
 
               const book = msg.book as ReturnType<Book["serialize"]>
@@ -865,4 +911,5 @@ export type SimulationOptions = {
 
 export type SimulationConfigOptions = {
   debug?: boolean
+  panelPort?: number
 }

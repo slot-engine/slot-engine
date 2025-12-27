@@ -1,5 +1,14 @@
-export interface ServerToClientEvents {}
+export interface ServerToClientEvents {
+  simulationProgress: SimulationProgress
+}
 
 export interface ClientToServerEvents {
-  joinRoom: (room: string, response: (message: string) => void) => void
+  simulationProgress: SimulationProgress
 }
+
+type SimulationProgress = (data: {
+  mode: string
+  percentage: number
+  current: number
+  total: number
+}) => void

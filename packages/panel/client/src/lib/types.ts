@@ -9,3 +9,10 @@ export interface LinkItem {
 export interface PropsWithGameId {
   gameId: string
 }
+
+export type SimulationOptions = {
+  simRunsAmount: Record<string, number>
+  concurrency: number
+  maxPendingSims: number
+  maxDiskBuffer: number
+}

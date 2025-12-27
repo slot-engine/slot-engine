@@ -15,9 +15,10 @@ import { ErrorDisplay } from "../Error"
 import { Loading } from "../Loading"
 import { NumberInput } from "../NumberInput"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "../Select"
+import { socket } from "../../context/Websocket"
+import type { SimulationOptions } from "../../lib/types"
 
-type SimConfig = Parameters<typeof mutation.gameSimConf>[1]
-type SimConfigWithoutGames = Omit<SimConfig, "simRunsAmount">
+type SimOptsWithoutGames = Omit<SimulationOptions, "simRunsAmount">
 
 export const GameSimulation = () => {
   const { gameId } = useGameContext()
@@ -34,15 +35,28 @@ export const GameSimulation = () => {
 
   const updateConfMutation = useMutation({
     mutationKey: ["game", "sim-conf", gameId],
-    mutationFn: async (data: SimConfig) => {
+    mutationFn: async (data: Required<SimulationOptions>) => {
       return await mutation.gameSimConf(gameId, data)
     },
   })
 
   const [modesToSimulate, setModesToSimulate] = useState<GameModeSimulation[]>([])
-  const [simSettings, setSimSettings] = useState<SimConfigWithoutGames | null>(null)
+  const [simSettings, setSimSettings] = useState<SimOptsWithoutGames | null>(null)
   const lastDataTimestamp = useRef<number | null>(null)
   const isUserChange = useRef(false)
+
+  const simulationMutation = useMutation({
+    mutationKey: ["game", "simulation", gameId],
+    mutationFn: async () => {
+      return await mutation.startSimulation(gameId, {
+        ...simSettings!,
+        simRunsAmount: modesToSimulate.reduce<Record<string, number>>((acc, curr) => {
+          acc[curr.name] = curr.amount
+          return acc
+        }, {}),
+      })
+    },
+  })
 
   useEffect(() => {
     if (!data) return
@@ -92,6 +106,22 @@ export const GameSimulation = () => {
     isUserChange.current = false
   }, [gameId])
 
+  useEffect(() => {
+    socket.on("simulationProgress", (data) => {
+      setModesToSimulate((prev) =>
+        prev.map((m) =>
+          m.name === data.mode
+            ? { ...m, isSimulating: true, progress: data.percentage }
+            : m,
+        ),
+      )
+    })
+
+    return () => {
+      socket.off("simulationProgress")
+    }
+  }, [])
+
   if (error) return <ErrorDisplay error={error} />
   if (!data || isFetching) return <Loading isLoading={isLoading || isFetching} />
 
@@ -138,6 +168,15 @@ export const GameSimulation = () => {
     setModesToSimulate((prev) => prev.map((m) => (m.name === o ? { ...m, name: n } : m)))
   }
 
+  const canNotSimulate =
+    modesToSimulate.length === 0 ||
+    updateConfMutation.isPending ||
+    simulationMutation.isPending
+
+  function triggerSimulation() {
+    simulationMutation.mutate()
+  }
+
   return (
     <div className="grid grid-cols-[2fr_1fr] gap-8 items-start">
       <div>
@@ -162,7 +201,7 @@ export const GameSimulation = () => {
         {modesToSimulate.map((mode, i) => (
           <div
             key={i}
-            className="p-4 mb-4 flex gap-8 rounded-lg border border-ui-700 bg-ui-900"
+            className="relative overflow-clip p-4 pb-5 mb-4 flex gap-8 rounded-lg border border-ui-700 bg-ui-900"
           >
             {availableModes.length > 0 ? (
               <div>
@@ -210,6 +249,12 @@ export const GameSimulation = () => {
               >
                 <IconTrash />
               </Button>
+            </div>
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-ui-800">
+              <div
+                className="absolute top-0 left-0 w-full h-full bg-linear-to-r from-cyan to-emerald duration-200"
+                style={{ clipPath: `inset(0 ${100 - mode.progress}% 0 0)` }}
+              />
             </div>
           </div>
         ))}
@@ -270,12 +315,17 @@ export const GameSimulation = () => {
             }}
           />
           <Button
-            className="mt-4"
-            disabled={modesToSimulate.length === 0 || updateConfMutation.isPending}
+            className="mt-6"
+            disabled={canNotSimulate}
+            onClick={() => triggerSimulation()}
           >
             <IconPlayerPlay />
             Start Simulation
           </Button>
+          <div className="text-sm mt-2 text-ui-500">
+            Simulation will be started without confirmation. This will override the output
+            files in your game directory. Proceed only if you are aware of this.
+          </div>
         </div>
       )}
     </div>
