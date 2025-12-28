@@ -29,6 +29,8 @@ export {
   OptimizationScaling,
 } from "./src/optimizer"
 
+export { type SimulationSummary } from "./src/simulation"
+
 export { type GameContext } from "./src/game-context"
 
 export { LinesWinType } from "./src/win-types/LinesWinType"
