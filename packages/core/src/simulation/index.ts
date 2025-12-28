@@ -908,11 +908,15 @@ export class Simulation {
         const totalWins = criteriaSummary.bsWins + criteriaSummary.fsWins
         const rtp = totalWins / (criteriaSummary.numSims * modeCost)
         this.summary[mode]!.criteria[criteria]!.rtp = round(rtp, 6)
+        this.summary[mode]!.criteria[criteria]!.bsWins = round(criteriaSummary.bsWins, 4)
+        this.summary[mode]!.criteria[criteria]!.fsWins = round(criteriaSummary.fsWins, 4)
       })
 
       const totalWins = modeSummary.total.bsWins + modeSummary.total.fsWins
       const rtp = totalWins / (modeSummary.total.numSims * modeCost)
       this.summary[mode]!.total.rtp = round(rtp, 4)
+      this.summary[mode]!.total.bsWins = round(modeSummary.total.bsWins, 4)
+      this.summary[mode]!.total.fsWins = round(modeSummary.total.fsWins, 4)
     })
 
     const maxLineLength = 50
@@ -922,22 +926,33 @@ export class Simulation {
       output += "-".repeat(maxLineLength) + "\n\n"
       output += chalk.bold.bgWhite(`Mode: ${mode}\n`)
       output += `Simulations: ${modeSummary.total.numSims}\n`
-      output += `Basegame Wins: ${round(modeSummary.total.bsWins, 4)}\n`
-      output += `Freespins Wins: ${round(modeSummary.total.fsWins, 4)}\n`
-      output += `RTP (unoptimized): ${round(modeSummary.total.rtp, 4)}\n`
+      output += `Basegame Wins: ${modeSummary.total.bsWins}\n`
+      output += `Freespins Wins: ${modeSummary.total.fsWins}\n`
+      output += `RTP (unoptimized): ${modeSummary.total.rtp}\n`
 
       output += chalk.bold("\n    Result Set Summary:\n")
       for (const [criteria, criteriaSummary] of Object.entries(modeSummary.criteria)) {
         output += chalk.gray("    " + "-".repeat(maxLineLength - 4)) + "\n"
         output += chalk.bold(`    Criteria: ${criteria}\n`)
-        output += `    Simulations: ${round(criteriaSummary.numSims, 4)}\n`
-        output += `    Basegame Wins: ${round(criteriaSummary.bsWins, 4)}\n`
-        output += `    Freespins Wins: ${round(criteriaSummary.fsWins, 4)}\n`
-        output += `    RTP (unoptimized): ${round(criteriaSummary.rtp, 4)}\n`
+        output += `    Simulations: ${criteriaSummary.numSims}\n`
+        output += `    Basegame Wins: ${criteriaSummary.bsWins}\n`
+        output += `    Freespins Wins: ${criteriaSummary.fsWins}\n`
+        output += `    RTP (unoptimized): ${criteriaSummary.rtp}\n`
       }
     }
 
     console.log(output)
+
+    writeFile(
+      path.join(this.PATHS.base, "simulation_summary.json"),
+      JSON.stringify(this.summary, null, 2),
+    )
+
+    if (this.socket && this.panelActive) {
+      this.socket.emit("simulationSummary", {
+        summary: this.summary,
+      })
+    }
   }
 }
 

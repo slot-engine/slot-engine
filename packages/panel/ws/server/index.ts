@@ -11,12 +11,16 @@ export const io = new Server<ClientToServerEvents, ServerToClientEvents>({
 
 export function startWsServer(httpServer: HTTPServer, panelConfig: PanelConfig) {
   io.attach(httpServer)
-  
+
   const games = panelConfig.games
 
   io.on("connection", (socket) => {
     socket.on("simulationProgress", (data) => {
       io.emit("simulationProgress", data)
+    })
+
+    socket.on("simulationSummary", (data) => {
+      io.emit("simulationSummary", data)
     })
 
     socket.on("simulationShouldStop", (gameId, response) => {

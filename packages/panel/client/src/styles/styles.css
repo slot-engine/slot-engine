@@ -61,3 +61,23 @@
     @apply flex items-center gap-1 mb-4 text-sm text-ui-500 hover:text-ui-100 underline;
   }
 }
+
+@layer components {
+  .text-slot-letter {
+    transform: translateY(-3rem);
+    display: block;
+    animation: spin-slot 2s cubic-bezier(.54,-0.27,.31,1.27) infinite;
+  }
+
+  @keyframes spin-slot {
+    0% {
+      transform: translateY(-3rem);
+    }
+    50% {
+      transform: translateY(0rem);
+    }
+    100% {
+      transform: translateY(0rem);
+    }
+  }
+}

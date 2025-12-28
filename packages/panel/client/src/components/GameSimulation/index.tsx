@@ -14,7 +14,7 @@ import {
 } from "@tabler/icons-react"
 import { useGameContext } from "../../context/GameContext"
 import { ErrorDisplay } from "../Error"
-import { Loading } from "../Loading"
+import { Loading, SimulationLoading } from "../Loading"
 import { NumberInput } from "../NumberInput"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "../Select"
 import { socket } from "../../context/Websocket"
@@ -322,20 +322,26 @@ export const GameSimulation = () => {
             }}
           />
           <div className="mt-6">
-            <Button
-              disabled={canNotSimulate}
-              onClick={() => simulationMutation.mutate()}
-              className="w-full flex-col py-3"
-            >
-              <div className="flex gap-2 items-center">
-                {isBusy ? <IconLoader2 className="animate-spin" /> : <IconPlayerPlay />}
-                Start Simulation
+            {simulationMutation.isPending ? (
+              <div className="h-22 bg-ui-800 rounded-lg flex items-center justify-center">
+                <SimulationLoading isLoading={true} />
               </div>
-              <div className="text-xs text-ui-700">
-                Simulation will override the output files in your game directory. Proceed
-                only if you are aware of this.
-              </div>
-            </Button>
+            ) : (
+              <Button
+                disabled={canNotSimulate}
+                onClick={() => simulationMutation.mutate()}
+                className="w-full flex-col py-3"
+              >
+                <div className="flex gap-2 items-center">
+                  {isBusy ? <IconLoader2 className="animate-spin" /> : <IconPlayerPlay />}
+                  Start Simulation
+                </div>
+                <div className="text-xs text-ui-700">
+                  Simulation will override the output files in your game directory.
+                  Proceed only if you are aware of this.
+                </div>
+              </Button>
+            )}
             <Button
               variant="destructive"
               disabled={!simulationMutation.isPending}
