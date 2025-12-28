@@ -2,4 +2,4 @@
 "@slot-engine/core": patch
 ---
 
-Internal restructure, preparing for panel compatibility
+Internal restructure, enabling panel compatibility
