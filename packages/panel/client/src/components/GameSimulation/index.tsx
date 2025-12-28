@@ -259,7 +259,7 @@ export const GameSimulation = () => {
             </div>
             <div className="absolute bottom-0 left-0 w-full h-1 bg-ui-800">
               <div
-                className="absolute top-0 left-0 w-full h-full bg-linear-to-r from-cyan to-emerald duration-200"
+                className="absolute top-0 left-0 w-full h-full bg-linear-to-r from-cyan to-emerald duration-1000"
                 style={{ clipPath: `inset(0 ${100 - mode.progress}% 0 0)` }}
               />
             </div>
@@ -321,21 +321,36 @@ export const GameSimulation = () => {
               setSimSettings((prev) => ({ ...prev!, maxDiskBuffer: v ?? 0 }))
             }}
           />
-          <div className="flex mt-6 gap-2">
-            <Button disabled={canNotSimulate} onClick={() => simulationMutation.mutate()}>
-              {isBusy ? <IconLoader2 className="animate-spin" /> : <IconPlayerPlay />}
-              Start Simulation
+          <div className="mt-6">
+            <Button
+              disabled={canNotSimulate}
+              onClick={() => simulationMutation.mutate()}
+              className="w-full flex-col py-3"
+            >
+              <div className="flex gap-2 items-center">
+                {isBusy ? <IconLoader2 className="animate-spin" /> : <IconPlayerPlay />}
+                Start Simulation
+              </div>
+              <div className="text-xs text-ui-700">
+                Simulation will override the output files in your game directory. Proceed
+                only if you are aware of this.
+              </div>
             </Button>
-            {simulationMutation.isPending && (
-              <Button variant="destructive" onClick={() => stopMutation.mutate()}>
+            <Button
+              variant="destructive"
+              disabled={!simulationMutation.isPending}
+              onClick={() => stopMutation.mutate()}
+              className="w-full flex-col py-3 mt-2"
+            >
+              <div className="flex gap-2 items-center">
                 <IconPlayerStop />
                 Force Stop
-              </Button>
-            )}
-          </div>
-          <div className="text-sm mt-2 text-ui-500">
-            Simulation will be started without confirmation. This will override the output
-            files in your game directory. Proceed only if you are aware of this.
+              </div>
+              <div className="text-xs text-balance">
+                Cancels the simulation as soon as possible. May take a few seconds to
+                process.
+              </div>
+            </Button>
           </div>
         </div>
       )}

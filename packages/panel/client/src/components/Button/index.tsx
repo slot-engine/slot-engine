@@ -14,7 +14,7 @@ export const Button = ({
 }: ButtonProps) => {
   const styles = cva({
     base: [
-      "cursor-pointer flex items-center gap-2 rounded-lg py-2 disabled:cursor-not-allowed disabled:opacity-50",
+      "cursor-pointer flex justify-center items-center gap-2 rounded-lg py-2 disabled:cursor-not-allowed disabled:opacity-50",
       props.className,
     ],
     variants: {

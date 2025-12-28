@@ -75,7 +75,6 @@ export function createPanel(opts?: PanelOptions): Panel {
 }
 
 interface PanelOptions {
-  port?: number
   games?: Array<SlotGame<any, any, any>>
 }
 
