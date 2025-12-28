@@ -51,6 +51,7 @@ export class Simulation {
   private debug = false
   private actualSims = 0
   private wallet: Wallet = new Wallet()
+  private summary: SimulationSummary = {}
   private recordsWriteStream: fs.WriteStream | undefined
   private hasWrittenRecord = false
   private readonly maxPendingSims: number
@@ -60,7 +61,7 @@ export class Simulation {
   private panelWsUrl: string | undefined
   private socket: Socket | undefined
 
-  private PATHS = {} as {
+  PATHS = {} as {
     base: string
     books: (mode: string) => string
     booksCompressed: (mode: string) => string
@@ -175,14 +176,10 @@ export class Simulation {
         }
       })
 
-      const debugDetails: Record<string, Record<string, any>> = {}
-
       for (const mode of gameModesToSimulate) {
         completedSimulations = 0
         this.wallet = new Wallet()
         this.hasWrittenRecord = false
-
-        debugDetails[mode] = {}
 
         console.log(`\nSimulating game mode: ${mode}`)
         const startTime = Date.now()
@@ -194,6 +191,11 @@ export class Simulation {
           throw new Error(
             `Tried to simulate game mode "${mode}", but it's not configured in the game config.`,
           )
+        }
+
+        this.summary[mode] = {
+          total: { numSims: runs, bsWins: 0, fsWins: 0, rtp: 0 },
+          criteria: {},
         }
 
         const booksPath = this.PATHS.books(mode)
@@ -279,26 +281,12 @@ export class Simulation {
         this.writeIndexJson()
         console.log(`Mode ${mode} done!`)
 
-        debugDetails[mode].rtp = round(
-          this.wallet.getCumulativeWins() /
-            (runs * this.gameConfig.gameModes[mode]!.cost),
-          3,
-        )
-        debugDetails[mode].wins = round(this.wallet.getCumulativeWins(), 3)
-        debugDetails[mode].winsPerSpinType = Object.fromEntries(
-          Object.entries(this.wallet.getCumulativeWinsPerSpinType()).map(([k, v]) => [
-            k,
-            round(v, 3),
-          ]),
-        )
-
         const endTime = Date.now()
         const prettyTime = new Date(endTime - startTime).toISOString().slice(11, -1)
         console.log(`Time taken for mode "${mode}": ${prettyTime}`)
       }
 
-      console.log("\n=== SIMULATION SUMMARY ===")
-      console.table(debugDetails)
+      await this.printSimulationSummary()
     }
 
     let desiredSims = 0
@@ -481,6 +469,22 @@ export class Simulation {
                 payoutMultiplier: book.payout,
                 events: book.events,
               }
+
+              if (!this.summary[mode]?.criteria[book.criteria]) {
+                this.summary[mode]!.criteria[book.criteria] = {
+                  numSims: 0,
+                  bsWins: 0,
+                  fsWins: 0,
+                  rtp: 0,
+                }
+              }
+              const bsWins = round(book.basegameWins, 4)
+              const fsWins = round(book.freespinsWins, 4)
+              this.summary[mode]!.criteria[book.criteria]!.numSims += 1
+              this.summary[mode]!.total.bsWins += bsWins
+              this.summary[mode]!.total.fsWins += fsWins
+              this.summary[mode]!.criteria[book.criteria]!.bsWins! += bsWins
+              this.summary[mode]!.criteria[book.criteria]!.fsWins! += fsWins
 
               const prefix = book.id === simStart ? "" : "\n"
               await write(bookStream, prefix + JSONL.stringify([bookData]))
@@ -895,6 +899,46 @@ export class Simulation {
 
     recorder.pendingRecords = []
   }
+
+  async printSimulationSummary() {
+    Object.entries(this.summary).forEach(([mode, modeSummary]) => {
+      const modeCost = this.gameConfig.gameModes[mode]!.cost
+
+      Object.entries(modeSummary.criteria).forEach(([criteria, criteriaSummary]) => {
+        const totalWins = criteriaSummary.bsWins + criteriaSummary.fsWins
+        const rtp = totalWins / (criteriaSummary.numSims * modeCost)
+        this.summary[mode]!.criteria[criteria]!.rtp = round(rtp, 6)
+      })
+
+      const totalWins = modeSummary.total.bsWins + modeSummary.total.fsWins
+      const rtp = totalWins / (modeSummary.total.numSims * modeCost)
+      this.summary[mode]!.total.rtp = round(rtp, 4)
+    })
+
+    const maxLineLength = 50
+    let output = chalk.green.bold("\nSimulation Summary\n")
+
+    for (const [mode, modeSummary] of Object.entries(this.summary)) {
+      output += "-".repeat(maxLineLength) + "\n\n"
+      output += chalk.bold.bgWhite(`Mode: ${mode}\n`)
+      output += `Simulations: ${modeSummary.total.numSims}\n`
+      output += `Basegame Wins: ${round(modeSummary.total.bsWins, 4)}\n`
+      output += `Freespins Wins: ${round(modeSummary.total.fsWins, 4)}\n`
+      output += `RTP (unoptimized): ${round(modeSummary.total.rtp, 4)}\n`
+
+      output += chalk.bold("\n    Result Set Summary:\n")
+      for (const [criteria, criteriaSummary] of Object.entries(modeSummary.criteria)) {
+        output += chalk.gray("    " + "-".repeat(maxLineLength - 4)) + "\n"
+        output += chalk.bold(`    Criteria: ${criteria}\n`)
+        output += `    Simulations: ${round(criteriaSummary.numSims, 4)}\n`
+        output += `    Basegame Wins: ${round(criteriaSummary.bsWins, 4)}\n`
+        output += `    Freespins Wins: ${round(criteriaSummary.fsWins, 4)}\n`
+        output += `    RTP (unoptimized): ${round(criteriaSummary.rtp, 4)}\n`
+      }
+    }
+
+    console.log(output)
+  }
 }
 
 export type SimulationOptions = {
@@ -930,3 +974,24 @@ export type SimulationConfigOptions = {
   debug?: boolean
   panelPort?: number
 }
+
+export type SimulationSummary = Record<
+  string,
+  {
+    total: {
+      numSims: number
+      bsWins: number
+      fsWins: number
+      rtp: number
+    }
+    criteria: Record<
+      string,
+      {
+        numSims: number
+        bsWins: number
+        fsWins: number
+        rtp: number
+      }
+    >
+  }
+>
