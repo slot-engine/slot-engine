@@ -49,6 +49,10 @@
     font-size: var(--text-3xl);
   }
 
+  h4 {
+    font-size: var(--text-2xl);
+  }
+
   code {
     padding: 0.1rem 0.25rem;
     background-color: var(--color-ui-900);
@@ -59,6 +63,11 @@
 
   a.link {
     @apply flex items-center gap-1 mb-4 text-sm text-ui-500 hover:text-ui-100 underline;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ui-700) var(--color-ui-900);
   }
 }
 

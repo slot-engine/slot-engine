@@ -5,6 +5,7 @@ import {
   type APIGameInfoResponse,
   type APIGameGetSimConfResponse,
   type PanelGameConfig,
+  type APIGameSimSummaryResponse,
 } from "../../../server/types"
 import type { SimulationOptions } from "./types"
 
@@ -33,6 +34,7 @@ export const query = {
   game: (id: string) => api<APIGameResponse>(`games/${id}`),
   gameInfo: (id: string) => api<APIGameInfoResponse>(`games/${id}/info`),
   gameSimConf: (id: string) => api<APIGameGetSimConfResponse>(`games/${id}/sim-conf`),
+  gameSimSummary: (id: string) => api<APIGameSimSummaryResponse>(`games/${id}/sim-summary`),
 }
 
 export const mutation = {

@@ -204,9 +204,11 @@ export class Simulation {
         createDirIfNotExists(this.PATHS.base)
         createDirIfNotExists(path.join(this.PATHS.base, TEMP_FOLDER))
 
-        this.recordsWriteStream = fs.createWriteStream(tempRecordsPath, {
-          highWaterMark: this.maxHighWaterMark,
-        }).setMaxListeners(30)
+        this.recordsWriteStream = fs
+          .createWriteStream(tempRecordsPath, {
+            highWaterMark: this.maxHighWaterMark,
+          })
+          .setMaxListeners(30)
 
         const criteriaCounts = ResultSet.getNumberOfSimsForCriteria(this, mode)
         const totalSims = Object.values(criteriaCounts).reduce((a, b) => a + b, 0)
@@ -339,6 +341,8 @@ export class Simulation {
     }
 
     if (this.socket && this.panelActive) {
+      // Wait a bit for the simulationSummary event to be sent first
+      await new Promise((resolve) => setTimeout(resolve, 500))
       this.socket?.close()
     }
   }
@@ -439,12 +443,18 @@ export class Simulation {
             .then(async () => {
               completedSimulations++
 
-              if (completedSimulations % 250 === 0) {
+              if (
+                completedSimulations % 250 === 0 ||
+                completedSimulations === totalSims
+              ) {
                 logArrowProgress(completedSimulations, totalSims)
               }
 
               if (this.socket && this.panelActive) {
-                if (completedSimulations % 1000 === 0) {
+                if (
+                  completedSimulations % 1000 === 0 ||
+                  completedSimulations === totalSims
+                ) {
                   this.socket.emit("simulationProgress", {
                     mode,
                     percentage: (completedSimulations / totalSims) * 100,
@@ -908,7 +918,7 @@ export class Simulation {
       Object.entries(modeSummary.criteria).forEach(([criteria, criteriaSummary]) => {
         const totalWins = criteriaSummary.bsWins + criteriaSummary.fsWins
         const rtp = totalWins / (criteriaSummary.numSims * modeCost)
-        this.summary[mode]!.criteria[criteria]!.rtp = round(rtp, 6)
+        this.summary[mode]!.criteria[criteria]!.rtp = round(rtp, 4)
         this.summary[mode]!.criteria[criteria]!.bsWins = round(criteriaSummary.bsWins, 4)
         this.summary[mode]!.criteria[criteria]!.fsWins = round(criteriaSummary.fsWins, 4)
       })

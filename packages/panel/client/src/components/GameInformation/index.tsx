@@ -4,6 +4,7 @@ import { ErrorDisplay } from "../Error"
 import { Loading } from "../Loading"
 import { useGameContext } from "../../context/GameContext"
 import { GameNotConfigured } from "../Error/GameNotConfigured"
+import { TableRow } from "../Table"
 
 export const GameInformation = () => {
   const { gameId } = useGameContext()
@@ -30,10 +31,7 @@ export const GameInformation = () => {
       {!data.isValid && <GameNotConfigured />}
       <div>
         {basicInfo.map((info, i) => (
-          <div key={i} className="flex gap-2 py-2 border-b border-ui-700 hover:bg-ui-800">
-            <div className="basis-sm font-bold">{info.label}:</div>
-            <div>{info.value}</div>
-          </div>
+          <TableRow key={i} label={info.label} value={info.value} />
         ))}
       </div>
       <div className="mt-8">

@@ -6,12 +6,14 @@ import {
   APIGameInfoResponse,
   APIGamePostSimConfResponse,
   APIGameGetSimConfResponse,
+  APIGameSimSummaryResponse,
 } from "../../types"
 import { Hono } from "hono"
 import {
   getGameById,
   getGameInfo,
   loadOrCreatePanelGameConfig,
+  loadSummaryFile,
   savePanelGameConfig,
 } from "../../lib/utils"
 import { zValidator } from "@hono/zod-validator"
@@ -165,6 +167,23 @@ app.post("/:id/sim-stop", (c) => {
   })
 
   return c.json<APIMessageResponse>({ message: "Done" })
+})
+
+app.get("/:id/sim-summary", (c) => {
+  const gameId = c.req.param("id")
+  const game = getGameById(gameId, c)
+
+  if (!game) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  const summary = loadSummaryFile(game)
+
+  if (!summary) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  return c.json<APIGameSimSummaryResponse>({ summary })
 })
 
 export default app

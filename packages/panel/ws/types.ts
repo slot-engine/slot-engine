@@ -1,4 +1,4 @@
-import { SimulationSummary } from "@slot-engine/core/types"
+import { type SimulationSummary } from "@slot-engine/core/types"
 
 export interface ServerToClientEvents {
   simulationProgress: SimulationProgress

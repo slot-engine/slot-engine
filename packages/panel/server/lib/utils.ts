@@ -2,7 +2,7 @@ import fs from "fs"
 import path from "path"
 import { Context } from "hono"
 import { Variables } from ".."
-import { SlotGame } from "@slot-engine/core/types"
+import type { SimulationSummary, SlotGame } from "@slot-engine/core/types"
 import { PANEL_GAME_CONFIG_FILE } from "./constants"
 import { PanelGameConfig } from "../types"
 import chalk from "chalk"
@@ -98,4 +98,18 @@ export function savePanelGameConfig(game: SlotGame, config: PanelGameConfig) {
   const filePath = path.join(game.getMetadata().rootDir, PANEL_GAME_CONFIG_FILE)
   fs.writeFileSync(filePath, JSON.stringify(config, null, 2), "utf-8")
   return config
+}
+
+export function loadSummaryFile(game: SlotGame) {
+  const meta = game.getMetadata()
+  const filePath = path.join(meta.rootDir, meta.outputDir, "simulation_summary.json")
+  if (!fs.existsSync(filePath)) return
+
+  const data = JSON.parse(
+    fs.readFileSync(filePath, {
+      encoding: "utf-8",
+    }),
+  ) as SimulationSummary
+
+  return data
 }

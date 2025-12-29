@@ -185,8 +185,8 @@ export const GameSimulation = () => {
   const isBusy = updateConfMutation.isPending || simulationMutation.isPending
 
   return (
-    <div className="grid grid-cols-[2fr_1fr] gap-8 items-start">
-      <div>
+    <div className="grid grid-cols-[2fr_1fr] gap-4 items-start">
+      <div className="max-h-162 overflow-y-auto pr-2">
         {modesToSimulate.length === 0 && (
           <div className="p-8 rounded-lg border border-ui-700 bg-ui-900 flex flex-col items-center">
             <div className="text-xl mb-2">No simulation configured</div>

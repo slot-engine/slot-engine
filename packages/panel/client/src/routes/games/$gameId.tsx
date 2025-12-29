@@ -15,6 +15,7 @@ import { z } from "zod"
 import { GameInformation } from "../../components/GameInformation"
 import { GameSimulation } from "../../components/GameSimulation"
 import { GameProvider } from "../../context/GameContext"
+import { GameSimulationSummary } from "../../components/GameSimulationSummary"
 
 const tabsNames = {
   info: "info",
@@ -134,6 +135,7 @@ const SimulationTab = () => {
     <div>
       <TabContentHeader title="Simulation" description="Run simulations for this game." />
       <GameSimulation />
+      <GameSimulationSummary />
     </div>
   )
 }

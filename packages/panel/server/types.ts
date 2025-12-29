@@ -1,5 +1,7 @@
 // Keep types in this file, because they are imported in the client
 
+import type { SimulationSummary } from "@slot-engine/core/types"
+
 export interface APIMessageResponse {
   message: string
 }
@@ -51,3 +53,7 @@ export interface PanelGameConfig {
 export type APIGameGetSimConfResponse = PanelGameConfig["simulation"]
 
 export type APIGamePostSimConfResponse = PanelGameConfig["simulation"]
+
+export type APIGameSimSummaryResponse = {
+  summary: SimulationSummary
+}
