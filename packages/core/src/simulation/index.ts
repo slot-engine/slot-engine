@@ -164,7 +164,7 @@ export class Simulation {
 
         this.recordsWriteStream = fs.createWriteStream(tempRecordsPath, {
           highWaterMark: this.maxHighWaterMark,
-        })
+        }).setMaxListeners(30)
 
         const criteriaCounts = ResultSet.getNumberOfSimsForCriteria(this, mode)
         const totalSims = Object.values(criteriaCounts).reduce((a, b) => a + b, 0)
