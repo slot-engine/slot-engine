@@ -304,6 +304,7 @@ export class Simulation {
         workerNum: index,
       })
 
+      parentPort?.removeAllListeners()
       parentPort?.close()
     }
   }
