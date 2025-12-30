@@ -6,6 +6,8 @@ export {
   type GameHooks,
   type SpinType,
   type Reels,
+  type LookupTable,
+  type LookupTableSegmented,
 } from "./src/types"
 
 export { SPIN_TYPE } from "./src/constants"
@@ -28,6 +30,8 @@ export {
   OptimizationParameters,
   OptimizationScaling,
 } from "./src/optimizer"
+
+export { parseLookupTable, parseLookupTableSegmented } from "./src/analysis/utils"
 
 export { type SimulationSummary } from "./src/simulation"
 

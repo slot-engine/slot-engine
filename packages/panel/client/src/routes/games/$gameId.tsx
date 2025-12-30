@@ -12,10 +12,11 @@ import {
   IconRepeat,
 } from "@tabler/icons-react"
 import { z } from "zod"
+import { GameProvider } from "../../context/GameContext"
 import { GameInformation } from "../../components/GameInformation"
 import { GameSimulation } from "../../components/GameSimulation"
-import { GameProvider } from "../../context/GameContext"
 import { GameSimulationSummary } from "../../components/GameSimulationSummary"
+import { GameExplorer } from "../../components/GameExplorer"
 
 const tabsNames = {
   info: "info",
@@ -158,6 +159,7 @@ const ExplorerTab = () => {
         title="Explorer"
         description="Browse books and events of this game."
       />
+      <GameExplorer />
     </div>
   )
 }

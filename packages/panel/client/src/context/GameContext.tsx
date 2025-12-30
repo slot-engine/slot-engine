@@ -1,8 +1,16 @@
 import { createContext, useContext } from "react"
 import type { PropsWithGameId } from "../lib/types"
+import { useQuery } from "@tanstack/react-query"
+import { query } from "../lib/queries"
+import type { APIGameInfoResponse } from "../../../server/types"
+import { ErrorDisplay } from "../components/Error"
+import { Loading } from "../components/Loading"
 
 export interface GameContext {
   gameId: string
+  data: APIGameInfoResponse
+  isLoading: boolean
+  error: Error | null
 }
 
 const GameContext = createContext<GameContext | null>(null)
@@ -12,7 +20,21 @@ interface GameProviderProps extends PropsWithGameId {
 }
 
 export const GameProvider = ({ gameId, children }: GameProviderProps) => {
-  return <GameContext.Provider value={{ gameId }}>{children}</GameContext.Provider>
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["game", "info", gameId],
+    queryFn: async () => {
+      return await query.gameInfo(gameId)
+    },
+  })
+
+  if (error) return <ErrorDisplay error={error} />
+  if (!data) return <Loading isLoading={isLoading} />
+
+  return (
+    <GameContext.Provider value={{ gameId, data, isLoading, error }}>
+      {children}
+    </GameContext.Provider>
+  )
 }
 
 export const useGameContext = () => {

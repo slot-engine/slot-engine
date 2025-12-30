@@ -1,3 +1,5 @@
+import { LookupTable, LookupTableSegmented } from "../types"
+
 export function parseLookupTable(content: string) {
   const lines = content.trim().split("\n")
   const lut: LookupTable = []
@@ -23,9 +25,6 @@ export function parseLookupTableSegmented(content: string) {
   }
   return lut
 }
-
-export type LookupTable = [number, number, number][]
-export type LookupTableSegmented = [number, string, number, number][]
 
 export function getTotalLutWeight(lut: LookupTable) {
   return lut.reduce((sum, [, weight]) => sum + weight, 0)

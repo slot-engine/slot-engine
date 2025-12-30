@@ -1,6 +1,6 @@
 // Keep types in this file, because they are imported in the client
 
-import type { SimulationSummary } from "@slot-engine/core/types"
+import type { LookupTable, SimulationSummary } from "@slot-engine/core/types"
 
 export interface APIMessageResponse {
   message: string
@@ -56,4 +56,9 @@ export type APIGamePostSimConfResponse = PanelGameConfig["simulation"]
 
 export type APIGameSimSummaryResponse = {
   summary: SimulationSummary
+}
+
+export type APIGameExploreResponse = {
+  lut: LookupTable
+  nextCursor: number | null
 }

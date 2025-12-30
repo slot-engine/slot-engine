@@ -1,27 +1,13 @@
-import { useQuery } from "@tanstack/react-query"
-import { query } from "../../lib/queries"
-import { ErrorDisplay } from "../Error"
-import { Loading } from "../Loading"
 import { useGameContext } from "../../context/GameContext"
 import { GameNotConfigured } from "../Error/GameNotConfigured"
 import { TableRow } from "../Table"
 
 export const GameInformation = () => {
-  const { gameId } = useGameContext()
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["game", "info", gameId],
-    queryFn: async () => {
-      return await query.gameInfo(gameId)
-    },
-  })
-
-  if (error) return <ErrorDisplay error={error} />
-  if (!data) return <Loading isLoading={isLoading} />
+  const { data } = useGameContext()
 
   const basicInfo = [
-    { label: "ID", value: data.name },
-    { label: "Name", value: data.id },
+    { label: "ID", value: data.id },
+    { label: "Name", value: data.name },
     { label: "Path", value: data.path },
     { label: "Max Win X", value: data.maxWin },
   ]

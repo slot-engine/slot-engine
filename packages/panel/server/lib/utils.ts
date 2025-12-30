@@ -1,8 +1,10 @@
 import fs from "fs"
+import fsAsync from "fs/promises"
+import readline from "readline"
 import path from "path"
 import { Context } from "hono"
 import { Variables } from ".."
-import type { SimulationSummary, SlotGame } from "@slot-engine/core/types"
+import { parseLookupTable, type SimulationSummary, type SlotGame } from "@slot-engine/core"
 import { PANEL_GAME_CONFIG_FILE } from "./constants"
 import { PanelGameConfig } from "../types"
 import chalk from "chalk"
@@ -112,4 +114,76 @@ export function loadSummaryFile(game: SlotGame) {
   ) as SimulationSummary
 
   return data
+}
+
+export async function exploreLookupTable(opts: {
+  game: SlotGame
+  mode: string
+  cursor?: string
+  take: number
+}) {
+  const { game, mode, cursor, take } = opts
+
+  const meta = game.getMetadata()
+  const filePath = path.join(
+    meta.rootDir,
+    meta.outputDir,
+    "publish_files",
+    `lookUpTable_${mode}_0.csv`,
+  )
+  if (!fs.existsSync(filePath)) return
+
+  const indexPath = path.join(meta.rootDir, meta.outputDir, `lookUpTable_${mode}.index`)
+  const offset = parseInt(cursor || "0", 10)
+
+  const { rows, nextCursor } = await readLutRows(filePath, indexPath, offset, take)
+
+  return {
+    lut: parseLookupTable(rows.join("\n")),
+    nextCursor,
+  }
+}
+
+async function lutOffsetForRow(indexPath: string, row: number) {
+  if (!fs.existsSync(indexPath)) return
+
+  const indexFile = await fsAsync.open(indexPath, "r")
+  const buffer = Buffer.alloc(8)
+  await indexFile.read(buffer, 0, 8, row * 8)
+  await indexFile.close()
+
+  return Number(buffer.readBigUInt64LE())
+}
+
+async function readLutRows(
+  filePath: string,
+  indexPath: string,
+  offset: number,
+  take: number,
+) {
+  const byteOffset = await lutOffsetForRow(indexPath, offset)
+  const stream = fs.createReadStream(filePath, { start: byteOffset })
+  const rl = readline.createInterface({
+    input: stream,
+    crlfDelay: Infinity,
+  })
+
+  const rows = []
+  let nextCursor: number | null = null
+
+  for await (const line of rl) {
+    rows.push(line)
+    if (rows.length > take) {
+      nextCursor = offset + rows.length
+      rows.pop()
+      break
+    }
+  }
+
+  stream.destroy()
+
+  return {
+    rows,
+    nextCursor,
+  }
 }

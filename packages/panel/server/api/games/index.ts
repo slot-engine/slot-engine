@@ -7,9 +7,11 @@ import {
   APIGamePostSimConfResponse,
   APIGameGetSimConfResponse,
   APIGameSimSummaryResponse,
+  APIGameExploreResponse,
 } from "../../types"
 import { Hono } from "hono"
 import {
+  exploreLookupTable,
   getGameById,
   getGameInfo,
   loadOrCreatePanelGameConfig,
@@ -184,6 +186,32 @@ app.get("/:id/sim-summary", (c) => {
   }
 
   return c.json<APIGameSimSummaryResponse>({ summary })
+})
+
+app.get("/:id/explore/:mode", async (c) => {
+  const gameId = c.req.param("id")
+  const game = getGameById(gameId, c)
+
+  if (!game) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  const mode = c.req.param("mode")
+  const cursor = c.req.query("cursor") || undefined
+  const take = 100
+
+  const lut = await exploreLookupTable({
+    game,
+    mode,
+    cursor,
+    take,
+  })
+
+  if (!lut) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  return c.json<APIGameExploreResponse>(lut)
 })
 
 export default app

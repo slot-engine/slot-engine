@@ -67,12 +67,14 @@ export class Simulation {
     booksCompressed: (mode: string) => string
     tempBooks: (mode: string, i: number) => string
     lookupTable: (mode: string) => string
+    lookupTableIndex: (mode: string) => string
     tempLookupTable: (mode: string, i: number) => string
     lookupTableSegmented: (mode: string) => string
     tempLookupTableSegmented: (mode: string, i: number) => string
     lookupTablePublish: (mode: string) => string
     tempRecords: (mode: string) => string
     forceRecords: (mode: string) => string
+    forceJson: () => string
     indexJson: string
     publishFiles: string
     optimizationFiles: string
@@ -111,6 +113,8 @@ export class Simulation {
         path.join(this.PATHS.base, TEMP_FOLDER, `temp_books_${mode}_${i}.jsonl`),
       lookupTable: (mode: string) =>
         path.join(this.PATHS.base, `lookUpTable_${mode}.csv`),
+      lookupTableIndex: (mode: string) =>
+        path.join(this.PATHS.base, `lookUpTable_${mode}.index`),
       tempLookupTable: (mode: string, i: number) =>
         path.join(this.PATHS.base, TEMP_FOLDER, `temp_lookup_${mode}_${i}.csv`),
       lookupTableSegmented: (mode: string) =>
@@ -123,6 +127,7 @@ export class Simulation {
         path.join(this.PATHS.base, TEMP_FOLDER, `temp_records_${mode}.jsonl`),
       forceRecords: (mode: string) =>
         path.join(this.PATHS.base, `force_record_${mode}.json`),
+      forceJson: () => path.join(this.PATHS.base, `force.json`),
       indexJson: path.join(this.PATHS.base, "publish_files", "index.json"),
       optimizationFiles: path.join(this.PATHS.base, "optimization_files"),
       publishFiles: path.join(this.PATHS.base, "publish_files"),
@@ -261,7 +266,12 @@ export class Simulation {
         const lutPathPublish = this.PATHS.lookupTablePublish(mode)
         const lutSegmentedPath = this.PATHS.lookupTableSegmented(mode)
 
-        await this.mergeCsv(chunks, lutPath, (i) => `temp_lookup_${mode}_${i}.csv`)
+        await this.mergeCsv(
+          chunks,
+          lutPath,
+          (i) => `temp_lookup_${mode}_${i}.csv`,
+          this.PATHS.lookupTableIndex(mode),
+        )
         fs.copyFileSync(lutPath, lutPathPublish)
         await this.mergeCsv(
           chunks,
@@ -794,6 +804,8 @@ export class Simulation {
         fs.createWriteStream(compressedFilePath),
       )
     }
+
+    fs.rmSync(outputFilePath, { force: true })
   }
 
   /**
@@ -858,21 +870,53 @@ export class Simulation {
     chunks: [number, number][],
     outPath: string,
     tempName: (i: number) => string,
+    lutIndexPath?: string,
   ) {
     fs.rmSync(outPath, { force: true })
-    const out = fs.createWriteStream(outPath)
+    const lutStream = fs.createWriteStream(outPath)
     let wroteAny = false
+
+    const lutIndexStream = lutIndexPath ? fs.createWriteStream(lutIndexPath) : undefined
+    let offset = 0n
+
     for (let i = 0; i < chunks.length; i++) {
-      const p = path.join(this.PATHS.base, TEMP_FOLDER, tempName(i))
-      if (!fs.existsSync(p)) continue
-      if (wroteAny) out.write("")
-      const rs = fs.createReadStream(p)
-      for await (const buf of rs) out.write(buf)
-      fs.rmSync(p)
+      const tempLutChunk = path.join(this.PATHS.base, TEMP_FOLDER, tempName(i))
+      if (!fs.existsSync(tempLutChunk)) continue
+      if (wroteAny) lutStream.write("")
+
+      if (lutIndexStream) {
+        // If an index file is needed, read line by line to track offsets
+        const rl = readline.createInterface({
+          input: fs.createReadStream(tempLutChunk),
+          crlfDelay: Infinity,
+        })
+
+        for await (const line of rl) {
+          const indexBuffer = Buffer.alloc(8)
+          indexBuffer.writeBigUInt64LE(offset)
+          lutIndexStream.write(indexBuffer)
+
+          const lineWithNewline = line + "\n"
+          lutStream.write(lineWithNewline)
+          offset += BigInt(Buffer.byteLength(lineWithNewline, "utf8"))
+        }
+      } else {
+        const tempChunkStream = fs.createReadStream(tempLutChunk)
+        for await (const buf of tempChunkStream) lutStream.write(buf)
+      }
+
+      fs.rmSync(tempLutChunk)
       wroteAny = true
     }
-    out.end()
-    await new Promise<void>((resolve) => out.on("finish", resolve))
+
+    lutStream.end()
+    lutIndexStream?.end()
+    await Promise.all([
+      new Promise<void>((resolve) => lutStream.on("finish", resolve)),
+      lutIndexStream
+        ? new Promise<void>((resolve) => lutIndexStream.on("finish", resolve))
+        : Promise.resolve(),
+    ])
   }
 
   /**

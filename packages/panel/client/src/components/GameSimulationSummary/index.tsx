@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { query } from "../../lib/queries"
 import { useGameContext } from "../../context/GameContext"
-import { ErrorDisplay } from "../Error"
 import { Loading } from "../Loading"
 import { TableRow } from "../Table"
 import { IconInfoCircle, IconTargetArrow } from "@tabler/icons-react"
@@ -28,12 +27,15 @@ export const GameSimulationSummary = () => {
     }
   }, [])
 
-  if (error) return (
-    <div className="mt-8 p-6 text-center">
-      <h3>Unable to load Summary</h3>
-      <p>Maybe it doesn't exist yet? Run simulations to generate it!</p>
-    </div>
-  )
+  if (error) {
+    return (
+      <div className="mt-8 p-6 text-center">
+        <h3>Unable to load Summary</h3>
+        <p>Maybe it doesn't exist yet? Run simulations to generate it!</p>
+      </div>
+    )
+  }
+
   if (!data) return <Loading isLoading={isLoading} />
 
   const modes = Object.entries(data.summary)

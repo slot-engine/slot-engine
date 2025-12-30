@@ -6,6 +6,7 @@ import {
   type APIGameGetSimConfResponse,
   type PanelGameConfig,
   type APIGameSimSummaryResponse,
+  type APIGameExploreResponse,
 } from "../../../server/types"
 import type { SimulationOptions } from "./types"
 
@@ -34,7 +35,18 @@ export const query = {
   game: (id: string) => api<APIGameResponse>(`games/${id}`),
   gameInfo: (id: string) => api<APIGameInfoResponse>(`games/${id}/info`),
   gameSimConf: (id: string) => api<APIGameGetSimConfResponse>(`games/${id}/sim-conf`),
-  gameSimSummary: (id: string) => api<APIGameSimSummaryResponse>(`games/${id}/sim-summary`),
+  gameSimSummary: (id: string) =>
+    api<APIGameSimSummaryResponse>(`games/${id}/sim-summary`),
+  gameExplore: (opts: { gameId: string; mode: string; cursor: number | null }) => {
+    const { gameId, cursor, mode } = opts
+    const params = new URLSearchParams()
+    if (cursor) {
+      params.append("cursor", cursor.toString())
+    }
+    return api<APIGameExploreResponse>(
+      `games/${gameId}/explore/${mode}?${params.toString()}`,
+    )
+  },
 }
 
 export const mutation = {
