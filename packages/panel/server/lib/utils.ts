@@ -9,6 +9,7 @@ import {
   parseLookupTableSegmented,
   type SimulationSummary,
   type SlotGame,
+  type WrittenBook,
 } from "@slot-engine/core"
 import { PANEL_GAME_CONFIG_FILE } from "./constants"
 import { PanelGameConfig } from "../types"
@@ -128,6 +129,7 @@ export async function exploreLookupTable(opts: {
   take: number
 }) {
   const { game, mode, cursor, take } = opts
+  const offset = parseInt(cursor || "0", 10)
   const meta = game.getMetadata()
 
   const lutPath = path.join(
@@ -146,10 +148,14 @@ export async function exploreLookupTable(opts: {
   if (!fs.existsSync(lutSegmentedPath)) return
 
   const indexPath = path.join(meta.rootDir, meta.outputDir, `lookUpTable_${mode}.index`)
-  const offset = parseInt(cursor || "0", 10)
+  const indexSegmentedPath = path.join(
+    meta.rootDir,
+    meta.outputDir,
+    `lookUpTableSegmented_${mode}.index`,
+  )
 
   const { rows, nextCursor } = await readLutRows(lutPath, indexPath, offset, take)
-  const segmented = await readLutRows(lutSegmentedPath, indexPath, offset, take)
+  const segmented = await readLutRows(lutSegmentedPath, indexSegmentedPath, offset, take)
 
   return {
     lut: parseLookupTable(rows.join("\n")),
@@ -158,7 +164,7 @@ export async function exploreLookupTable(opts: {
   }
 }
 
-async function lutOffsetForRow(indexPath: string, row: number) {
+async function getByteOffsetFromIndex(indexPath: string, row: number) {
   if (!fs.existsSync(indexPath)) return
 
   const indexFile = await fsAsync.open(indexPath, "r")
@@ -175,7 +181,7 @@ async function readLutRows(
   offset: number,
   take: number,
 ) {
-  const byteOffset = await lutOffsetForRow(indexPath, offset)
+  const byteOffset = await getByteOffsetFromIndex(indexPath, offset)
   const stream = fs.createReadStream(filePath, { start: byteOffset })
   const rl = readline.createInterface({
     input: stream,
@@ -200,4 +206,37 @@ async function readLutRows(
     rows,
     nextCursor,
   }
+}
+
+export async function getBook(opts: { game: SlotGame; mode: string; bookId: number }) {
+  const { game, mode, bookId } = opts
+  const meta = game.getMetadata()
+
+  const bookPath = path.join(
+    meta.rootDir,
+    meta.outputDir,
+    `books_${mode}.jsonl`,
+  )
+  if (!fs.existsSync(bookPath)) return
+
+  const indexPath = path.join(meta.rootDir, meta.outputDir, `books_${mode}.index`)
+  const byteOffset = await getByteOffsetFromIndex(indexPath, bookId)
+  const stream = fs.createReadStream(bookPath, { start: byteOffset })
+  const rl = readline.createInterface({
+    input: stream,
+    crlfDelay: Infinity,
+  })
+
+  let line: string | null = null
+
+  for await (const l of rl) {
+    line = l
+    break
+  }
+
+  stream.destroy()
+
+  if (!line) return undefined
+
+  return JSON.parse(line) as WrittenBook
 }

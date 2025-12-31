@@ -51,3 +51,9 @@ interface BookOpts {
   id: number
   criteria: string
 }
+
+export interface WrittenBook {
+  id: number
+  payoutMultiplier: number
+  events: BookEvent[]
+}

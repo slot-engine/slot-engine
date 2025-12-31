@@ -7,6 +7,7 @@ import {
   type PanelGameConfig,
   type APIGameSimSummaryResponse,
   type APIGameExploreResponse,
+  type APIGameExploreBookResponse,
 } from "../../../server/types"
 import type { SimulationOptions } from "./types"
 
@@ -46,6 +47,10 @@ export const query = {
     return api<APIGameExploreResponse>(
       `games/${gameId}/explore/${mode}?${params.toString()}`,
     )
+  },
+  gameExploreBook: (opts: { gameId: string; mode: string; bookId: number }) => {
+    const { gameId, mode, bookId } = opts
+    return api<APIGameExploreBookResponse>(`games/${gameId}/explore/${mode}/${bookId}`)
   },
 }
 

@@ -4,6 +4,7 @@ import type {
   LookupTable,
   LookupTableSegmented,
   SimulationSummary,
+  WrittenBook,
 } from "@slot-engine/core/types"
 
 export interface APIMessageResponse {
@@ -66,4 +67,8 @@ export type APIGameExploreResponse = {
   lut: LookupTable
   lutSegmented: LookupTableSegmented
   nextCursor: number | null
+}
+
+export type APIGameExploreBookResponse = {
+  book: WrittenBook
 }

@@ -32,7 +32,7 @@ export const GameExplorer = () => {
     count: hasNextPage ? luts.length + 1 : luts.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => 56,
-    overscan: 5,
+    overscan: 10,
   })
 
   const items = virtualizer.getVirtualItems()
@@ -106,6 +106,7 @@ export const GameExplorer = () => {
                     return (
                       <LookupTableRow
                         key={`${virtualRow.index}`}
+                        mode={mode}
                         lut={lut}
                         lutSegmented={lutSegmented}
                       />

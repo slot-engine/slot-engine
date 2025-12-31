@@ -4,6 +4,7 @@ export function parseLookupTable(content: string) {
   const lines = content.trim().split("\n")
   const lut: LookupTable = []
   for (const line of lines) {
+    if (!line.trim()) continue
     const [indexStr, weightStr, payoutStr] = line.split(",")
     const index = parseInt(indexStr!.trim())
     const weight = parseInt(weightStr!.trim())
@@ -17,6 +18,7 @@ export function parseLookupTableSegmented(content: string) {
   const lines = content.trim().split("\n")
   const lut: LookupTableSegmented = []
   for (const line of lines) {
+    if (!line.trim()) continue
     const [indexStr, criteria, weightStr, payoutStr] = line.split(",")
     const index = parseInt(indexStr!.trim())
     const weight = parseInt(weightStr!.trim())

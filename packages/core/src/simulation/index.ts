@@ -71,6 +71,7 @@ export class Simulation {
     lookupTableIndex: (mode: string) => string
     tempLookupTable: (mode: string, i: number) => string
     lookupTableSegmented: (mode: string) => string
+    lookupTableSegmentedIndex: (mode: string) => string
     tempLookupTableSegmented: (mode: string, i: number) => string
     lookupTablePublish: (mode: string) => string
     tempRecords: (mode: string) => string
@@ -121,6 +122,8 @@ export class Simulation {
         path.join(this.PATHS.base, TEMP_FOLDER, `temp_lookup_${mode}_${i}.csv`),
       lookupTableSegmented: (mode: string) =>
         path.join(this.PATHS.base, `lookUpTableSegmented_${mode}.csv`),
+      lookupTableSegmentedIndex: (mode: string) =>
+        path.join(this.PATHS.base, `lookUpTableSegmented_${mode}.index`),
       tempLookupTableSegmented: (mode: string, i: number) =>
         path.join(this.PATHS.base, TEMP_FOLDER, `temp_lookup_segmented_${mode}_${i}.csv`),
       lookupTablePublish: (mode: string) =>
@@ -298,6 +301,7 @@ export class Simulation {
           chunks,
           lutSegmentedPath,
           (i) => `temp_lookup_segmented_${mode}_${i}.csv`,
+          this.PATHS.lookupTableSegmentedIndex(mode),
         )
 
         if (this.recordsWriteStream) {
@@ -826,7 +830,11 @@ export class Simulation {
       )
     }
 
-    fs.rmSync(outputFilePath, { force: true })
+    // We can save space by removing uncompressed file if panel is not active.
+    // For active panel, we need this file for easier data access.
+    if (!this.panelActive) {
+      fs.rmSync(outputFilePath, { force: true })
+    }
   }
 
   /**
@@ -891,7 +899,7 @@ export class Simulation {
     chunks: [number, number][],
     outPath: string,
     tempName: (i: number) => string,
-    lutIndexPath?: string,
+    lutIndexPath: string,
   ) {
     fs.rmSync(outPath, { force: true })
     const lutStream = fs.createWriteStream(outPath)
