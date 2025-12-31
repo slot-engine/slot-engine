@@ -4,7 +4,12 @@ import readline from "readline"
 import path from "path"
 import { Context } from "hono"
 import { Variables } from ".."
-import { parseLookupTable, type SimulationSummary, type SlotGame } from "@slot-engine/core"
+import {
+  parseLookupTable,
+  parseLookupTableSegmented,
+  type SimulationSummary,
+  type SlotGame,
+} from "@slot-engine/core"
 import { PANEL_GAME_CONFIG_FILE } from "./constants"
 import { PanelGameConfig } from "../types"
 import chalk from "chalk"
@@ -123,23 +128,32 @@ export async function exploreLookupTable(opts: {
   take: number
 }) {
   const { game, mode, cursor, take } = opts
-
   const meta = game.getMetadata()
-  const filePath = path.join(
+
+  const lutPath = path.join(
     meta.rootDir,
     meta.outputDir,
     "publish_files",
     `lookUpTable_${mode}_0.csv`,
   )
-  if (!fs.existsSync(filePath)) return
+  const lutSegmentedPath = path.join(
+    meta.rootDir,
+    meta.outputDir,
+    `lookUpTableSegmented_${mode}.csv`,
+  )
+
+  if (!fs.existsSync(lutPath)) return
+  if (!fs.existsSync(lutSegmentedPath)) return
 
   const indexPath = path.join(meta.rootDir, meta.outputDir, `lookUpTable_${mode}.index`)
   const offset = parseInt(cursor || "0", 10)
 
-  const { rows, nextCursor } = await readLutRows(filePath, indexPath, offset, take)
+  const { rows, nextCursor } = await readLutRows(lutPath, indexPath, offset, take)
+  const segmented = await readLutRows(lutSegmentedPath, indexPath, offset, take)
 
   return {
     lut: parseLookupTable(rows.join("\n")),
+    lutSegmented: parseLookupTableSegmented(segmented.rows.join("\n")),
     nextCursor,
   }
 }

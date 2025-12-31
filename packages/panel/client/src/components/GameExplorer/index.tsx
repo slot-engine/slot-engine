@@ -26,6 +26,7 @@ export const GameExplorer = () => {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const luts = data ? data.pages.flatMap((p) => p.lut) : []
+  const lutsSegmented = data ? data.pages.flatMap((p) => p.lutSegmented) : []
 
   const virtualizer = useVirtualizer({
     count: hasNextPage ? luts.length + 1 : luts.length,
@@ -92,6 +93,8 @@ export const GameExplorer = () => {
                   {items.map((virtualRow) => {
                     const isLoader = virtualRow.index > luts.length - 1
                     const lut = luts[virtualRow.index]
+                    const lutSegmented = lutsSegmented[virtualRow.index]
+
                     if (isLoader) {
                       return hasNextPage ? (
                         <div className="p-6 flex justify-center items-center gap-2">
@@ -100,7 +103,13 @@ export const GameExplorer = () => {
                         </div>
                       ) : null
                     }
-                    return <LookupTableRow key={`${virtualRow.index}`} lut={lut} />
+                    return (
+                      <LookupTableRow
+                        key={`${virtualRow.index}`}
+                        lut={lut}
+                        lutSegmented={lutSegmented}
+                      />
+                    )
                   })}
                 </div>
               </Accordion.Root>

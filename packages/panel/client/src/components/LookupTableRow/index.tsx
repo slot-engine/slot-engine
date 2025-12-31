@@ -1,16 +1,18 @@
 import { Accordion } from "@base-ui/react/accordion"
-import type { LookupTable } from "@slot-engine/core"
+import type { LookupTable, LookupTableSegmented } from "@slot-engine/core"
 import { IconMinus, IconPlus } from "@tabler/icons-react"
 import { useState } from "react"
 import { cn } from "../../lib/cn"
 
 interface LookupTableRowProps {
   lut: LookupTable[number]
+  lutSegmented: LookupTableSegmented[number]
 }
 
-export const LookupTableRow = ({ lut }: LookupTableRowProps) => {
+export const LookupTableRow = ({ lut, lutSegmented }: LookupTableRowProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [id, weight, payout] = lut
+  const [, criteria, bsWins, fsWins] = lutSegmented
 
   return (
     <Accordion.Item
@@ -23,15 +25,19 @@ export const LookupTableRow = ({ lut }: LookupTableRowProps) => {
       <Accordion.Trigger className="p-4 w-full flex justify-between items-center gap-8">
         <div className="flex">
           <div className="w-28 text-left">
-            <span className="font-bold">ID</span>
+            <span className="font-bold">ID:</span>
             <span className="ml-2">{id}</span>
           </div>
           <div className="w-48 text-left ml-4 pl-4 border-l border-ui-700">
-            <span className="font-bold">Payout</span>
+            <span className="font-bold">Criteria:</span>
+            <span className="ml-2">{criteria}</span>
+          </div>
+          <div className="w-48 text-left ml-4 pl-4 border-l border-ui-700">
+            <span className="font-bold">Payout:</span>
             <span className="ml-2">{payout}</span>
           </div>
           <div className="ml-4 pl-4 border-l border-ui-700">
-            <span className="font-bold">Weight</span>
+            <span className="font-bold">Weight:</span>
             <span className="ml-2">{weight}</span>
           </div>
         </div>

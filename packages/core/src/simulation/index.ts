@@ -64,6 +64,7 @@ export class Simulation {
   PATHS = {} as {
     base: string
     books: (mode: string) => string
+    booksIndex: (mode: string) => string
     booksCompressed: (mode: string) => string
     tempBooks: (mode: string, i: number) => string
     lookupTable: (mode: string) => string
@@ -107,6 +108,7 @@ export class Simulation {
     this.PATHS = {
       ...this.PATHS,
       books: (mode: string) => path.join(this.PATHS.base, `books_${mode}.jsonl`),
+      booksIndex: (mode: string) => path.join(this.PATHS.base, `books_${mode}.index`),
       booksCompressed: (mode: string) =>
         path.join(this.PATHS.base, "publish_files", `books_${mode}.jsonl.zst`),
       tempBooks: (mode: string, i: number) =>
@@ -240,26 +242,45 @@ export class Simulation {
           `Writing final files for game mode "${mode}". This may take a while...`,
         )
 
-        // Merge temporary book files into the final sorted file
+        // Merge temporary book files into the final sorted file.
+        // Also write index file for lookup
         const finalBookStream = fs.createWriteStream(booksPath)
         let isFirstChunk = true
+
+        const bookIndexStream = fs.createWriteStream(this.PATHS.booksIndex(mode))
+        let offset = 0n
+
         for (let i = 0; i < chunks.length; i++) {
           const tempBookPath = this.PATHS.tempBooks(mode, i)
+          if (!fs.existsSync(tempBookPath)) continue
 
-          if (fs.existsSync(tempBookPath)) {
-            if (!isFirstChunk) {
-              finalBookStream.write("\n")
-            }
-            const content = fs.createReadStream(tempBookPath)
-            for await (const chunk of content) {
-              finalBookStream.write(chunk)
-            }
-            fs.rmSync(tempBookPath)
-            isFirstChunk = false
+          const rl = readline.createInterface({
+            input: fs.createReadStream(tempBookPath),
+            crlfDelay: Infinity,
+          })
+
+          if (!isFirstChunk) finalBookStream.write("\n")
+
+          for await (const line of rl) {
+            const indexBuffer = Buffer.alloc(8)
+            indexBuffer.writeBigUInt64LE(offset)
+            bookIndexStream.write(indexBuffer)
+
+            const lineWithNewline = line + "\n"
+            finalBookStream.write(lineWithNewline)
+            offset += BigInt(Buffer.byteLength(lineWithNewline, "utf8"))
           }
+
+          fs.rmSync(tempBookPath)
+          isFirstChunk = false
         }
+
         finalBookStream.end()
-        await new Promise<void>((resolve) => finalBookStream.on("finish", resolve))
+        bookIndexStream.end()
+        await Promise.all([
+          new Promise<void>((r) => finalBookStream.on("finish", () => r())),
+          new Promise<void>((r) => bookIndexStream.on("finish", () => r())),
+        ])
 
         // Merge temporary LUTs
         const lutPath = this.PATHS.lookupTable(mode)
