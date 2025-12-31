@@ -174,7 +174,7 @@ async function readLutRows(
   for await (const line of rl) {
     rows.push(line)
     if (rows.length > take) {
-      nextCursor = offset + rows.length
+      nextCursor = offset + rows.length - 1 // -1 because we pop the last result
       rows.pop()
       break
     }
