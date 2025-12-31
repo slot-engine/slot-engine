@@ -110,7 +110,7 @@ function drawBoard(ctx: Context) {
       if (!scatInvalid) break
     }
   } else {
-    // If no special ResultSet criteria, draw board normally
+    // If no special ResultSet criteria, or we are in FS, draw board normally
     while (true) {
       ctx.services.board.resetBoard()
       ctx.services.board.drawBoardWithRandomStops(reels)
@@ -130,7 +130,7 @@ function handleAnticipation(ctx: Context) {
     if (count >= ctx.config.anticipationTriggers[ctx.state.currentSpinType]) {
       ctx.services.board.setAnticipationForReel(i, true)
     }
-    if (scatCount[i] > 0) {
+    if (scatCount[i]! > 0) {
       count++
     }
   }
@@ -178,9 +178,9 @@ function handleTumbles(ctx: Context) {
 
     // Double board multipliers after win, capped at 128x
     for (const sym of winSymbols) {
-      const currentMulti = ctx.state.userData.boardMultis[sym.reelIdx][sym.rowIdx]
+      const currentMulti = ctx.state.userData.boardMultis[sym.reelIdx]![sym.rowIdx]!
       const newMulti = Math.max(1, Math.min(currentMulti * 2, 128))
-      ctx.state.userData.boardMultis[sym.reelIdx][sym.rowIdx] = newMulti
+      ctx.state.userData.boardMultis[sym.reelIdx]![sym.rowIdx] = newMulti
     }
 
     ctx.services.data.addBookEvent({
@@ -356,7 +356,7 @@ function makeInitialBoardMultis(ctx: Context) {
 
   for (let r = 0; r < reelsNum; r++) {
     const reelMultis: number[] = []
-    for (let s = 0; s < symbolsPerReel[r]; s++) {
+    for (let s = 0; s < symbolsPerReel[r]!; s++) {
       reelMultis.push(0)
     }
     boardMultis.push(reelMultis)
@@ -368,7 +368,7 @@ function makeInitialBoardMultis(ctx: Context) {
 function processWins(wins: WinCombination[], ctx: Context) {
   const winCombinations = wins.map((wc) => {
     const multiForCluster = wc.symbols.reduce((multi, s) => {
-      const multiOnPos = ctx.state.userData.boardMultis[s.reelIndex][s.posIndex]
+      const multiOnPos = ctx.state.userData.boardMultis[s.reelIndex]![s.posIndex]!
       // A winning cluster must first "activate" the multiplier on a position (multi 0 -> 1).
       // Only on the next win does the multiplier apply (multi 1 -> 2).
       // Multipliers themselves are updated in `handleTumbles()`.
