@@ -220,7 +220,7 @@ export async function getBook(opts: { game: SlotGame; mode: string; bookId: numb
   if (!fs.existsSync(bookPath)) return
 
   const indexPath = path.join(meta.rootDir, meta.outputDir, `books_${mode}.index`)
-  const byteOffset = await getByteOffsetFromIndex(indexPath, bookId)
+  const byteOffset = await getByteOffsetFromIndex(indexPath, bookId - 1) // -1 because index is 0-based
   const stream = fs.createReadStream(bookPath, { start: byteOffset })
   const rl = readline.createInterface({
     input: stream,
