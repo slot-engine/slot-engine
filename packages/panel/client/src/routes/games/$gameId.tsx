@@ -59,7 +59,7 @@ function RouteComponent() {
       <h1 className="mb-8">{data.name}</h1>
 
       <Tabs defaultValue={tab}>
-        <TabsList>
+        <TabsList className="sticky top-0 z-10 bg-ui-950">
           <TabsTrigger value={tabsNames.info} onClick={() => setUrlTab(tabsNames.info)}>
             <IconInfoCircle />
             Game Information
