@@ -48,9 +48,12 @@ export function onHandleGameFlow(ctx: Context) {
   ctx.services.data.addBookEvent({
     type: "show-final-win",
     data: {
-      payout: ctx.services.wallet.getCurrentWin(),
+      payout: Math.min(ctx.services.wallet.getCurrentWin(), ctx.config.maxWinX),
     },
   })
+
+  // If we reach max win in base game we can skip free spins entirely
+  if (ctx.state.triggeredMaxWin) return
 
   // Maybe enter free spins loop
   checkFreespins(ctx)
@@ -213,6 +216,12 @@ function handleTumbles(ctx: Context) {
         ),
       },
     })
+
+    // Reached max win, stop win calculation
+    if (payout >= ctx.config.maxWinX) {
+      ctx.state.triggeredMaxWin = true
+      break
+    }
   }
 }
 
@@ -305,11 +314,14 @@ function playFreeSpins(ctx: Context) {
     ctx.services.data.addBookEvent({
       type: "show-fs-spin-win",
       data: {
-        payout: ctx.services.wallet.getCurrentSpinWin(),
+        payout: Math.min(ctx.services.wallet.getCurrentSpinWin(), ctx.config.maxWinX),
       },
     })
 
     ctx.services.wallet.confirmSpinWin()
+
+    // We don't want to play more free spins if max win was reached
+    if (ctx.state.triggeredMaxWin) break
 
     checkFreespins(ctx)
   }
@@ -318,7 +330,7 @@ function playFreeSpins(ctx: Context) {
   ctx.services.data.addBookEvent({
     type: "show-fs-win",
     data: {
-      payout: ctx.services.wallet.getCurrentWin(),
+      payout: Math.min(ctx.services.wallet.getCurrentWin(), ctx.config.maxWinX),
     },
   })
 }
