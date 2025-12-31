@@ -124,7 +124,7 @@ function handleAnticipation(ctx: Context) {
     if (count >= ctx.config.anticipationTriggers[ctx.state.currentSpinType]) {
       ctx.services.board.setAnticipationForReel(i, true)
     }
-    if (scatCount[i] > 0 || superScatCount[i] > 0) {
+    if (scatCount[i]! > 0 || superScatCount[i]! > 0) {
       count++
     }
   }
