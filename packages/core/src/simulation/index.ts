@@ -76,7 +76,7 @@ export class Simulation {
     lookupTablePublish: (mode: string) => string
     tempRecords: (mode: string) => string
     forceRecords: (mode: string) => string
-    forceJson: () => string
+    forceKeys: (mode: string) => string
     indexJson: string
     publishFiles: string
     optimizationFiles: string
@@ -132,7 +132,7 @@ export class Simulation {
         path.join(this.PATHS.base, TEMP_FOLDER, `temp_records_${mode}.jsonl`),
       forceRecords: (mode: string) =>
         path.join(this.PATHS.base, `force_record_${mode}.json`),
-      forceJson: () => path.join(this.PATHS.base, `force.json`),
+      forceKeys: (mode: string) => path.join(this.PATHS.base, `force_keys_${mode}.json`),
       indexJson: path.join(this.PATHS.base, "publish_files", "index.json"),
       optimizationFiles: path.join(this.PATHS.base, "optimization_files"),
       publishFiles: path.join(this.PATHS.base, "publish_files"),
@@ -738,6 +738,8 @@ export class Simulation {
     const tempRecordsPath = this.PATHS.tempRecords(mode)
     const forceRecordsPath = this.PATHS.forceRecords(mode)
 
+    const allSearchKeysAndValues = new Map<string, Set<string>>()
+
     // Use a local Map to aggregate records efficiently without cluttering the main Recorder
     // Key is the stringified search criteria
     const aggregatedRecords = new Map<string, RecordItem>()
@@ -753,6 +755,13 @@ export class Simulation {
       for await (const line of rl) {
         if (line.trim() === "") continue
         const record: RecordItem = JSON.parse(line)
+
+        for (const entry of record.search) {
+          if (!allSearchKeysAndValues.has(entry.name)) {
+            allSearchKeysAndValues.set(entry.name, new Set<string>())
+          }
+          allSearchKeysAndValues.get(entry.name)!.add(String(entry.value))
+        }
 
         const key = JSON.stringify(record.search)
 
@@ -775,6 +784,7 @@ export class Simulation {
     }
 
     fs.rmSync(forceRecordsPath, { force: true })
+    fs.rmSync(this.PATHS.forceKeys(mode), { force: true })
 
     const writeStream = fs.createWriteStream(forceRecordsPath, { encoding: "utf-8" })
     writeStream.write("[\n")
@@ -794,6 +804,13 @@ export class Simulation {
     await new Promise<void>((resolve) => {
       writeStream.on("finish", () => resolve())
     })
+
+    const forceJson = Object.fromEntries(
+      Array.from(allSearchKeysAndValues.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, values]) => [key, Array.from(values)]),
+    )
+    writeFile(this.PATHS.forceKeys(mode), JSON.stringify(forceJson, null, 2))
 
     fs.rmSync(tempRecordsPath, { force: true })
   }
