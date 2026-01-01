@@ -19,11 +19,11 @@ export function parseLookupTableSegmented(content: string) {
   const lut: LookupTableSegmented = []
   for (const line of lines) {
     if (!line.trim()) continue
-    const [indexStr, criteria, weightStr, payoutStr] = line.split(",")
+    const [indexStr, criteria, bsWinsStr, fsWinsStr] = line.split(",")
     const index = parseInt(indexStr!.trim())
-    const weight = parseInt(weightStr!.trim())
-    const payout = parseFloat(payoutStr!.trim())
-    lut.push([index, criteria!, weight, payout])
+    const bsWins = parseFloat(bsWinsStr!.trim())
+    const fsWins = parseFloat(fsWinsStr!.trim())
+    lut.push([index, criteria!, bsWins, fsWins])
   }
   return lut
 }
