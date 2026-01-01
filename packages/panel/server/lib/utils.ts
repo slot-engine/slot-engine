@@ -110,7 +110,7 @@ export function savePanelGameConfig(game: SlotGame, config: PanelGameConfig) {
 
 export function loadSummaryFile(game: SlotGame) {
   const meta = game.getMetadata()
-  const filePath = path.join(meta.rootDir, meta.outputDir, "simulation_summary.json")
+  const filePath = meta.paths.simulationSummary
   if (!fs.existsSync(filePath)) return
 
   const data = JSON.parse(
@@ -132,27 +132,14 @@ export async function exploreLookupTable(opts: {
   const offset = parseInt(cursor || "0", 10)
   const meta = game.getMetadata()
 
-  const lutPath = path.join(
-    meta.rootDir,
-    meta.outputDir,
-    "publish_files",
-    `lookUpTable_${mode}_0.csv`,
-  )
-  const lutSegmentedPath = path.join(
-    meta.rootDir,
-    meta.outputDir,
-    `lookUpTableSegmented_${mode}.csv`,
-  )
+  const lutPath = meta.paths.lookupTable(mode)
+  const lutSegmentedPath = meta.paths.lookupTableSegmented(mode)
 
   if (!fs.existsSync(lutPath)) return
   if (!fs.existsSync(lutSegmentedPath)) return
 
-  const indexPath = path.join(meta.rootDir, meta.outputDir, `lookUpTable_${mode}.index`)
-  const indexSegmentedPath = path.join(
-    meta.rootDir,
-    meta.outputDir,
-    `lookUpTableSegmented_${mode}.index`,
-  )
+  const indexPath = meta.paths.lookupTableIndex(mode)
+  const indexSegmentedPath = meta.paths.lookupTableSegmentedIndex(mode)
 
   const { rows, nextCursor } = await readLutRows(lutPath, indexPath, offset, take)
   const segmented = await readLutRows(lutSegmentedPath, indexSegmentedPath, offset, take)
@@ -212,14 +199,10 @@ export async function getBook(opts: { game: SlotGame; mode: string; bookId: numb
   const { game, mode, bookId } = opts
   const meta = game.getMetadata()
 
-  const bookPath = path.join(
-    meta.rootDir,
-    meta.outputDir,
-    `books_${mode}.jsonl`,
-  )
+  const bookPath = meta.paths.books(mode)
   if (!fs.existsSync(bookPath)) return
 
-  const indexPath = path.join(meta.rootDir, meta.outputDir, `books_${mode}.index`)
+  const indexPath = meta.paths.booksIndex(mode)
   const byteOffset = await getByteOffsetFromIndex(indexPath, bookId - 1) // -1 because index is 0-based
   const stream = fs.createReadStream(bookPath, { start: byteOffset })
   const rl = readline.createInterface({

@@ -1,6 +1,8 @@
 import assert from "assert"
 import { AnyGameModes, AnySymbols, AnyUserData, GameHooks } from "../types"
 import { SPIN_TYPE } from "../constants"
+import { createPermanentFilePaths, PermanentFilePaths } from "../utils/file-paths"
+import path from "path"
 
 export interface GameConfigOptions<
   TGameModes extends AnyGameModes = AnyGameModes,
@@ -90,6 +92,10 @@ export function createGameConfig<
     )
   }
 
+  const rootDir = opts.rootDir || process.cwd()
+  const outputDir = "__build__"
+  const basePath = path.join(rootDir, outputDir)
+
   return {
     config: {
       padSymbols: opts.padSymbols || 1,
@@ -102,9 +108,10 @@ export function createGameConfig<
       },
     },
     metadata: {
-      outputDir: "__build__",
-      rootDir: opts.rootDir || process.cwd(),
+      outputDir,
+      rootDir,
       isCustomRoot: !!opts.rootDir,
+      paths: createPermanentFilePaths(basePath),
     },
   }
 }
@@ -113,7 +120,9 @@ export type GameConfig<
   TGameModes extends AnyGameModes = AnyGameModes,
   TSymbols extends AnySymbols = AnySymbols,
   TUserState extends AnyUserData = AnyUserData,
-> = Required<Omit<GameConfigOptions<TGameModes, TSymbols, TUserState>, "symbols" | "rootDir">> & {
+> = Required<
+  Omit<GameConfigOptions<TGameModes, TSymbols, TUserState>, "symbols" | "rootDir">
+> & {
   /**
    * A map of all symbols.
    */
@@ -128,4 +137,5 @@ export type GameMetadata = {
   outputDir: string
   rootDir: string
   isCustomRoot: boolean
+  paths: PermanentFilePaths
 }

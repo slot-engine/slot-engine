@@ -22,6 +22,11 @@ import { pipeline } from "stream/promises"
 import { createCriteriaSampler, hashStringToInt, splitCountsAcrossChunks } from "./utils"
 import { io, Socket } from "socket.io-client"
 import chalk from "chalk"
+import {
+  createPermanentFilePaths,
+  createTemporaryFilePaths,
+  FilePaths,
+} from "../utils/file-paths"
 
 let completedSimulations = 0
 const TEMP_FILENAME = "__temp_compiled_src_IGNORE.js"
@@ -61,26 +66,7 @@ export class Simulation {
   private panelWsUrl: string | undefined
   private socket: Socket | undefined
 
-  PATHS = {} as {
-    base: string
-    books: (mode: string) => string
-    booksIndex: (mode: string) => string
-    booksCompressed: (mode: string) => string
-    tempBooks: (mode: string, i: number) => string
-    lookupTable: (mode: string) => string
-    lookupTableIndex: (mode: string) => string
-    tempLookupTable: (mode: string, i: number) => string
-    lookupTableSegmented: (mode: string) => string
-    lookupTableSegmentedIndex: (mode: string) => string
-    tempLookupTableSegmented: (mode: string, i: number) => string
-    lookupTablePublish: (mode: string) => string
-    tempRecords: (mode: string) => string
-    forceRecords: (mode: string) => string
-    forceKeys: (mode: string) => string
-    indexJson: string
-    publishFiles: string
-    optimizationFiles: string
-  }
+  PATHS = {} as FilePaths
 
   // Worker related
   private credits = 0
@@ -104,38 +90,11 @@ export class Simulation {
       "Game mode name must match its key in the gameModes object.",
     )
 
-    this.PATHS.base = path.join(this.gameConfig.rootDir, this.gameConfig.outputDir)
+    const basePath = path.join(this.gameConfig.rootDir, this.gameConfig.outputDir)
 
     this.PATHS = {
-      ...this.PATHS,
-      books: (mode: string) => path.join(this.PATHS.base, `books_${mode}.jsonl`),
-      booksIndex: (mode: string) => path.join(this.PATHS.base, `books_${mode}.index`),
-      booksCompressed: (mode: string) =>
-        path.join(this.PATHS.base, "publish_files", `books_${mode}.jsonl.zst`),
-      tempBooks: (mode: string, i: number) =>
-        path.join(this.PATHS.base, TEMP_FOLDER, `temp_books_${mode}_${i}.jsonl`),
-      lookupTable: (mode: string) =>
-        path.join(this.PATHS.base, `lookUpTable_${mode}.csv`),
-      lookupTableIndex: (mode: string) =>
-        path.join(this.PATHS.base, `lookUpTable_${mode}.index`),
-      tempLookupTable: (mode: string, i: number) =>
-        path.join(this.PATHS.base, TEMP_FOLDER, `temp_lookup_${mode}_${i}.csv`),
-      lookupTableSegmented: (mode: string) =>
-        path.join(this.PATHS.base, `lookUpTableSegmented_${mode}.csv`),
-      lookupTableSegmentedIndex: (mode: string) =>
-        path.join(this.PATHS.base, `lookUpTableSegmented_${mode}.index`),
-      tempLookupTableSegmented: (mode: string, i: number) =>
-        path.join(this.PATHS.base, TEMP_FOLDER, `temp_lookup_segmented_${mode}_${i}.csv`),
-      lookupTablePublish: (mode: string) =>
-        path.join(this.PATHS.base, "publish_files", `lookUpTable_${mode}_0.csv`),
-      tempRecords: (mode: string) =>
-        path.join(this.PATHS.base, TEMP_FOLDER, `temp_records_${mode}.jsonl`),
-      forceRecords: (mode: string) =>
-        path.join(this.PATHS.base, `force_record_${mode}.json`),
-      forceKeys: (mode: string) => path.join(this.PATHS.base, `force_keys_${mode}.json`),
-      indexJson: path.join(this.PATHS.base, "publish_files", "index.json"),
-      optimizationFiles: path.join(this.PATHS.base, "optimization_files"),
-      publishFiles: path.join(this.PATHS.base, "publish_files"),
+      ...createPermanentFilePaths(basePath),
+      ...createTemporaryFilePaths(basePath, TEMP_FOLDER),
     }
   }
 
@@ -1044,10 +1003,7 @@ export class Simulation {
 
     console.log(output)
 
-    writeFile(
-      path.join(this.PATHS.base, "simulation_summary.json"),
-      JSON.stringify(this.summary, null, 2),
-    )
+    writeFile(this.PATHS.simulationSummary, JSON.stringify(this.summary, null, 2))
 
     if (this.socket && this.panelActive) {
       this.socket.emit("simulationSummary", {
