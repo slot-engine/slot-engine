@@ -201,7 +201,9 @@ export class GeneratedReelSet extends ReelSet {
       )
     }
 
-    const outputDir = path.join(config.rootDir, config.outputDir)
+    const outputDir = config.rootDir.endsWith(config.outputDir)
+      ? config.rootDir
+      : path.join(config.rootDir, config.outputDir)
 
     const filePath = path.join(
       outputDir,
@@ -410,7 +412,7 @@ export class GeneratedReelSet extends ReelSet {
         `Generated reelset ${this.id} for game mode ${this.associatedGameModeName}`,
       )
     }
-    
+
     this.reels = this.parseReelsetCSV(filePath, config)
 
     return this
