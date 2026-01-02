@@ -1,5 +1,15 @@
 # @slot-engine/core
 
+## 0.1.12
+
+### Patch Changes
+
+- Properly terminate the simulation workers event loop ([#41](https://github.com/slot-engine/slot-engine/pull/41)) - Thanks @jordanamr
+
+- Destroy object reference when writing event data - Thanks @nordowl
+
+- Suppress warning in console ([#40](https://github.com/slot-engine/slot-engine/pull/40)) - Thanks @jordanamr
+
 ## 0.1.11
 
 ### Patch Changes
