@@ -1293,13 +1293,12 @@ fn get_weights_no_weight_array(
     for index in 0..wins.len() {
         let mut total_weight = 0.0;
         for norm_index in 0..amps.len() {
+            let z = (wins[index] - mus[norm_index]) / stds[norm_index];
             let mut weight = amps[norm_index]
                 * (1.0
                     + 20000.0
-                        * (1.0 / ((stds[norm_index] * (2.0 * 3.14)).sqrt()))
-                        * ((2.71_f64).powf(
-                            -0.5 * ((wins[index] - mus[norm_index]) / stds[norm_index]).powf(2.0),
-                        )));
+                        * (1.0 / ((stds[norm_index] * std::f64::consts::TAU).sqrt()))
+                        * ((-0.5 * z * z).exp()));
 
             for param_index in 0..(params.len() / 3) {
                 if let Some(apply_norm_indexes) = apply_parms.get(param_index) {
@@ -1348,13 +1347,12 @@ fn get_weights(
     for index in 0..wins.len() {
         let mut total_weight = 0.0;
         for norm_index in 0..amps.len() {
+            let z = (wins[index] - mus[norm_index]) / stds[norm_index];
             let mut weight = amps[norm_index]
                 * (1.0
                     + 20000.0
-                        * (1.0 / ((stds[norm_index] * (2.0 * 3.14)).sqrt()))
-                        * ((2.71_f64).powf(
-                            -0.5 * ((wins[index] - mus[norm_index]) / stds[norm_index]).powf(2.0),
-                        )));
+                        * (1.0 / ((stds[norm_index] * std::f64::consts::TAU).sqrt()))
+                        * ((-0.5 * z * z).exp()));
 
             for param_index in 0..(params.len() / 3) {
                 if let Some(apply_norm_indexes) = apply_parms.get(param_index) {
@@ -1378,11 +1376,6 @@ fn get_weights(
 
         weights[index] = total_weight;
     }
-    // let mut rtp = 0.0;
-    // for index in 0..wins.len(){
-    //     rtp += wins[index]*weights[index]
-    // }
-    // print!("{}",rtp)
 }
 
 fn breed_pigs(pos_pig: &Pig, neg_pig: &Pig, pig_heaven: &PigHeaven) -> Pig {
@@ -1572,29 +1565,26 @@ fn run_enhanced_simulation(
     spins: usize,
     trials: usize,
     bet: f64,
-    test_spins: &Vec<u32>,
+    test_spins: &[u32],
     pmb_rtp: f64,
 ) -> Vec<f64> {
     let num_spins = test_spins[test_spins.len() - 1usize] as usize;
-    let total_spin_trials = num_spins * trials;
+
+    let weighted_index = WeightedIndex::new(weights).expect("Invalid weights");
 
     let success: Vec<f64> = (0..num_spins)
         .into_par_iter()
         .map(|spin_index| {
             let mut spin_success = 0.0;
+            let mut rng = thread_rng();
+            let mut banks: Vec<f64> = vec![0.0; spins];
 
             for _ in 0..trials {
-                let mut rng = thread_rng();
-                let mut banks: Array1<f64> = Array1::zeros(spins);
-                let banks_slice = banks.as_slice_mut().unwrap();
-                let weighted_index = WeightedIndex::new(weights).expect("Invalid weights");
-
                 for i in 0..spins {
-                    banks_slice[i] = wins[weighted_index.sample(&mut rng)];
+                    banks[i] = wins[weighted_index.sample(&mut rng)];
                 }
 
-                let bank_slice = &banks.slice(s![..(spin_index + 1) as usize]);
-                let total_bank: f64 = bank_slice.iter().sum();
+                let total_bank: f64 = banks[..(spin_index + 1)].iter().sum();
                 if (total_bank / ((spin_index + 1) as f64 * bet)) >= pmb_rtp {
                     spin_success += 1.0;
                 }
