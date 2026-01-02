@@ -1,3 +1,5 @@
+import { copy } from "../../utils"
+
 export class Book {
   readonly id: number
   criteria: string = "N/A"
@@ -23,7 +25,11 @@ export class Book {
    */
   addEvent(event: Omit<BookEvent, "index">) {
     const index = this.events.length + 1
-    this.events.push({ index, ...event })
+    this.events.push({
+      index,
+      type: event.type,
+      data: copy(event.data),
+    })
   }
 
   /**
