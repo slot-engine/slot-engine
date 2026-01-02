@@ -25,6 +25,7 @@ import {
 import { zValidator } from "@hono/zod-validator"
 import z from "zod"
 import chalk from "chalk"
+import qs from "qs"
 
 const app = new Hono<{ Variables: Variables }>()
 
@@ -218,6 +219,9 @@ app.get("/:id/explore/:mode", async (c) => {
     return c.json<APIMessageResponse>({ message: "Not found" }, 404)
   }
 
+  const url = new URL(c.req.url)
+  const filter = qs.parse(url.search, { ignoreQueryPrefix: true }).filter
+
   const mode = c.req.param("mode")
   const cursor = c.req.query("cursor") || undefined
   const take = 100
@@ -227,6 +231,7 @@ app.get("/:id/explore/:mode", async (c) => {
     mode,
     cursor,
     take,
+    filter,
   })
 
   if (!lut) {

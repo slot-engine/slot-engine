@@ -7,6 +7,7 @@ import { Variables } from ".."
 import {
   parseLookupTable,
   parseLookupTableSegmented,
+  type RecordItem,
   type SimulationSummary,
   type SlotGame,
   type WrittenBook,
@@ -127,8 +128,9 @@ export async function exploreLookupTable(opts: {
   mode: string
   cursor?: string
   take: number
+  filter?: string | qs.ParsedQs | (string | qs.ParsedQs)[]
 }) {
-  const { game, mode, cursor, take } = opts
+  const { game, mode, cursor, take, filter } = opts
   const offset = parseInt(cursor || "0", 10)
   const meta = game.getMetadata()
 
@@ -141,8 +143,26 @@ export async function exploreLookupTable(opts: {
   const indexPath = meta.paths.lookupTableIndex(mode)
   const indexSegmentedPath = meta.paths.lookupTableSegmentedIndex(mode)
 
-  const { rows, nextCursor } = await readLutRows(lutPath, indexPath, offset, take)
-  const segmented = await readLutRows(lutSegmentedPath, indexSegmentedPath, offset, take)
+  const bookIds = await filterForceRecords({
+    game,
+    mode,
+    filter: filter as Record<string, string> | undefined,
+  })
+
+  const { rows, nextCursor } = await readLutRows({
+    path: lutPath,
+    indexPath,
+    offset,
+    take,
+    bookIds,
+  })
+  const segmented = await readLutRows({
+    path: lutSegmentedPath,
+    indexPath: indexSegmentedPath,
+    offset,
+    take,
+    bookIds,
+  })
 
   return {
     lut: parseLookupTable(rows.join("\n")),
@@ -162,12 +182,17 @@ async function getByteOffsetFromIndex(indexPath: string, row: number) {
   return Number(buffer.readBigUInt64LE())
 }
 
-async function readLutRows(
-  filePath: string,
-  indexPath: string,
-  offset: number,
-  take: number,
-) {
+async function readLutRows(opts: {
+  path: string
+  indexPath: string
+  offset: number
+  take: number
+  bookIds?: number[]
+}) {
+  const { path: filePath, indexPath, offset, take, bookIds } = opts
+
+  const hasBookIds = opts.bookIds && opts.bookIds.length > 0
+
   const byteOffset = await getByteOffsetFromIndex(indexPath, offset)
   const stream = fs.createReadStream(filePath, { start: byteOffset })
   const rl = readline.createInterface({
@@ -176,14 +201,28 @@ async function readLutRows(
   })
 
   const rows = []
+  let rowsScanned = 0
   let nextCursor: number | null = null
 
   for await (const line of rl) {
-    rows.push(line)
-    if (rows.length > take) {
-      nextCursor = offset + rows.length - 1 // -1 because we pop the last result
-      rows.pop()
-      break
+    if (hasBookIds) {
+      rowsScanned++
+      const id = line.split(",")[0]
+      if (bookIds!.includes(Number(id))) {
+        rows.push(line)
+      }
+      if (rows.length >= take) {
+        nextCursor = offset + rowsScanned
+        break
+      }
+    } else {
+      // No filters
+      rows.push(line)
+      if (rows.length > take) {
+        nextCursor = offset + rows.length - 1 // -1 because we pop the last result
+        rows.pop()
+        break
+      }
     }
   }
 
@@ -218,6 +257,7 @@ export async function getBook(opts: { game: SlotGame; mode: string; bookId: numb
   }
 
   stream.destroy()
+  console.log(line)
 
   if (!line) return undefined
 
@@ -236,4 +276,52 @@ export function getForceKeys(opts: { game: SlotGame; mode: string }) {
   ) as Record<string, string[]>
 
   return data
+}
+
+async function filterForceRecords(opts: {
+  game: SlotGame
+  mode: string
+  filter: Record<string, string> | undefined
+}) {
+  const { game, mode, filter } = opts
+
+  if (!filter || Object.keys(filter).length === 0) return []
+  
+  const forceFile = game.getMetadata().paths.forceRecords(mode)
+  if (!fs.existsSync(forceFile)) return []
+
+  const stream = fs.createReadStream(forceFile)
+  const rl = readline.createInterface({
+    input: stream,
+    crlfDelay: Infinity,
+  })
+
+  const bookIds = new Set<number>()
+
+  // Every unique force value fits in one line, so we can just scan the file line by line.
+  for await (const l of rl) {
+    // Skip empty or invalid lines, e.g. first and last lines which contain only brackets for opening/closing the array
+    if (l.trim() === "" || l.length < 5) continue
+
+    try {
+      const line = l.trim().replace(/,$/, "") // Remove trailing comma if present
+      const record = JSON.parse(line) as RecordItem
+      let matches = true
+
+      for (const [key, value] of Object.entries(filter)) {
+        if (!record.search.find((s) => s.name === key && s.value === value)) {
+          matches = false
+          break
+        }
+        record.bookIds.forEach((id) => bookIds.add(id))
+      }
+    } catch (error) {
+      console.log("Error parsing force record line:", error)
+      continue
+    }
+  }
+
+  stream.destroy()
+
+  return Array.from(bookIds)
 }

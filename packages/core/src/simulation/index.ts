@@ -207,7 +207,6 @@ export class Simulation {
         // Merge temporary book files into the final sorted file.
         // Also write index file for lookup
         const finalBookStream = fs.createWriteStream(booksPath)
-        let isFirstChunk = true
 
         const bookIndexStream = fs.createWriteStream(this.PATHS.booksIndex(mode))
         let offset = 0n
@@ -221,8 +220,6 @@ export class Simulation {
             crlfDelay: Infinity,
           })
 
-          if (!isFirstChunk) finalBookStream.write("\n")
-
           for await (const line of rl) {
             const indexBuffer = Buffer.alloc(8)
             indexBuffer.writeBigUInt64LE(offset)
@@ -234,7 +231,6 @@ export class Simulation {
           }
 
           fs.rmSync(tempBookPath)
-          isFirstChunk = false
         }
 
         finalBookStream.end()

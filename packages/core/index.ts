@@ -35,6 +35,8 @@ export {
 
 export { parseLookupTable, parseLookupTableSegmented } from "./src/analysis/utils"
 
+export { type RecordItem } from "./src/recorder"
+
 export { type SimulationSummary } from "./src/simulation"
 
 export { type GameContext } from "./src/game-context"

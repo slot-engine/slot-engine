@@ -171,7 +171,7 @@ const Filters = ({ mode, filters, onValueChange }: FiltersProps) => {
   const { gameId } = useGameContext()
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["game", "force-keys", gameId],
+    queryKey: ["game", "force-keys", gameId, mode],
     queryFn: async () => {
       return await query.gameForceKeys(gameId, mode)
     },

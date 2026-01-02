@@ -14,10 +14,12 @@ import type { SimulationOptions } from "./types"
 
 export class FetchError extends Error {
   code: number
+  type: string
 
-  constructor(code: number, message: string) {
+  constructor(code: number, message: string, type: string = "FetchError") {
     super(message)
     this.code = code
+    this.type = type
   }
 }
 
