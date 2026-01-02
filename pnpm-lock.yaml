@@ -208,7 +208,7 @@ importers:
         specifier: 5.2.8
         version: 5.2.8
       '@slot-engine/core':
-        specifier: 0.1.11
+        specifier: 0.1.12
         version: link:../core
       '@tabler/icons-react':
         specifier: 3.36.0

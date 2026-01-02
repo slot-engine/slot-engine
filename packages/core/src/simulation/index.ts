@@ -12,7 +12,7 @@ import {
   GameMetadata,
 } from "../game-config"
 import { createGameContext, GameContext } from "../game-context"
-import { createDirIfNotExists, JSONL, round, writeFile } from "../../utils"
+import { copy, createDirIfNotExists, JSONL, round, writeFile } from "../../utils"
 import { SPIN_TYPE } from "../constants"
 import { Book } from "../book"
 import { Recorder, RecordItem } from "../recorder"
@@ -672,7 +672,7 @@ export class Simulation {
     ctx.state.totalFreespinAmount = 0
     ctx.state.triggeredMaxWin = false
     ctx.state.triggeredFreespins = false
-    ctx.state.userData = ctx.config.userState || {}
+    ctx.state.userData = copy(ctx.config.userState)
   }
 
   /**
