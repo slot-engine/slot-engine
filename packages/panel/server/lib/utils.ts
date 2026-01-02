@@ -257,7 +257,6 @@ export async function getBook(opts: { game: SlotGame; mode: string; bookId: numb
   }
 
   stream.destroy()
-  console.log(line)
 
   if (!line) return undefined
 
