@@ -8,6 +8,7 @@ import {
   type APIGameSimSummaryResponse,
   type APIGameExploreResponse,
   type APIGameExploreBookResponse,
+  type APIGameForceKeysResponse,
 } from "../../../server/types"
 import type { SimulationOptions } from "./types"
 
@@ -38,20 +39,33 @@ export const query = {
   gameSimConf: (id: string) => api<APIGameGetSimConfResponse>(`games/${id}/sim-conf`),
   gameSimSummary: (id: string) =>
     api<APIGameSimSummaryResponse>(`games/${id}/sim-summary`),
-  gameExplore: (opts: { gameId: string; mode: string; cursor: number | null }) => {
-    const { gameId, cursor, mode } = opts
+  gameExplore: (opts: {
+    gameId: string
+    mode: string
+    cursor: number | null
+    filter?: Array<{ name: string; value: string }>
+  }) => {
+    const { gameId, cursor, mode, filter } = opts
     const params = new URLSearchParams()
+
     if (cursor) {
       params.append("cursor", cursor.toString())
     }
+
+    if (filter) {
+      filter.forEach(({ name, value }) => {
+        params.append(`filter[${name}]`, value)
+      })
+    }
+
     return api<APIGameExploreResponse>(
       `games/${gameId}/explore/${mode}?${params.toString()}`,
     )
   },
-  gameExploreBook: (opts: { gameId: string; mode: string; bookId: number }) => {
-    const { gameId, mode, bookId } = opts
-    return api<APIGameExploreBookResponse>(`games/${gameId}/explore/${mode}/${bookId}`)
-  },
+  gameExploreBook: (id: string, mode: string, bookId: number) =>
+    api<APIGameExploreBookResponse>(`games/${id}/explore/${mode}/${bookId}`),
+  gameForceKeys: (id: string, mode: string) =>
+    api<APIGameForceKeysResponse>(`games/${id}/force-keys/${mode}`),
 }
 
 export const mutation = {

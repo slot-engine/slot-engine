@@ -61,6 +61,15 @@
     color: var(--color-ui-100);
   }
 
+  ul.list {
+    list-style-type: disc;
+    padding-left: 1rem;
+
+    li::marker {
+      color: var(--color-ui-500);
+    }
+  }
+
   a.link {
     @apply flex items-center gap-1 mb-4 text-sm text-ui-500 hover:text-ui-100 underline;
   }

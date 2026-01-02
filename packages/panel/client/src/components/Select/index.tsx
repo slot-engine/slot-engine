@@ -13,8 +13,10 @@ export const Select = <Value, Multiple extends boolean | undefined>({
 }: SelectProps<Value, Multiple>) => {
   return (
     <Primitive.Root {...props}>
-      {label && <div className="block mb-1">{label}</div>}
-      {props.children}
+      <div>
+        {label && <div className="block mb-1">{label}</div>}
+        {props.children}
+      </div>
     </Primitive.Root>
   )
 }
@@ -66,7 +68,10 @@ export const SelectItem = ({ children, className, ...props }: Primitive.Item.Pro
   return (
     <Primitive.Item
       {...props}
-      className={cn("px-2 py-1 flex items-center gap-2 rounded-sm hover:bg-ui-800", className)}
+      className={cn(
+        "px-2 py-1 flex items-center gap-2 rounded-sm hover:bg-ui-800",
+        className,
+      )}
     >
       <Primitive.ItemIndicator
         render={(p) => <span className="size-2 inline-block rounded-full bg-emerald" />}

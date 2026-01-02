@@ -72,3 +72,7 @@ export type APIGameExploreResponse = {
 export type APIGameExploreBookResponse = {
   book: WrittenBook
 }
+
+export type APIGameForceKeysResponse = {
+  forceKeys: Record<string, string[]>
+}

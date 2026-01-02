@@ -1,10 +1,10 @@
 import { Accordion } from "@base-ui/react/accordion"
-import type { LookupTable, LookupTableSegmented } from "@slot-engine/core"
-import { IconMinus, IconPlus } from "@tabler/icons-react"
+import type { LookupTable, LookupTableSegmented } from "@slot-engine/core/types"
+import { IconMinus, IconMoodPuzzled, IconPlus } from "@tabler/icons-react"
 import { useRef, useState } from "react"
 import { cn } from "../../lib/cn"
 import { useGameContext } from "../../context/GameContext"
-import { query } from "../../lib/queries"
+import { FetchError, query } from "../../lib/queries"
 import { useQuery } from "@tanstack/react-query"
 import { ErrorDisplay } from "../Error"
 import { Loading } from "../Loading"
@@ -31,6 +31,8 @@ export const LookupTableRow = ({
 
   const formatter = new Intl.NumberFormat("en-US", { style: "decimal" })
   const formattedPayout = formatter.format(payout / 100)
+  const formattedBsWins = formatter.format(bsWins)
+  const formattedFsWins = formatter.format(fsWins)
 
   return (
     <Accordion.Item
@@ -66,6 +68,11 @@ export const LookupTableRow = ({
       </Accordion.Trigger>
       <Accordion.Panel className="bg-ui-900 border-t border-ui-700 h-(--accordion-panel-height) data-starting-style:h-0 data-ending-style:h-0 duration-200">
         <div className="p-4">
+          <div className="pb-2 mb-4 border-b border-ui-700 flex gap-8 items-center">
+            <div className="font-bold">Win Composition:</div>
+            <div>Basegame: {formattedBsWins}x</div>
+            <div>Freespins: {formattedFsWins}x</div>
+          </div>
           <BookDetails bookId={id} mode={mode} />
         </div>
       </Accordion.Panel>
@@ -79,7 +86,7 @@ const BookDetails = ({ bookId, mode }: { bookId: number; mode: string }) => {
   const { data, isLoading, error } = useQuery({
     queryKey: ["game", "book", gameId, mode, bookId],
     queryFn: async () => {
-      return await query.gameExploreBook({ gameId, mode, bookId })
+      return await query.gameExploreBook(gameId, mode, bookId)
     },
   })
 
@@ -95,7 +102,42 @@ const BookDetails = ({ bookId, mode }: { bookId: number; mode: string }) => {
     gap: 16,
   })
 
-  if (error) return <ErrorDisplay error={error} />
+  if (error) {
+    return (
+      <ErrorDisplay
+        error={error}
+        render={(props) => {
+          const error = props.error as FetchError
+          switch (error.code) {
+            case 404:
+              return (
+                <div className="flex justify-center gap-4">
+                  <div>
+                    <IconMoodPuzzled size={64} stroke={1} />
+                  </div>
+                  <div>
+                    <h4 className="text-2xl">Book not found</h4>
+                    <p>
+                      Your book details could not be loaded. The uncompressed book file
+                      for this game mode doesn't exist. Panel works with uncompressed
+                      books, so make sure those exist by running simulations again.
+                    </p>
+                  </div>
+                </div>
+              )
+            default:
+              return (
+                <div className="text-center">
+                  <h2>{error.code}</h2>
+                  <div>{error.message}</div>
+                </div>
+              )
+          }
+        }}
+      />
+    )
+  }
+
   if (!data) return <Loading isLoading={isLoading} />
 
   const items = virtualizer.getVirtualItems()

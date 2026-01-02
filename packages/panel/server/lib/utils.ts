@@ -223,3 +223,17 @@ export async function getBook(opts: { game: SlotGame; mode: string; bookId: numb
 
   return JSON.parse(line) as WrittenBook
 }
+
+export function getForceKeys(opts: { game: SlotGame; mode: string }) {
+  const { game, mode } = opts
+  const forceKeysPath = game.getMetadata().paths.forceKeys(mode)
+  if (!fs.existsSync(forceKeysPath)) return
+
+  const data = JSON.parse(
+    fs.readFileSync(forceKeysPath, {
+      encoding: "utf-8",
+    }),
+  ) as Record<string, string[]>
+
+  return data
+}

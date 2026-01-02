@@ -9,11 +9,13 @@ import {
   APIGameSimSummaryResponse,
   APIGameExploreResponse,
   APIGameExploreBookResponse,
+  APIGameForceKeysResponse,
 } from "../../types"
 import { Hono } from "hono"
 import {
   exploreLookupTable,
   getBook,
+  getForceKeys,
   getGameById,
   getGameInfo,
   loadOrCreatePanelGameConfig,
@@ -188,6 +190,24 @@ app.get("/:id/sim-summary", (c) => {
   }
 
   return c.json<APIGameSimSummaryResponse>({ summary })
+})
+
+app.get("/:id/force-keys/:mode", (c) => {
+  const gameId = c.req.param("id")
+  const game = getGameById(gameId, c)
+
+  if (!game) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  const mode = c.req.param("mode")
+  const forceKeys = getForceKeys({ game, mode })
+
+  if (!forceKeys) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  return c.json<APIGameForceKeysResponse>({ forceKeys })
 })
 
 app.get("/:id/explore/:mode", async (c) => {
