@@ -87,16 +87,17 @@ export class ResultSet<TUserState extends AnyUserData> {
    */
   meetsCriteria(ctx: GameContext) {
     // @ts-ignore TODO: Fix type errors with AnyTypes
-    const customEval = this.evaluate?.(copy(ctx))
+    const customEval = this.evaluate?.(ctx)
 
     const freespinsMet = this.forceFreespins ? ctx.state.triggeredFreespins : true
 
     const wallet = ctx.services.wallet._getWallet()
 
-    const multiplierMet =
-      this.multiplier !== undefined
-        ? wallet.getCurrentWin() === this.multiplier && !this.forceMaxWin
-        : wallet.getCurrentWin() > 0 && (!this.forceMaxWin || true)
+    const multiplierMet = this.forceMaxWin
+      ? true
+      : this.multiplier !== undefined
+        ? wallet.getCurrentWin() === this.multiplier
+        : wallet.getCurrentWin() > 0
 
     const maxWinMet = this.forceMaxWin
       ? wallet.getCurrentWin() >= ctx.config.maxWinX
