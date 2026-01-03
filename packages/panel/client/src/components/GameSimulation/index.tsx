@@ -19,6 +19,7 @@ import { NumberInput } from "../NumberInput"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "../Select"
 import { socket } from "../../context/Websocket"
 import type { SimulationOptions } from "../../lib/types"
+import { Skeleton } from "../Skeleton"
 
 type SimOptsWithoutGames = Omit<SimulationOptions, "simRunsAmount">
 
@@ -132,7 +133,18 @@ export const GameSimulation = () => {
   }, [])
 
   if (error) return <ErrorDisplay error={error} />
-  if (!data || isFetching) return <Loading isLoading={isLoading || isFetching} />
+
+  if (!data || isFetching) {
+    return <div className="grid grid-cols-[2fr_1fr] gap-4 items-start">
+      <div>
+        <Skeleton className="h-32" />
+        <Skeleton className="h-32 mt-4" />
+        <Skeleton className="h-32 mt-4" />
+        <Skeleton className="h-32 mt-4" />
+      </div>
+      <Skeleton className="h-140" />
+    </div>
+  }
 
   const allModes = data.modes.map((m) => m.name)
   const availableModes = allModes.filter(

@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
 import { query } from "../../lib/queries"
 import { useGameContext } from "../../context/GameContext"
-import { Loading } from "../Loading"
 import { TableRow } from "../Table"
 import { IconInfoCircle, IconTargetArrow } from "@tabler/icons-react"
 import { useEffect } from "react"
 import { socket } from "../../context/Websocket"
+import { Skeleton } from "../Skeleton"
 
 export const GameSimulationSummary = () => {
   const { gameId } = useGameContext()
@@ -36,7 +36,7 @@ export const GameSimulationSummary = () => {
     )
   }
 
-  if (!data) return <Loading isLoading={isLoading} />
+  if (!data || isLoading) return <Skeleton className="h-64 mt-8" /> 
 
   const modes = Object.entries(data.summary)
 

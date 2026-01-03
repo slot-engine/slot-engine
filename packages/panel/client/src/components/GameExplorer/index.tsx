@@ -36,6 +36,7 @@ export const GameExplorer = () => {
     getScrollElement: () => scrollRef.current,
     estimateSize: () => 56,
     overscan: 10,
+    gap: 8,
   })
 
   const items = virtualizer.getVirtualItems()
@@ -111,7 +112,7 @@ export const GameExplorer = () => {
         {luts.length > 0 && !isLoading && (
           <div>
             <div className="mb-1 text-ui-500">Loaded {luts.length} rows</div>
-            <div className="max-h-192 overflow-y-auto pr-2" ref={scrollRef}>
+            <div className="h-192 overflow-y-auto pr-2" ref={scrollRef}>
               <Accordion.Root
                 multiple
                 style={{
