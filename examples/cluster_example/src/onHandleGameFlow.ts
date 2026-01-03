@@ -242,6 +242,14 @@ function checkFreespins(ctx: Context) {
   // Ensure we only trigger free spins from base game.
   // Our playFreeSpins function handles the free spins loop already and we don't want recursion.
   if (ctx.state.currentSpinType == SPIN_TYPE.BASE_GAME) {
+    // In some cases, free spins might be triggered in a non-freespins result set,
+    // for example when the third scatter drops in during tumbling.
+    // Make this simulation invalid to skip it.
+    const forbiddenResultSets = ["0", "basegame"]
+    if (forbiddenResultSets.includes(ctx.state.currentResultSet.criteria)) {
+      ctx.services.wallet.addSpinWin(-999999999)
+    }
+
     ctx.services.data.addBookEvent({
       type: "fs-triggered",
       data: {
