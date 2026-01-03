@@ -1,5 +1,11 @@
 # @slot-engine/core
 
+## 0.1.14
+
+### Patch Changes
+
+- Fix services not working in ResultSet evaluate function - Thanks @nordowl
+
 ## 0.1.13
 
 ### Patch Changes
