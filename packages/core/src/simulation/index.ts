@@ -22,13 +22,13 @@ const TEMP_FOLDER = "temp_files"
 
 /**
  * Class for handling simulations of the slot game.
- * 
+ *
  * High level overview:
  * - Main thread compiles user code to JS and spawns workers
  * - Workers run compiled code to execute simulations
  * - Workers send data to main thread
  * - Main thread merges data and writes files
- * 
+ *
  * Notes:
  * - Backpressure system with credits to avoid overwhelming the main thread
  * - Limited amount of credits
@@ -46,6 +46,7 @@ export class Simulation {
   private wallet: Wallet
   private recordsWriteStream: fs.WriteStream | undefined
   private hasWrittenRecord = false
+  private readonly streamHighWaterMark = 500 * 1024 * 1024
   private readonly maxPendingSims: number
   private readonly maxHighWaterMark: number
 
@@ -162,9 +163,11 @@ export class Simulation {
         createDirIfNotExists(this.PATHS.base)
         createDirIfNotExists(path.join(this.PATHS.base, TEMP_FOLDER))
 
-        this.recordsWriteStream = fs.createWriteStream(tempRecordsPath, {
-          highWaterMark: this.maxHighWaterMark,
-        }).setMaxListeners(30)
+        this.recordsWriteStream = fs
+          .createWriteStream(tempRecordsPath, {
+            highWaterMark: this.maxHighWaterMark,
+          })
+          .setMaxListeners(30)
 
         const criteriaCounts = ResultSet.getNumberOfSimsForCriteria(this, mode)
         const totalSims = Object.values(criteriaCounts).reduce((a, b) => a + b, 0)
@@ -192,25 +195,35 @@ export class Simulation {
         )
 
         // Merge temporary book files into the final sorted file
-        const finalBookStream = fs.createWriteStream(booksPath)
-        let isFirstChunk = true
-        for (let i = 0; i < chunks.length; i++) {
-          const tempBookPath = this.PATHS.tempBooks(mode, i)
+        try {
+          const finalBookStream = fs.createWriteStream(booksPath, {
+            highWaterMark: this.streamHighWaterMark,
+          })
+          let isFirstChunk = true
+          for (let i = 0; i < chunks.length; i++) {
+            const tempBookPath = this.PATHS.tempBooks(mode, i)
 
-          if (fs.existsSync(tempBookPath)) {
-            if (!isFirstChunk) {
-              finalBookStream.write("\n")
+            if (fs.existsSync(tempBookPath)) {
+              if (!isFirstChunk) {
+                if (!finalBookStream.write("\n")) {
+                  await new Promise<void>((r) => finalBookStream.once("drain", r))
+                }
+              }
+              const content = fs.createReadStream(tempBookPath)
+              for await (const chunk of content) {
+                if (!finalBookStream.write(chunk)) {
+                  await new Promise<void>((r) => finalBookStream.once("drain", r))
+                }
+              }
+              fs.rmSync(tempBookPath)
+              isFirstChunk = false
             }
-            const content = fs.createReadStream(tempBookPath)
-            for await (const chunk of content) {
-              finalBookStream.write(chunk)
-            }
-            fs.rmSync(tempBookPath)
-            isFirstChunk = false
           }
+          finalBookStream.end()
+          await new Promise<void>((resolve) => finalBookStream.on("finish", resolve))
+        } catch (error) {
+          throw new Error(`Error merging book files: ${(error as Error).message}`)
         }
-        finalBookStream.end()
-        await new Promise<void>((resolve) => finalBookStream.on("finish", resolve))
 
         // Merge temporary LUTs
         const lutPath = this.PATHS.lookupTable(mode)
@@ -776,20 +789,29 @@ export class Simulation {
     outPath: string,
     tempName: (i: number) => string,
   ) {
-    fs.rmSync(outPath, { force: true })
-    const out = fs.createWriteStream(outPath)
-    let wroteAny = false
-    for (let i = 0; i < chunks.length; i++) {
-      const p = path.join(this.PATHS.base, TEMP_FOLDER, tempName(i))
-      if (!fs.existsSync(p)) continue
-      if (wroteAny) out.write("")
-      const rs = fs.createReadStream(p)
-      for await (const buf of rs) out.write(buf)
-      fs.rmSync(p)
-      wroteAny = true
+    try {
+      fs.rmSync(outPath, { force: true })
+      const out = fs.createWriteStream(outPath, {
+        highWaterMark: this.streamHighWaterMark,
+      })
+      for (let i = 0; i < chunks.length; i++) {
+        const p = path.join(this.PATHS.base, TEMP_FOLDER, tempName(i))
+        if (!fs.existsSync(p)) continue
+        const rs = fs.createReadStream(p, {
+          highWaterMark: this.streamHighWaterMark,
+        })
+        for await (const buf of rs) {
+          if (!out.write(buf)) {
+            await new Promise<void>((resolve) => out.once("drain", resolve))
+          }
+        }
+        fs.rmSync(p)
+      }
+      out.end()
+      await new Promise<void>((resolve) => out.on("finish", resolve))
+    } catch (error) {
+      throw new Error(`Error merging CSV files: ${(error as Error).message}`)
     }
-    out.end()
-    await new Promise<void>((resolve) => out.on("finish", resolve))
   }
 
   /**

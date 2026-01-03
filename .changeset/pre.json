@@ -1,0 +1,12 @@
+{
+  "mode": "pre",
+  "tag": "test",
+  "initialVersions": {
+    "docs": "0.0.0",
+    "example-cluster": "0.0.0",
+    "example-lines": "0.0.0",
+    "@slot-engine/core": "0.1.13",
+    "@slot-engine/lgs": "0.0.0"
+  },
+  "changesets": []
+}
