@@ -188,6 +188,8 @@ const Filters = ({ mode, filters, onValueChange }: FiltersProps) => {
   const availableFilters = allFilters.filter((f) => !filters.find((ff) => ff.name === f))
   const availableValuesForFilter = (name: string) => {
     const values = new Set<string>()
+    const options = data.forceKeys[name]
+    if (!Array.isArray(options)) return ["some weird error occurred, try reloading"]
     for (const val of data.forceKeys[name]) {
       values.add(val)
     }

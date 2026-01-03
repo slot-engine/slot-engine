@@ -17,6 +17,7 @@ import { GameInformation } from "../../components/GameInformation"
 import { GameSimulation } from "../../components/GameSimulation"
 import { GameSimulationSummary } from "../../components/GameSimulationSummary"
 import { GameExplorer } from "../../components/GameExplorer"
+import { GameBetSimulation } from "../../components/GameBetSimulation"
 
 const tabsNames = {
   info: "info",
@@ -99,6 +100,9 @@ function RouteComponent() {
         <TabsContent value={tabsNames.simulation}>
           <SimulationTab />
         </TabsContent>
+        <TabsContent value={tabsNames.betSimulation}>
+          <BetSimulationTab />
+        </TabsContent>
         <TabsContent value={tabsNames["reelset-designer"]}>
           <ReelSetDesignerTab />
         </TabsContent>
@@ -137,6 +141,18 @@ const SimulationTab = () => {
       <TabContentHeader title="Simulation" description="Run simulations for this game." />
       <GameSimulation />
       <GameSimulationSummary />
+    </div>
+  )
+}
+
+const BetSimulationTab = () => {
+  return (
+    <div>
+      <TabContentHeader
+        title="Bet Simulation"
+        description="Simulate players betting on this game."
+      />
+      <GameBetSimulation />
     </div>
   )
 }

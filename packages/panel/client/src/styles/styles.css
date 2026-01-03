@@ -53,6 +53,14 @@
     font-size: var(--text-2xl);
   }
 
+  h5 {
+    font-size: var(--text-xl);
+  }
+
+  p + p {
+    margin-top: 1rem;
+  }
+
   code {
     padding: 0.1rem 0.25rem;
     background-color: var(--color-ui-900);

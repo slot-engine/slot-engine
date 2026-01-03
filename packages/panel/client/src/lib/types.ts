@@ -16,3 +16,20 @@ export type SimulationOptions = {
   maxPendingSims: number
   maxDiskBuffer: number
 }
+
+export type SetState<T> = React.Dispatch<React.SetStateAction<T>>
+
+export interface BetSimulationConfig {
+  id: string
+  players: {
+    count: number
+    startingBalance: number
+  }
+  betGroups: BetSimulationBetGroup[]
+}
+
+export interface BetSimulationBetGroup {
+  mode: string
+  betAmount: number
+  spins: number
+}

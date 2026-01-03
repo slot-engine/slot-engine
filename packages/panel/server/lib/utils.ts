@@ -79,6 +79,7 @@ export function loadOrCreatePanelGameConfig(game: SlotGame | undefined) {
       maxPendingSims: 25,
       maxDiskBuffer: 150,
     },
+    betSimulations: [],
     forceStop: false,
   }
 

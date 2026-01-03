@@ -6,6 +6,7 @@ import type {
   SimulationSummary,
   WrittenBook,
 } from "@slot-engine/core/types"
+import { BetSimulationConfig } from "../client/src/lib/types"
 
 export interface APIMessageResponse {
   message: string
@@ -52,6 +53,7 @@ export interface PanelGameConfig {
     maxPendingSims: number
     maxDiskBuffer: number
   }
+  betSimulations: BetSimulationConfig[]
   forceStop: boolean
 }
 
