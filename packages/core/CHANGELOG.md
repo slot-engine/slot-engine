@@ -1,5 +1,12 @@
 # @slot-engine/core
 
+## 0.1.14-test.0
+
+### Patch Changes
+
+- 0aa9977: Fix services not working in ResultSet evaluate function
+- c743447: Fix file system errors
+
 ## 0.1.13
 
 ### Patch Changes

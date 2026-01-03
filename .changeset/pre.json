@@ -8,5 +8,8 @@
     "@slot-engine/core": "0.1.13",
     "@slot-engine/lgs": "0.0.0"
   },
-  "changesets": []
+  "changesets": [
+    "giant-lights-fix",
+    "gold-lamps-wash"
+  ]
 }
