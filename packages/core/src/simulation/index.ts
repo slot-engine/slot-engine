@@ -59,6 +59,7 @@ export class Simulation {
   private summary: SimulationSummary = {}
   private recordsWriteStream: fs.WriteStream | undefined
   private hasWrittenRecord = false
+  private readonly streamHighWaterMark = 500 * 1024 * 1024
   private readonly maxPendingSims: number
   private readonly maxHighWaterMark: number
   private panelPort: number = 7770
@@ -206,39 +207,51 @@ export class Simulation {
 
         // Merge temporary book files into the final sorted file.
         // Also write index file for lookup
-        const finalBookStream = fs.createWriteStream(booksPath)
-
-        const bookIndexStream = fs.createWriteStream(this.PATHS.booksIndex(mode))
-        let offset = 0n
-
-        for (let i = 0; i < chunks.length; i++) {
-          const tempBookPath = this.PATHS.tempBooks(mode, i)
-          if (!fs.existsSync(tempBookPath)) continue
-
-          const rl = readline.createInterface({
-            input: fs.createReadStream(tempBookPath),
-            crlfDelay: Infinity,
+        try {
+          const finalBookStream = fs.createWriteStream(booksPath, {
+            highWaterMark: this.streamHighWaterMark,
           })
 
-          for await (const line of rl) {
-            const indexBuffer = Buffer.alloc(8)
-            indexBuffer.writeBigUInt64LE(offset)
-            bookIndexStream.write(indexBuffer)
+          const bookIndexStream = fs.createWriteStream(this.PATHS.booksIndex(mode), {
+            highWaterMark: this.streamHighWaterMark,
+          })
+          let offset = 0n
 
-            const lineWithNewline = line + "\n"
-            finalBookStream.write(lineWithNewline)
-            offset += BigInt(Buffer.byteLength(lineWithNewline, "utf8"))
+          for (let i = 0; i < chunks.length; i++) {
+            const tempBookPath = this.PATHS.tempBooks(mode, i)
+            if (!fs.existsSync(tempBookPath)) continue
+
+            const rl = readline.createInterface({
+              input: fs.createReadStream(tempBookPath),
+              crlfDelay: Infinity,
+            })
+
+            for await (const line of rl) {
+              const indexBuffer = Buffer.alloc(8)
+              indexBuffer.writeBigUInt64LE(offset)
+              if (!bookIndexStream.write(indexBuffer)) {
+                await new Promise<void>((resolve) => bookIndexStream.once("drain", resolve))
+              }
+
+              const lineWithNewline = line + "\n"
+              if (!finalBookStream.write(lineWithNewline)) {
+                await new Promise<void>((resolve) => finalBookStream.once("drain", resolve))
+              }
+              offset += BigInt(Buffer.byteLength(lineWithNewline, "utf8"))
+            }
+
+            fs.rmSync(tempBookPath)
           }
 
-          fs.rmSync(tempBookPath)
+          finalBookStream.end()
+          bookIndexStream.end()
+          await Promise.all([
+            new Promise<void>((r) => finalBookStream.on("finish", () => r())),
+            new Promise<void>((r) => bookIndexStream.on("finish", () => r())),
+          ])
+        } catch (error) {
+          throw new Error(`Error merging book files: ${(error as Error).message}`)
         }
-
-        finalBookStream.end()
-        bookIndexStream.end()
-        await Promise.all([
-          new Promise<void>((r) => finalBookStream.on("finish", () => r())),
-          new Promise<void>((r) => bookIndexStream.on("finish", () => r())),
-        ])
 
         // Merge temporary LUTs
         const lutPath = this.PATHS.lookupTable(mode)
@@ -700,7 +713,9 @@ export class Simulation {
     const aggregatedRecords = new Map<string, RecordItem>()
 
     if (fs.existsSync(tempRecordsPath)) {
-      const fileStream = fs.createReadStream(tempRecordsPath)
+      const fileStream = fs.createReadStream(tempRecordsPath, {
+        highWaterMark: this.streamHighWaterMark,
+      })
 
       const rl = readline.createInterface({
         input: fileStream,
@@ -873,51 +888,67 @@ export class Simulation {
     tempName: (i: number) => string,
     lutIndexPath: string,
   ) {
-    fs.rmSync(outPath, { force: true })
-    const lutStream = fs.createWriteStream(outPath)
-    let wroteAny = false
+    try {
+      fs.rmSync(outPath, { force: true })
 
-    const lutIndexStream = lutIndexPath ? fs.createWriteStream(lutIndexPath) : undefined
-    let offset = 0n
+      const lutStream = fs.createWriteStream(outPath, {
+        highWaterMark: this.streamHighWaterMark,
+      })
+      const lutIndexStream = lutIndexPath ? fs.createWriteStream(lutIndexPath, {
+        highWaterMark: this.streamHighWaterMark,
+      }) : undefined
+      let offset = 0n
 
-    for (let i = 0; i < chunks.length; i++) {
-      const tempLutChunk = path.join(this.PATHS.base, TEMP_FOLDER, tempName(i))
-      if (!fs.existsSync(tempLutChunk)) continue
-      if (wroteAny) lutStream.write("")
+      for (let i = 0; i < chunks.length; i++) {
+        const tempLutChunk = path.join(this.PATHS.base, TEMP_FOLDER, tempName(i))
+        if (!fs.existsSync(tempLutChunk)) continue
 
-      if (lutIndexStream) {
-        // If an index file is needed, read line by line to track offsets
-        const rl = readline.createInterface({
-          input: fs.createReadStream(tempLutChunk),
-          crlfDelay: Infinity,
-        })
+        if (lutIndexStream) {
+          // If an index file is needed, read line by line to track offsets
+          const rl = readline.createInterface({
+            input: fs.createReadStream(tempLutChunk),
+            crlfDelay: Infinity,
+          })
 
-        for await (const line of rl) {
-          const indexBuffer = Buffer.alloc(8)
-          indexBuffer.writeBigUInt64LE(offset)
-          lutIndexStream.write(indexBuffer)
+          for await (const line of rl) {
+            const indexBuffer = Buffer.alloc(8)
+            indexBuffer.writeBigUInt64LE(offset)
+            if (!lutIndexStream.write(indexBuffer)) {
+              await new Promise<void>((resolve) => lutIndexStream.once("drain", resolve))
+            }
 
-          const lineWithNewline = line + "\n"
-          lutStream.write(lineWithNewline)
-          offset += BigInt(Buffer.byteLength(lineWithNewline, "utf8"))
+            const lineWithNewline = line + "\n"
+            if(!lutStream.write(lineWithNewline)) {
+              await new Promise<void>((resolve) => lutStream.once("drain", resolve))
+            }
+            offset += BigInt(Buffer.byteLength(lineWithNewline, "utf8"))
+          }
+        } else {
+          // No index, stream normally
+          const tempChunkStream = fs.createReadStream(tempLutChunk, {
+            highWaterMark: this.streamHighWaterMark,
+          })
+          for await (const buf of tempChunkStream) {
+            if (!lutStream.write(buf)) {
+              await new Promise<void>((resolve) => lutStream.once("drain", resolve))
+            }
+          }
         }
-      } else {
-        const tempChunkStream = fs.createReadStream(tempLutChunk)
-        for await (const buf of tempChunkStream) lutStream.write(buf)
+
+        fs.rmSync(tempLutChunk)
       }
 
-      fs.rmSync(tempLutChunk)
-      wroteAny = true
+      lutStream.end()
+      lutIndexStream?.end()
+      await Promise.all([
+        new Promise<void>((resolve) => lutStream.on("finish", resolve)),
+        lutIndexStream
+          ? new Promise<void>((resolve) => lutIndexStream.on("finish", resolve))
+          : Promise.resolve(),
+      ])
+    } catch (error) {
+      throw new Error(`Error merging CSV files: ${(error as Error).message}`)
     }
-
-    lutStream.end()
-    lutIndexStream?.end()
-    await Promise.all([
-      new Promise<void>((resolve) => lutStream.on("finish", resolve)),
-      lutIndexStream
-        ? new Promise<void>((resolve) => lutIndexStream.on("finish", resolve))
-        : Promise.resolve(),
-    ])
   }
 
   /**

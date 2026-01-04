@@ -100,7 +100,7 @@ importers:
   examples/cluster_example:
     dependencies:
       '@slot-engine/core':
-        specifier: 0.1.13
+        specifier: 0.1.14
         version: link:../../packages/core
     devDependencies:
       '@types/node':
@@ -113,7 +113,7 @@ importers:
   examples/lines_example:
     dependencies:
       '@slot-engine/core':
-        specifier: 0.1.13
+        specifier: 0.1.14
         version: link:../../packages/core
     devDependencies:
       '@types/node':
