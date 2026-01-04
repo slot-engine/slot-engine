@@ -12,8 +12,9 @@ import {
   type APIGameGetBetSimConfResponse,
   type APIGamePostBetSimConfResponse,
   type APIGamePostSimConfResponse,
+  type BetSimulationConfig,
 } from "../../../server/types"
-import type { BetSimulationConfig, SimulationOptions } from "./types"
+import type { SimulationOptions } from "./types"
 
 export class FetchError extends Error {
   code: number

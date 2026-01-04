@@ -287,8 +287,10 @@ app.post(
           count: z.number().int().min(1),
           startingBalance: z.number().int().min(1),
         }),
+        balanceMode: z.enum(["shared", "fresh"]),
         betGroups: z
           .object({
+            id: z.string(),
             mode: z.string(),
             betAmount: z.number().min(0.1),
             spins: z.number().int().min(1),

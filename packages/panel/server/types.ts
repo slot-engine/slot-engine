@@ -6,7 +6,6 @@ import type {
   SimulationSummary,
   WrittenBook,
 } from "@slot-engine/core/types"
-import { BetSimulationConfig } from "../client/src/lib/types"
 
 export interface APIMessageResponse {
   message: string
@@ -55,6 +54,23 @@ export interface PanelGameConfig {
   }
   betSimulations: BetSimulationConfig[]
   forceStop: boolean
+}
+
+export interface BetSimulationConfig {
+  id: string
+  players: {
+    count: number
+    startingBalance: number
+  }
+  balanceMode: "shared" | "fresh"
+  betGroups: BetSimulationBetGroup[]
+}
+
+export interface BetSimulationBetGroup {
+  id: string
+  mode: string
+  betAmount: number
+  spins: number
 }
 
 export type APIGameGetSimConfResponse = PanelGameConfig["simulation"]

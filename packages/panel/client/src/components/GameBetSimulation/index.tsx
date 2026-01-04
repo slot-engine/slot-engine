@@ -9,11 +9,12 @@ import { useGameContext } from "../../context/GameContext"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "../Button"
 import { NumberInput } from "../NumberInput"
-import type { BetSimulationConfig } from "../../lib/types"
 import { mutation, query } from "../../lib/queries"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { ErrorDisplay } from "../Error"
 import { Skeleton } from "../Skeleton"
+import type { BetSimulationConfig } from "../../../../server/types"
+import { Select, SelectContent, SelectItem, SelectTrigger } from "../Select"
 
 const DEFAULT_CONFIG: BetSimulationConfig = {
   id: "",
@@ -21,6 +22,7 @@ const DEFAULT_CONFIG: BetSimulationConfig = {
     count: 100,
     startingBalance: 1000,
   },
+  balanceMode: "fresh",
   betGroups: [],
 }
 
@@ -33,6 +35,7 @@ function makeDefaultConfig(): BetSimulationConfig {
 
 function makeDefaultBetGroup(mode: string) {
   return {
+    id: crypto.randomUUID(),
     mode,
     betAmount: 1,
     spins: 500,
@@ -170,7 +173,6 @@ const BetSimulation = ({ config, onValueChange }: BetSimulationProps) => {
       ...config,
       players: { ...config.players, count: count ?? config.players.count },
     }
-
     onValueChange(newConfig)
   }
 
@@ -182,7 +184,6 @@ const BetSimulation = ({ config, onValueChange }: BetSimulationProps) => {
         startingBalance: balance ?? config.players.startingBalance,
       },
     }
-
     onValueChange(newConfig)
   }
 
@@ -191,7 +192,24 @@ const BetSimulation = ({ config, onValueChange }: BetSimulationProps) => {
       ...config,
       betGroups: [...config.betGroups, makeDefaultBetGroup(game.modes[0]?.name || "")],
     }
+    onValueChange(newConfig)
+  }
 
+  function changeGroupMode(id: string, mode: string) {
+    const newConfig = {
+      ...config,
+      betGroups: config.betGroups.map((bg) => (bg.id === id ? { ...bg, mode } : bg)),
+    }
+    onValueChange(newConfig)
+  }
+
+  function updateGroupSpins(id: string, spins: number | null) {
+    const newConfig = {
+      ...config,
+      betGroups: config.betGroups.map((bg) =>
+        bg.id === id ? { ...bg, spins: spins ?? bg.spins } : bg,
+      ),
+    }
     onValueChange(newConfig)
   }
 
@@ -224,12 +242,36 @@ const BetSimulation = ({ config, onValueChange }: BetSimulationProps) => {
         Bet Groups
       </h5>
       <div className="mt-2 mb-4 text-ui-100">
-        Bet groups are played sequentially, either sharing a players balance, or with a
-        fresh balance.
+        Bet groups are played sequentially, either sharing a players balance, or starting
+        fresh.
       </div>
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         {config.betGroups.map((bg, index) => (
-          <div key={index} className="p-4 rounded-lg bg-ui-950 flex flex-col gap-2"></div>
+          <div key={index} className="p-4 rounded-lg bg-ui-950 flex flex-col gap-2">
+            <Select
+              label="Mode"
+              value={bg.mode}
+              multiple={false}
+              onValueChange={(v) => changeGroupMode(bg.id, v || "")}
+            >
+              <SelectTrigger className="w-full" />
+              <SelectContent>
+                {game.modes.map((m) => (
+                  <SelectItem key={m.name} value={m.name}>
+                    {m.name} (Cost: {m.cost}x)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <NumberInput
+              label="Number of Bets"
+              step={10}
+              inputMode="numeric"
+              className="w-full"
+              value={bg.spins}
+              onValueChange={(v) => updateGroupSpins(bg.id, v)}
+            />
+          </div>
         ))}
         <div
           onClick={addBetGroup}

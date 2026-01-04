@@ -1,29 +1,32 @@
 {
   "id": "example-02",
   "simulation": {
-    "concurrency": 16,
+    "concurrency": 8,
     "simRunsAmount": {
-      "base": 1000000,
-      "bonus": 500000
+      "base": 50000,
+      "bonus": 50000
     },
     "maxPendingSims": 25,
-    "maxDiskBuffer": 250
+    "maxDiskBuffer": 150
   },
   "betSimulations": [
     {
-      "id": "9da52108-3a03-49b5-8a17-18a430d5e1c8",
+      "id": "6cb8763c-9463-4731-8826-416a4ce074e9",
       "players": {
         "count": 100,
         "startingBalance": 1000
       },
+      "balanceMode": "fresh",
       "betGroups": [
         {
+          "id": "39796ba4-5ae2-4c1d-be25-8a4cae8982ee",
           "mode": "base",
           "betAmount": 1,
           "spins": 500
         },
         {
-          "mode": "base",
+          "id": "34519a8b-1e7f-42f3-8e9f-3a9373a5a155",
+          "mode": "bonus",
           "betAmount": 1,
           "spins": 500
         }
