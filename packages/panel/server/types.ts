@@ -78,3 +78,11 @@ export type APIGameExploreBookResponse = {
 export type APIGameForceKeysResponse = {
   forceKeys: Record<string, string[]>
 }
+
+export type APIGameGetBetSimConfResponse = {
+  configs: BetSimulationConfig[]
+}
+
+export type APIGamePostBetSimConfResponse = {
+  configs: BetSimulationConfig[]
+}

@@ -14,7 +14,7 @@ import {
 } from "@tabler/icons-react"
 import { useGameContext } from "../../context/GameContext"
 import { ErrorDisplay } from "../Error"
-import { Loading, SimulationLoading } from "../Loading"
+import { SimulationLoading } from "../Loading"
 import { NumberInput } from "../NumberInput"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "../Select"
 import { socket } from "../../context/Websocket"
@@ -26,7 +26,7 @@ type SimOptsWithoutGames = Omit<SimulationOptions, "simRunsAmount">
 export const GameSimulation = () => {
   const { gameId } = useGameContext()
 
-  const { data, isLoading, isFetching, error, dataUpdatedAt } = useQuery({
+  const { data, isFetching, error, dataUpdatedAt } = useQuery({
     queryKey: ["game", "info-advanced", gameId],
     queryFn: async () => {
       const info = await query.gameInfo(gameId)

@@ -8,7 +8,7 @@ import { Loading } from "../components/Loading"
 
 export interface GameContext {
   gameId: string
-  data: APIGameInfoResponse
+  game: APIGameInfoResponse
   isLoading: boolean
   error: Error | null
 }
@@ -31,7 +31,7 @@ export const GameProvider = ({ gameId, children }: GameProviderProps) => {
   if (!data) return <Loading isLoading={isLoading} />
 
   return (
-    <GameContext.Provider value={{ gameId, data, isLoading, error }}>
+    <GameContext.Provider value={{ gameId, game: data, isLoading, error }}>
       {children}
     </GameContext.Provider>
   )

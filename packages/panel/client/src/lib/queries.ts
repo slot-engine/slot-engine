@@ -9,8 +9,11 @@ import {
   type APIGameExploreResponse,
   type APIGameExploreBookResponse,
   type APIGameForceKeysResponse,
+  type APIGameGetBetSimConfResponse,
+  type APIGamePostBetSimConfResponse,
+  type APIGamePostSimConfResponse,
 } from "../../../server/types"
-import type { SimulationOptions } from "./types"
+import type { BetSimulationConfig, SimulationOptions } from "./types"
 
 export class FetchError extends Error {
   code: number
@@ -39,6 +42,7 @@ export const query = {
   game: (id: string) => api<APIGameResponse>(`games/${id}`),
   gameInfo: (id: string) => api<APIGameInfoResponse>(`games/${id}/info`),
   gameSimConf: (id: string) => api<APIGameGetSimConfResponse>(`games/${id}/sim-conf`),
+  gameBetSimConf: (id: string) => api<APIGameGetBetSimConfResponse>(`games/${id}/bet-sim-conf`),
   gameSimSummary: (id: string) =>
     api<APIGameSimSummaryResponse>(`games/${id}/sim-summary`),
   gameExplore: (opts: {
@@ -72,7 +76,15 @@ export const query = {
 
 export const mutation = {
   gameSimConf: (id: string, data: PanelGameConfig["simulation"]) =>
-    api<APIGameGetSimConfResponse>(`games/${id}/sim-conf`, {
+    api<APIGamePostSimConfResponse>(`games/${id}/sim-conf`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }),
+  gameBetSimConf: (id: string, data: BetSimulationConfig[]) =>
+    api<APIGamePostBetSimConfResponse>(`games/${id}/bet-sim-conf`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

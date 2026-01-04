@@ -12,7 +12,7 @@ import { Skeleton } from "../Skeleton"
 import { Button } from "../Button"
 
 export const GameExplorer = () => {
-  const { gameId, data: game } = useGameContext()
+  const { gameId, game } = useGameContext()
   const [mode, setMode] = useState(game.modes[0]?.name || "")
   const [filter, setFilter] = useState<Array<{ name: string; value: string }>>([])
 

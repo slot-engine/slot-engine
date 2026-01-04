@@ -10,6 +10,8 @@ import {
   APIGameExploreResponse,
   APIGameExploreBookResponse,
   APIGameForceKeysResponse,
+  APIGameGetBetSimConfResponse,
+  APIGamePostBetSimConfResponse,
 } from "../../types"
 import { Hono } from "hono"
 import {
@@ -26,6 +28,7 @@ import { zValidator } from "@hono/zod-validator"
 import z from "zod"
 import chalk from "chalk"
 import qs from "qs"
+import { count } from "console"
 
 const app = new Hono<{ Variables: Variables }>()
 
@@ -260,5 +263,58 @@ app.get("/:id/explore/:mode/:bookId", async (c) => {
 
   return c.json<APIGameExploreBookResponse>({ book })
 })
+
+app.get("/:id/bet-sim-conf", (c) => {
+  const gameId = c.req.param("id")
+  const game = getGameById(gameId, c)
+  const config = loadOrCreatePanelGameConfig(game)
+
+  if (!game || !config) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  return c.json<APIGameGetBetSimConfResponse>({ configs: config.betSimulations })
+})
+
+app.post(
+  "/:id/bet-sim-conf",
+  zValidator(
+    "json",
+    z
+      .object({
+        id: z.string(),
+        players: z.object({
+          count: z.number().int().min(1),
+          startingBalance: z.number().int().min(1),
+        }),
+        betGroups: z
+          .object({
+            mode: z.string(),
+            betAmount: z.number().min(0.1),
+            spins: z.number().int().min(1),
+          })
+          .array(),
+      })
+      .array(),
+  ),
+  (c) => {
+    const gameId = c.req.param("id")
+    const game = getGameById(gameId, c)
+    const config = loadOrCreatePanelGameConfig(game)
+
+    if (!game || !config) {
+      return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+    }
+
+    const data = c.req.valid("json")
+
+    savePanelGameConfig(game, {
+      ...config,
+      betSimulations: data,
+    })
+
+    return c.json<APIGamePostBetSimConfResponse>({ configs: data })
+  },
+)
 
 export default app

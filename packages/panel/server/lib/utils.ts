@@ -61,6 +61,7 @@ export function loadOrCreatePanelGameConfig(game: SlotGame | undefined) {
       config.simulation?.maxDiskBuffer,
       config.simulation?.simRunsAmount,
       config.forceStop,
+      config.betSimulations,
     ]
 
     isFileBroken = propsToCheck.some((p) => p === undefined)
