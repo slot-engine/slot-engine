@@ -3,8 +3,8 @@
   "simulation": {
     "concurrency": 12,
     "simRunsAmount": {
-      "base": 600000,
-      "bonus": 600000
+      "base": 50000,
+      "bonus": 50000
     },
     "maxPendingSims": 50,
     "maxDiskBuffer": 150
