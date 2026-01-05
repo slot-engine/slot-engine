@@ -269,8 +269,8 @@ const Filters = ({ mode, filters, onValueChange }: FiltersProps) => {
               </SelectContent>
             </Select>
           </div>
-          <Button variant="ghost" isIconButton onClick={() => removeFilter(name)}>
-            <IconTrash className="text-red-600" />
+          <Button variant="ghost-destructive" isIconButton onClick={() => removeFilter(name)}>
+            <IconTrash />
           </Button>
         </div>
       ))}

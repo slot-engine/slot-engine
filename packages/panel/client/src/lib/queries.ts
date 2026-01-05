@@ -43,7 +43,8 @@ export const query = {
   game: (id: string) => api<APIGameResponse>(`games/${id}`),
   gameInfo: (id: string) => api<APIGameInfoResponse>(`games/${id}/info`),
   gameSimConf: (id: string) => api<APIGameGetSimConfResponse>(`games/${id}/sim-conf`),
-  gameBetSimConf: (id: string) => api<APIGameGetBetSimConfResponse>(`games/${id}/bet-sim-conf`),
+  gameBetSimConf: (id: string) =>
+    api<APIGameGetBetSimConfResponse>(`games/${id}/bet-sim-conf`),
   gameSimSummary: (id: string) =>
     api<APIGameSimSummaryResponse>(`games/${id}/sim-summary`),
   gameExplore: (opts: {
@@ -103,6 +104,14 @@ export const mutation = {
   stopSimulation: (gameId: string) =>
     api<void>(`games/${gameId}/sim-stop`, {
       method: "POST",
+    }),
+  startBetSimulation: (gameId: string, opts: BetSimulationConfig) =>
+    api<void>(`games/${gameId}/bet-sim-run`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(opts),
     }),
 }
 

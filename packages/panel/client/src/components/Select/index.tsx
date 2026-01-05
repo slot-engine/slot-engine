@@ -39,9 +39,7 @@ export const SelectTrigger = ({
       )}
       {...props}
     >
-      <Primitive.Value
-        render={(p, s) => <span>{s.value ? s.value : placeholder}</span>}
-      />
+      <Primitive.Value />
       <Primitive.Icon>
         <IconChevronDown />
       </Primitive.Icon>

@@ -1,8 +1,12 @@
 import {
   IconBusinessplan,
   IconInfoCircle,
+  IconLoader2,
+  IconPlayerPlay,
   IconPlus,
+  IconReportAnalytics,
   IconSettings,
+  IconTrash,
   IconUsers,
 } from "@tabler/icons-react"
 import { useGameContext } from "../../context/GameContext"
@@ -10,11 +14,13 @@ import { useEffect, useRef, useState } from "react"
 import { Button } from "../Button"
 import { NumberInput } from "../NumberInput"
 import { mutation, query } from "../../lib/queries"
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, type UseMutationResult } from "@tanstack/react-query"
 import { ErrorDisplay } from "../Error"
 import { Skeleton } from "../Skeleton"
 import type { BetSimulationConfig } from "../../../../server/types"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "../Select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../Tabs"
+import { SimulationLoading } from "../Loading"
 
 const DEFAULT_CONFIG: BetSimulationConfig = {
   id: "",
@@ -110,12 +116,23 @@ export const GameBetSimulation = () => {
     setBetConfigs((prev) => prev.map((c) => (c.id === config.id ? config : c)))
   }
 
+  function removeSimulation(id: string) {
+    isUserChange.current = true
+    setBetConfigs((prev) => prev.filter((c) => c.id !== id))
+  }
+
   return (
     <div className="grid grid-cols-[2fr_1fr] gap-4 items-start">
       <div>
         {betConfigs.length > 0 ? (
           betConfigs.map((config, index) => (
-            <BetSimulation config={config} onValueChange={onConfigChange} key={index} />
+            <BetSimulation
+              config={config}
+              onValueChange={onConfigChange}
+              removeSimulation={removeSimulation}
+              key={index}
+              isSaving={updateConfMutation.isPending}
+            />
           ))
         ) : (
           <div className="p-8 rounded-lg border border-ui-700 bg-ui-900 flex flex-col items-center">
@@ -163,10 +180,17 @@ export const GameBetSimulation = () => {
 interface BetSimulationProps {
   config: BetSimulationConfig
   onValueChange: (config: BetSimulationConfig) => void
+  removeSimulation: (id: string) => void
+  isSaving: boolean
 }
 
-const BetSimulation = ({ config, onValueChange }: BetSimulationProps) => {
-  const { game } = useGameContext()
+const BetSimulation = ({
+  config,
+  onValueChange,
+  removeSimulation,
+  isSaving,
+}: BetSimulationProps) => {
+  const { game, gameId } = useGameContext()
 
   function updatePlayerCount(count: number | null) {
     const newConfig = {
@@ -213,74 +237,206 @@ const BetSimulation = ({ config, onValueChange }: BetSimulationProps) => {
     onValueChange(newConfig)
   }
 
+  function updateGroupBetAmnt(id: string, betAmount: number | null) {
+    const newConfig = {
+      ...config,
+      betGroups: config.betGroups.map((bg) =>
+        bg.id === id ? { ...bg, betAmount: betAmount ?? bg.betAmount } : bg,
+      ),
+    }
+    onValueChange(newConfig)
+  }
+
+  function removeBetGroup(id: string) {
+    const newConfig = {
+      ...config,
+      betGroups: config.betGroups.filter((bg) => bg.id !== id),
+    }
+    onValueChange(newConfig)
+  }
+
+  const betGroupModes = game.modes.map((m) => ({
+    label: `${m.name} (Cost: ${m.cost}x)`,
+    value: m.name,
+  }))
+
+  function getModeRtp(modeName: string) {
+    const mode = game.modes.find((m) => m.name === modeName)
+    return mode ? mode.rtp * 100 : 0
+  }
+
+  function getModeCost(modeName: string) {
+    const mode = game.modes.find((m) => m.name === modeName)
+    return mode ? mode.cost : 1
+  }
+
+  const simulationMutation = useMutation({
+    mutationKey: ["game", "simulation", gameId],
+    mutationFn: async () => {
+      return await mutation.startBetSimulation(gameId, config)
+    },
+  })
+
+  const frmt = new Intl.NumberFormat("en-DE")
+
+  const canNotSimulate =
+    config.betGroups.length === 0 || isSaving || simulationMutation.isPending
+
+  const isBusy = isSaving || simulationMutation.isPending
+
   return (
-    <div className="mb-4 p-6 rounded-lg bg-ui-900 border border-ui-700">
-      <h5 className="flex items-center gap-2">
-        <IconUsers />
-        Virtual Players
-      </h5>
-      <div className="flex gap-4 mt-2 mb-4">
-        <NumberInput
-          label="Player Count"
-          step={1}
-          inputMode="numeric"
-          className="w-full"
-          value={config.players.count}
-          onValueChange={(v) => updatePlayerCount(v)}
-        />
-        <NumberInput
-          label="Starting Balance"
-          step={50}
-          inputMode="numeric"
-          className="w-full"
-          value={config.players.startingBalance}
-          onValueChange={(v) => updateStartingBalance(v)}
-        />
-      </div>
-      <h5 className="flex items-center gap-2">
-        <IconBusinessplan />
-        Bet Groups
-      </h5>
-      <div className="mt-2 mb-4 text-ui-100">
-        Bet groups are played sequentially, either sharing a players balance, or starting
-        fresh.
-      </div>
-      <div className="grid grid-cols-3 gap-4">
-        {config.betGroups.map((bg, index) => (
-          <div key={index} className="p-4 rounded-lg bg-ui-950 flex flex-col gap-2">
-            <Select
-              label="Mode"
-              value={bg.mode}
-              multiple={false}
-              onValueChange={(v) => changeGroupMode(bg.id, v || "")}
-            >
-              <SelectTrigger className="w-full" />
-              <SelectContent>
-                {game.modes.map((m) => (
-                  <SelectItem key={m.name} value={m.name}>
-                    {m.name} (Cost: {m.cost}x)
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <div className="mb-4 rounded-lg overflow-clip bg-ui-900 border border-ui-700">
+      <Tabs>
+        <TabsList>
+          <TabsTrigger value="config" className="rounded-none">
+            <IconSettings />
+            Configuration
+          </TabsTrigger>
+          <TabsTrigger value="results" className="rounded-none">
+            <IconReportAnalytics />
+            Results
+          </TabsTrigger>
+          <Button
+            variant="ghost-destructive"
+            className="rounded-none ml-auto"
+            onClick={() => removeSimulation(config.id)}
+          >
+            <IconTrash />
+            Remove Simulation
+          </Button>
+        </TabsList>
+        <TabsContent value="config" className="p-6">
+          <h5 className="flex items-center gap-2">
+            <IconUsers />
+            Virtual Players
+          </h5>
+          <div className="flex gap-4 mt-2 mb-4">
             <NumberInput
-              label="Number of Bets"
-              step={10}
+              label="Player Count"
+              step={1}
               inputMode="numeric"
               className="w-full"
-              value={bg.spins}
-              onValueChange={(v) => updateGroupSpins(bg.id, v)}
+              value={config.players.count}
+              onValueChange={(v) => updatePlayerCount(v)}
+            />
+            <NumberInput
+              label="Starting Balance"
+              step={50}
+              inputMode="numeric"
+              className="w-full"
+              value={config.players.startingBalance}
+              onValueChange={(v) => updateStartingBalance(v)}
             />
           </div>
-        ))}
-        <div
-          onClick={addBetGroup}
-          className="p-6 rounded-lg border border-dashed border-ui-700 flex flex-col items-center justify-center gap-2 bg-ui-950 hover:bg-ui-900 cursor-pointer"
-        >
-          <IconPlus />
-          Add Bet Group
-        </div>
-      </div>
+          <h5 className="flex items-center gap-2">
+            <IconBusinessplan />
+            Bet Groups
+          </h5>
+          <div className="mt-2 mb-4 text-ui-100">
+            Bet groups are played sequentially, either sharing a players balance, or
+            starting fresh.
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            {config.betGroups.map((bg, index) => (
+              <div key={index} className="p-4 rounded-lg bg-ui-950 flex flex-col gap-2">
+                <Select
+                  label="Mode"
+                  value={bg.mode}
+                  multiple={false}
+                  onValueChange={(v) => changeGroupMode(bg.id, v || "")}
+                  items={betGroupModes}
+                >
+                  <SelectTrigger className="w-full" />
+                  <SelectContent>
+                    {betGroupModes.map((m) => (
+                      <SelectItem key={m.value} value={m.value}>
+                        {m.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <NumberInput
+                  label="Number of Bets"
+                  step={10}
+                  inputMode="numeric"
+                  className="w-full"
+                  value={bg.spins}
+                  onValueChange={(v) => updateGroupSpins(bg.id, v)}
+                />
+                <NumberInput
+                  label="Bet"
+                  step={0.1}
+                  inputMode="decimal"
+                  className="w-full"
+                  value={bg.betAmount}
+                  onValueChange={(v) => updateGroupBetAmnt(bg.id, v)}
+                />
+                <div className="mt-2 flex gap-4 justify-between items-end">
+                  <div className="text-sm">
+                    <div>Estimated Costs:</div>
+                    <div className="flex gap-2">
+                      <span className="font-bold">0% RTP:</span>
+                      <span>
+                        {frmt.format(bg.betAmount * bg.spins * getModeCost(bg.mode))}
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="font-bold">50% RTP:</span>
+                      <span>
+                        {frmt.format(
+                          (bg.betAmount * bg.spins * getModeCost(bg.mode)) / 2,
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="font-bold">{getModeRtp(bg.mode)}% RTP:</span>
+                      <span>
+                        {frmt.format(
+                          (bg.betAmount *
+                            bg.spins *
+                            getModeCost(bg.mode) *
+                            (100 - getModeRtp(bg.mode))) /
+                            100,
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost-destructive"
+                    isIconButton
+                    onClick={() => removeBetGroup(bg.id)}
+                  >
+                    <IconTrash />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            <div
+              onClick={addBetGroup}
+              className="p-6 rounded-lg border border-dashed border-ui-700 flex flex-col items-center justify-center gap-2 bg-ui-950 hover:bg-ui-900 cursor-pointer"
+            >
+              <IconPlus />
+              Add Bet Group
+            </div>
+          </div>
+          <div className="mt-6">
+            {simulationMutation.isPending ? (
+              <div className="h-10 bg-ui-800 rounded-lg flex items-center justify-center">
+                <SimulationLoading isLoading={true} />
+              </div>
+            ) : (
+              <Button
+                disabled={canNotSimulate}
+                onClick={() => simulationMutation.mutate()}
+              >
+                {isBusy ? <IconLoader2 className="animate-spin" /> : <IconPlayerPlay />}
+                Start Simulation
+              </Button>
+            )}
+          </div>
+        </TabsContent>
+        <TabsContent value="results" className="p-6"></TabsContent>
+      </Tabs>
     </div>
   )
 }
