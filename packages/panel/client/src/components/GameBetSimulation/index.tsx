@@ -25,7 +25,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "../Select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../Tabs"
 import { SimulationLoading } from "../Loading"
 import { cn } from "../../lib/cn"
-import { de } from "zod/v4/locales"
 
 const DEFAULT_CONFIG: BetSimulationConfig = {
   id: "",
