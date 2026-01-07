@@ -47,15 +47,15 @@ export const LookupTableRow = ({
     >
       <Accordion.Trigger className="cursor-pointer p-4 w-full flex justify-between items-center gap-8">
         <div className="flex">
-          <div className="w-28 text-left">
+          <div className="w-26 text-left">
             <span className="font-bold">ID:</span>
             <span className="ml-2">{id}</span>
           </div>
-          <div className="w-48 text-left ml-4 pl-4 border-l border-ui-700">
+          <div className="w-64 flex items-center text-left ml-4 pl-4 border-l border-ui-700">
             <span className="font-bold">Criteria:</span>
-            <span className="ml-2">{criteria}</span>
+            <span className="ml-2 truncate">{criteria}</span>
           </div>
-          <div className="w-48 text-left ml-4 pl-4 border-l border-ui-700">
+          <div className="w-40 text-left ml-4 pl-4 border-l border-ui-700">
             <span className="font-bold">Payout:</span>
             <span className="ml-2">{formattedPayout}x</span>
           </div>

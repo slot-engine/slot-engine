@@ -5,15 +5,17 @@ import { cn } from "../../lib/cn"
 interface SelectProps<Value, Multiple extends boolean | undefined>
   extends Primitive.Root.Props<Value, Multiple> {
   label?: string
+  className?: string
 }
 
 export const Select = <Value, Multiple extends boolean | undefined>({
   label,
+  className,
   ...props
 }: SelectProps<Value, Multiple>) => {
   return (
     <Primitive.Root {...props}>
-      <div>
+      <div className={className}>
         {label && <div className="block mb-1">{label}</div>}
         {props.children}
       </div>
@@ -34,13 +36,13 @@ export const SelectTrigger = ({
   return (
     <Primitive.Trigger
       className={cn(
-        "w-full px-4 py-2 border border-ui-700 hover:bg-ui-800 rounded-lg flex items-center justify-between",
+        "w-full px-4 py-2 border border-ui-700 hover:bg-ui-800 rounded-lg flex gap-2 items-center justify-between",
         className,
       )}
       {...props}
     >
-      <Primitive.Value />
-      <Primitive.Icon>
+      <Primitive.Value className="truncate" />
+      <Primitive.Icon className="shrink-0">
         <IconChevronDown />
       </Primitive.Icon>
     </Primitive.Trigger>

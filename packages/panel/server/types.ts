@@ -62,7 +62,6 @@ export interface BetSimulationConfig {
     count: number
     startingBalance: number
   }
-  balanceMode: "shared" | "fresh"
   betGroups: BetSimulationBetGroup[]
 }
 
@@ -71,6 +70,48 @@ export interface BetSimulationBetGroup {
   mode: string
   betAmount: number
   spins: number
+}
+
+export interface BetSimulationResult {
+  id: string
+  bets: BetSimulationStats
+  groups: BetSimulationResultGroup[]
+}
+
+export interface BetSimulationResultGroup {
+  id: string
+  bets: BetSimulationStats
+}
+
+export interface BetSimulationStats {
+  totalBets: number
+  avgBets: number
+  low20PercentileBets: number
+  high20PercentileBets: number
+  medianBets: number
+  totalWager: number
+  numBetsProfit: number
+  numBetsLoss: number
+  totalProfit: number
+  avgProfit: number
+  minProfit: number
+  maxProfit: number
+  low20PercentileProfit: number
+  high20PercentileProfit: number
+  medianProfit: number
+  longestWinStreak: number
+  longestLoseStreak: number
+  highestBalance: number
+  lowestBalance: number
+  avgRtp: number
+  medianRtp: number
+  low20PercentileRtp: number
+  high20PercentileRtp: number
+  highestRtp: number
+  lowestRtp: number
+  hits15: number
+  hits40: number
+  hits90: number
 }
 
 export type APIGameGetSimConfResponse = PanelGameConfig["simulation"]
@@ -101,4 +142,8 @@ export type APIGameGetBetSimConfResponse = {
 
 export type APIGamePostBetSimConfResponse = {
   configs: BetSimulationConfig[]
+}
+
+export type APIGamePostBetSimRunResponse = {
+  results: {}
 }

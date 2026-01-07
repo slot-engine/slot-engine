@@ -50,3 +50,5 @@ export { GeneratedReelSet } from "./src/reel-set/GeneratedReelSet"
 export { StaticReelSet } from "./src/reel-set/StaticReelSet"
 
 export { StandaloneBoard } from "./src/board/StandaloneBoard"
+
+export { RandomNumberGenerator } from "./src/rng"

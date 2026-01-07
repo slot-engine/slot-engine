@@ -25,77 +25,21 @@ import { isMainThread } from "worker_threads"
 
 export class Analysis {
   protected readonly gameConfig: GameConfig
-  protected readonly gameMeta: GameMetadata
+  protected readonly meta: GameMetadata
   protected readonly optimizerConfig: OptimzierGameModeConfig
-  protected filePaths: Record<string, FilePaths>
 
   constructor(optimizer: Optimizer) {
     this.gameConfig = optimizer.getGameConfig()
-    this.gameMeta = optimizer.getGameMeta()
+    this.meta = optimizer.getGameMeta()
     this.optimizerConfig = optimizer.getOptimizerGameModes()
-    this.filePaths = {}
   }
 
   async runAnalysis(gameModes: string[]) {
     if (!isMainThread) return // IMPORTANT: Prevent workers from kicking off (multiple) analysis runs
-
-    this.filePaths = this.getPathsForModes(gameModes)
     this.getNumberStats(gameModes)
     this.getWinRanges(gameModes)
     // TODO: this.getSymbolStats(gameModes)
     console.log("Analysis complete. Files written to build directory.")
-  }
-
-  private getPathsForModes(gameModes: string[]) {
-    const rootPath = this.gameMeta.rootDir
-    const paths: Record<string, FilePaths> = {}
-
-    for (const modeStr of gameModes) {
-      const lut = path.join(
-        rootPath,
-        this.gameMeta.outputDir,
-        `lookUpTable_${modeStr}.csv`,
-      )
-      const lutSegmented = path.join(
-        rootPath,
-        this.gameMeta.outputDir,
-        `lookUpTableSegmented_${modeStr}.csv`,
-      )
-      const lutOptimized = path.join(
-        rootPath,
-        this.gameMeta.outputDir,
-        "publish_files",
-        `lookUpTable_${modeStr}_0.csv`,
-      )
-      const booksJsonl = path.join(
-        rootPath,
-        this.gameMeta.outputDir,
-        `books_${modeStr}.jsonl`,
-      )
-      const booksJsonlCompressed = path.join(
-        rootPath,
-        this.gameMeta.outputDir,
-        "publish_files",
-        `books_${modeStr}.jsonl.zst`,
-      )
-
-      paths[modeStr] = {
-        lut,
-        lutSegmented,
-        lutOptimized,
-        booksJsonl,
-        booksJsonlCompressed,
-      }
-
-      for (const p of Object.values(paths[modeStr])) {
-        assert(
-          fs.existsSync(p),
-          `File "${p}" does not exist. Run optimization to auto-create it.`,
-        )
-      }
-    }
-
-    return paths
   }
 
   private getNumberStats(gameModes: string[]) {
@@ -105,7 +49,7 @@ export class Analysis {
       const mode = this.getGameModeConfig(modeStr)
 
       const lutOptimized = parseLookupTable(
-        fs.readFileSync(this.filePaths[modeStr]!.lutOptimized, "utf-8"),
+        fs.readFileSync(this.meta.paths.lookupTablePublish(modeStr), "utf-8"),
       )
       const totalWeight = getTotalLutWeight(lutOptimized)
       const payoutWeights = getPayoutWeights(lutOptimized)
@@ -128,7 +72,7 @@ export class Analysis {
     }
 
     writeJsonFile(
-      path.join(this.gameMeta.rootDir, this.gameMeta.outputDir, "stats_summary.json"),
+      path.join(this.meta.rootDir, this.meta.outputDir, "stats_summary.json"),
       stats,
     )
   }
@@ -155,6 +99,10 @@ export class Analysis {
       [10000, 14999.99],
       [15000, 19999.99],
       [20000, 24999.99],
+      [25000, 49999.99],
+      [50000, 74999.99],
+      [75000, 99999.99],
+      [100000, Infinity],
     ]
 
     const payoutRanges: Record<
@@ -169,7 +117,7 @@ export class Analysis {
       payoutRanges[modeStr] = { overall: {}, criteria: {} }
 
       const lutSegmented = parseLookupTableSegmented(
-        fs.readFileSync(this.filePaths[modeStr]!.lutSegmented, "utf-8"),
+        fs.readFileSync(this.meta.paths.lookupTableSegmented(modeStr), "utf-8"),
       )
 
       lutSegmented.forEach(([, criteria, bp, fsp]) => {
@@ -234,7 +182,7 @@ export class Analysis {
     }
 
     writeJsonFile(
-      path.join(this.gameMeta.rootDir, this.gameMeta.outputDir, "stats_payouts.json"),
+      path.join(this.meta.rootDir, this.meta.outputDir, "stats_payouts.json"),
       payoutRanges,
     )
   }
@@ -248,14 +196,6 @@ export class Analysis {
 
 export interface AnalysisOpts {
   gameModes: string[]
-}
-
-interface FilePaths {
-  lut: string
-  lutSegmented: string
-  lutOptimized: string
-  booksJsonl: string
-  booksJsonlCompressed: string
 }
 
 interface Statistics {

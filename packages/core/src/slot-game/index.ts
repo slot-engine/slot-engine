@@ -3,7 +3,7 @@ import { createGameConfig, GameConfigOptions } from "../game-config"
 import { Simulation, SimulationConfigOptions, SimulationOptions } from "../simulation"
 import { Analysis, AnalysisOpts } from "../analysis"
 import { OptimizationOpts, Optimizer, OptimizerOpts } from "../optimizer"
-import { isMainThread } from "worker_threads"
+import { isMainThread, workerData } from "worker_threads"
 import { CLI_ARGS } from "../constants"
 
 /**
@@ -100,6 +100,17 @@ export class SlotGame<
       const argv = await argvParser.parse()
 
       if (!argv[CLI_ARGS.RUN]) return
+    }
+
+    // Force simulation if running in a worker thread spawned for simulation
+    // This allows the panel to run simulations even if doSimulation is set to false in the game file
+    if (
+      !isMainThread &&
+      workerData &&
+      typeof workerData === "object" &&
+      "simStart" in workerData
+    ) {
+      opts.doSimulation = true
     }
 
     if (!opts.doSimulation && !opts.doOptimization && !opts.doAnalysis) {

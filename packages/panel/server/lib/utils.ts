@@ -16,6 +16,10 @@ import { PANEL_GAME_CONFIG_FILE } from "./constants"
 import { PanelGameConfig } from "../types"
 import chalk from "chalk"
 
+export function round(value: number, decimals: number) {
+  return Number(Math.round(Number(value + "e" + decimals)) + "e-" + decimals)
+}
+
 export function getGameById(gameId: string, c: Context<{ Variables: Variables }>) {
   const games = c.get("config").games
   return games.find((g) => g.getConfig().id === gameId)
@@ -136,7 +140,7 @@ export async function exploreLookupTable(opts: {
   const offset = parseInt(cursor || "0", 10)
   const meta = game.getMetadata()
 
-  const lutPath = meta.paths.lookupTable(mode)
+  const lutPath = meta.paths.lookupTablePublish(mode)
   const lutSegmentedPath = meta.paths.lookupTableSegmented(mode)
 
   if (!fs.existsSync(lutPath)) return
@@ -184,7 +188,7 @@ async function getByteOffsetFromIndex(indexPath: string, row: number) {
   return Number(buffer.readBigUInt64LE())
 }
 
-async function readLutRows(opts: {
+export async function readLutRows(opts: {
   path: string
   indexPath: string
   offset: number
@@ -287,7 +291,7 @@ async function filterForceRecords(opts: {
   const { game, mode, filter } = opts
 
   if (!filter || Object.keys(filter).length === 0) return []
-  
+
   const forceFile = game.getMetadata().paths.forceRecords(mode)
   if (!fs.existsSync(forceFile)) return []
 

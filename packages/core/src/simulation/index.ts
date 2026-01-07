@@ -911,6 +911,7 @@ export class Simulation {
           })
 
           for await (const line of rl) {
+            if (!line.trim()) continue
             const indexBuffer = Buffer.alloc(8)
             indexBuffer.writeBigUInt64LE(offset)
             if (!lutIndexStream.write(indexBuffer)) {

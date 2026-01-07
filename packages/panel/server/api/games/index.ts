@@ -12,6 +12,7 @@ import {
   APIGameForceKeysResponse,
   APIGameGetBetSimConfResponse,
   APIGamePostBetSimConfResponse,
+  APIGamePostBetSimRunResponse,
 } from "../../types"
 import { Hono } from "hono"
 import {
@@ -29,6 +30,7 @@ import z from "zod"
 import chalk from "chalk"
 import qs from "qs"
 import { count } from "console"
+import { betSimulation } from "../../lib/bet-simulation"
 
 const app = new Hono<{ Variables: Variables }>()
 
@@ -150,11 +152,18 @@ app.post("/:id/sim-run", async (c) => {
   const game = origGame.clone()
 
   game.configureSimulation(config.simulation)
+  game.configureOptimization({
+    gameModes: {},
+  })
   await game.runTasks({
     _internal_ignore_args: true,
     doSimulation: true,
     simulationOpts: {
       panelPort: c.get("config").port,
+    },
+    doAnalysis: true,
+    analysisOpts: {
+      gameModes: Object.keys(config.simulation.simRunsAmount),
     },
   })
 
@@ -284,16 +293,15 @@ app.post(
       .object({
         id: z.string(),
         players: z.object({
-          count: z.number().int().min(1),
-          startingBalance: z.number().int().min(1),
+          count: z.number().int().min(1).max(2000),
+          startingBalance: z.number().int().min(1).max(20_000),
         }),
-        balanceMode: z.enum(["shared", "fresh"]),
         betGroups: z
           .object({
             id: z.string(),
             mode: z.string(),
-            betAmount: z.number().min(0.1),
-            spins: z.number().int().min(1),
+            betAmount: z.number().min(0.1).multipleOf(0.1).max(1000),
+            spins: z.number().int().min(1).max(5000),
           })
           .array(),
       })
@@ -318,5 +326,26 @@ app.post(
     return c.json<APIGamePostBetSimConfResponse>({ configs: data })
   },
 )
+
+app.post("/:id/bet-sim-run", async (c) => {
+  const gameId = c.req.param("id")
+  const game = getGameById(gameId, c)
+  const config = loadOrCreatePanelGameConfig(game)
+
+  if (!game || !config) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  const configId = c.req.query("configId")
+  const simConfig = config.betSimulations.find((conf) => conf.id === configId)
+
+  if (!simConfig) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  const results = await betSimulation(game, simConfig)
+
+  return c.json<APIGamePostBetSimRunResponse>({ results })
+})
 
 export default app

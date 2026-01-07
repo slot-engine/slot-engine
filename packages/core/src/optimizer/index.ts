@@ -9,6 +9,7 @@ import { OptimizationConditions } from "./OptimizationConditions"
 import { OptimizationScaling } from "./OptimizationScaling"
 import { SlotGame } from "../slot-game"
 import { GameConfig, GameMetadata } from "../game-config"
+import { makeLutIndexFromPublishLut } from "../simulation/utils"
 
 export class Optimizer {
   protected readonly gameConfig: GameConfig
@@ -33,6 +34,10 @@ export class Optimizer {
     for (const mode of gameModes) {
       const setupFile = makeSetupFile(this, mode)
       await this.runSingleOptimization()
+      await makeLutIndexFromPublishLut(
+        this.gameMeta.paths.lookupTablePublish(mode),
+        this.gameMeta.paths.lookupTableIndex(mode),
+      )
     }
     console.log("Optimization complete. Files written to build directory.")
   }

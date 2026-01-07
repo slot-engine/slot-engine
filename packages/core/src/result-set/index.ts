@@ -2,9 +2,7 @@ import assert from "assert"
 import { AnyGameModes, AnySymbols, AnyUserData } from "../types"
 import { GameContext } from "../game-context"
 import { Simulation } from "../simulation"
-import { RandomNumberGenerator } from "../service/rng"
-import { copy } from "../../utils"
-import { Wallet } from "../wallet"
+import { RandomNumberGenerator } from "../rng"
 import { SPIN_TYPE } from "../constants"
 
 export class ResultSet<TUserState extends AnyUserData> {

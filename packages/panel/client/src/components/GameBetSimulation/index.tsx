@@ -14,13 +14,14 @@ import { useEffect, useRef, useState } from "react"
 import { Button } from "../Button"
 import { NumberInput } from "../NumberInput"
 import { mutation, query } from "../../lib/queries"
-import { useMutation, useQuery, type UseMutationResult } from "@tanstack/react-query"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import { ErrorDisplay } from "../Error"
 import { Skeleton } from "../Skeleton"
 import type { BetSimulationConfig } from "../../../../server/types"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "../Select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../Tabs"
 import { SimulationLoading } from "../Loading"
+import { Checkbox } from "../Checkbox"
 
 const DEFAULT_CONFIG: BetSimulationConfig = {
   id: "",
@@ -28,7 +29,6 @@ const DEFAULT_CONFIG: BetSimulationConfig = {
     count: 100,
     startingBalance: 1000,
   },
-  balanceMode: "fresh",
   betGroups: [],
 }
 
@@ -271,7 +271,7 @@ const BetSimulation = ({
   }
 
   const simulationMutation = useMutation({
-    mutationKey: ["game", "simulation", gameId],
+    mutationKey: ["game", "bet-simulation", gameId, config.id],
     mutationFn: async () => {
       return await mutation.startBetSimulation(gameId, config)
     },
@@ -310,10 +310,12 @@ const BetSimulation = ({
             <IconUsers />
             Virtual Players
           </h5>
-          <div className="flex gap-4 mt-2 mb-4">
+          <div className="flex gap-4 mt-2 mb-6">
             <NumberInput
               label="Player Count"
               step={1}
+              min={1}
+              max={2000}
               inputMode="numeric"
               className="w-full"
               value={config.players.count}
@@ -322,21 +324,28 @@ const BetSimulation = ({
             <NumberInput
               label="Starting Balance"
               step={50}
+              min={1}
+              max={20_000}
               inputMode="numeric"
               className="w-full"
               value={config.players.startingBalance}
               onValueChange={(v) => updateStartingBalance(v)}
             />
           </div>
-          <h5 className="flex items-center gap-2">
-            <IconBusinessplan />
-            Bet Groups
-          </h5>
-          <div className="mt-2 mb-4 text-ui-100">
-            Bet groups are played sequentially, either sharing a players balance, or
-            starting fresh.
+          <div className="flex items-center gap-4">
+            <h5 className="flex items-center gap-2">
+              <IconBusinessplan />
+              Bet Groups ({config.betGroups.length})
+            </h5>
+            <Button variant="secondary" size="sm" onClick={addBetGroup}>
+              <IconPlus />
+              Add Bet Group
+            </Button>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="mt-2 mb-4 text-ui-100">
+            Bet groups are played sequentially for each player, reflecting a virtual betting session.
+          </div>
+          <div className="grid grid-cols-2 gap-4 max-h-96 pr-2 scrollbar-thin overflow-y-auto">
             {config.betGroups.map((bg, index) => (
               <div key={index} className="p-4 rounded-lg bg-ui-950 flex flex-col gap-2">
                 <Select
@@ -355,25 +364,31 @@ const BetSimulation = ({
                     ))}
                   </SelectContent>
                 </Select>
-                <NumberInput
-                  label="Number of Bets"
-                  step={10}
-                  inputMode="numeric"
-                  className="w-full"
-                  value={bg.spins}
-                  onValueChange={(v) => updateGroupSpins(bg.id, v)}
-                />
-                <NumberInput
-                  label="Bet"
-                  step={0.1}
-                  inputMode="decimal"
-                  className="w-full"
-                  value={bg.betAmount}
-                  onValueChange={(v) => updateGroupBetAmnt(bg.id, v)}
-                />
+                <div className="flex gap-4">
+                  <NumberInput
+                    label="Number of Bets"
+                    step={10}
+                    min={1}
+                    max={5000}
+                    inputMode="numeric"
+                    className="w-full"
+                    value={bg.spins}
+                    onValueChange={(v) => updateGroupSpins(bg.id, v)}
+                  />
+                  <NumberInput
+                    label="Bet"
+                    step={0.1}
+                    min={0.1}
+                    max={1000}
+                    inputMode="decimal"
+                    className="w-full"
+                    value={bg.betAmount}
+                    onValueChange={(v) => updateGroupBetAmnt(bg.id, v)}
+                  />
+                </div>
                 <div className="mt-2 flex gap-4 justify-between items-end">
                   <div className="text-sm">
-                    <div>Estimated Costs:</div>
+                    <div>Estimated Balance Loss:</div>
                     <div className="flex gap-2">
                       <span className="font-bold">0% RTP:</span>
                       <span>
@@ -411,17 +426,10 @@ const BetSimulation = ({
                 </div>
               </div>
             ))}
-            <div
-              onClick={addBetGroup}
-              className="p-6 rounded-lg border border-dashed border-ui-700 flex flex-col items-center justify-center gap-2 bg-ui-950 hover:bg-ui-900 cursor-pointer"
-            >
-              <IconPlus />
-              Add Bet Group
-            </div>
           </div>
           <div className="mt-6">
             {simulationMutation.isPending ? (
-              <div className="h-10 bg-ui-800 rounded-lg flex items-center justify-center">
+              <div className="h-24 bg-ui-800 rounded-lg flex items-center justify-center">
                 <SimulationLoading isLoading={true} />
               </div>
             ) : (

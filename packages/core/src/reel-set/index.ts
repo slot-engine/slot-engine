@@ -1,7 +1,7 @@
 import fs from "fs"
 import path from "path"
 import { GameConfig } from "../game-config"
-import { RandomNumberGenerator } from "../service/rng"
+import { RandomNumberGenerator } from "../rng"
 import { Reels } from "../types"
 
 export class ReelSet {

@@ -14,7 +14,7 @@ export const Button = ({
 }: ButtonProps) => {
   const styles = cva({
     base: [
-      "cursor-pointer flex justify-center items-center gap-2 rounded-lg py-2 disabled:cursor-not-allowed disabled:opacity-50",
+      "cursor-pointer flex justify-center items-center gap-2 rounded-lg disabled:cursor-not-allowed disabled:opacity-50",
       props.className,
     ],
     variants: {
@@ -30,11 +30,15 @@ export const Button = ({
         false: "px-4",
       },
       size: {
-        sm: "",
-        md: "",
+        sm: "py-1 px-2 gap-1",
+        md: "py-2 px-4",
         lg: "",
       },
     },
+    compoundVariants: [
+      { isIconButton: true, size: "sm", className: "p-1" },
+      { isIconButton: true, size: "md", className: "p-2" },
+    ]
   })
 
   return (

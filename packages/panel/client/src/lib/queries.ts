@@ -13,6 +13,7 @@ import {
   type APIGamePostBetSimConfResponse,
   type APIGamePostSimConfResponse,
   type BetSimulationConfig,
+  type APIGamePostBetSimRunResponse,
 } from "../../../server/types"
 import type { SimulationOptions } from "./types"
 
@@ -105,13 +106,13 @@ export const mutation = {
     api<void>(`games/${gameId}/sim-stop`, {
       method: "POST",
     }),
-  startBetSimulation: (gameId: string, opts: BetSimulationConfig) =>
-    api<void>(`games/${gameId}/bet-sim-run`, {
+  startBetSimulation: (gameId: string, config: BetSimulationConfig) =>
+    api<APIGamePostBetSimRunResponse>(`games/${gameId}/bet-sim-run?configId=${config.id}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(opts),
+      body: JSON.stringify(config),
     }),
 }
 

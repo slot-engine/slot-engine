@@ -342,8 +342,8 @@ game.configureOptimization({
 })
 
 game.runTasks({
-  doSimulation: true,
-  doOptimization: false,
+  doSimulation: false,
+  doOptimization: true,
   optimizationOpts: {
     gameModes: ["base", "bonus"],
   },
