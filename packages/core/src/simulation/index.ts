@@ -102,6 +102,7 @@ export class Simulation {
   async runSimulation(opts: SimulationConfigOptions) {
     const debug = opts.debug || false
     this.debug = debug
+    let statusMessage = ""
 
     const gameModesToSimulate = Object.keys(this.simRunsAmount)
     const configuredGameModes = Object.keys(this.gameConfig.gameModes)
@@ -151,8 +152,12 @@ export class Simulation {
         this.wallet = new Wallet()
         this.hasWrittenRecord = false
 
-        console.log(`\nSimulating game mode: ${mode}`)
         const startTime = Date.now()
+        statusMessage = `Simulating mode "${mode}" with ${this.simRunsAmount[mode]} runs.`
+        console.log(statusMessage)
+        if (this.socket && this.panelActive) {
+          this.socket.emit("simulationStatus", statusMessage)
+        }
 
         const runs = this.simRunsAmount[mode] || 0
         if (runs <= 0) continue
@@ -201,9 +206,11 @@ export class Simulation {
         createDirIfNotExists(this.PATHS.optimizationFiles)
         createDirIfNotExists(this.PATHS.publishFiles)
 
-        console.log(
-          `Writing final files for game mode "${mode}". This may take a while...`,
-        )
+        statusMessage = `Writing final files for game mode "${mode}". This may take a while...`
+        console.log(statusMessage)
+        if (this.socket && this.panelActive) {
+          this.socket.emit("simulationStatus", statusMessage)
+        }
 
         // Merge temporary book files into the final sorted file.
         // Also write index file for lookup
@@ -230,12 +237,16 @@ export class Simulation {
               const indexBuffer = Buffer.alloc(8)
               indexBuffer.writeBigUInt64LE(offset)
               if (!bookIndexStream.write(indexBuffer)) {
-                await new Promise<void>((resolve) => bookIndexStream.once("drain", resolve))
+                await new Promise<void>((resolve) =>
+                  bookIndexStream.once("drain", resolve),
+                )
               }
 
               const lineWithNewline = line + "\n"
               if (!finalBookStream.write(lineWithNewline)) {
-                await new Promise<void>((resolve) => finalBookStream.once("drain", resolve))
+                await new Promise<void>((resolve) =>
+                  finalBookStream.once("drain", resolve),
+                )
               }
               offset += BigInt(Buffer.byteLength(lineWithNewline, "utf8"))
             }
@@ -284,11 +295,15 @@ export class Simulation {
         await this.writeRecords(mode)
         await this.writeBooksJson(mode)
         this.writeIndexJson()
-        console.log(`Mode ${mode} done!`)
 
         const endTime = Date.now()
         const prettyTime = new Date(endTime - startTime).toISOString().slice(11, -1)
-        console.log(`Time taken for mode "${mode}": ${prettyTime}`)
+
+        statusMessage = `Mode ${mode} done! Time taken: ${prettyTime}`
+        console.log(statusMessage)
+        if (this.socket && this.panelActive) {
+          this.socket.emit("simulationStatus", statusMessage)
+        }
       }
 
       await this.printSimulationSummary()
@@ -407,6 +422,8 @@ export class Simulation {
     return new Promise((resolve, reject) => {
       const scriptPath = path.join(basePath, TEMP_FILENAME)
 
+      const startTime = Date.now()
+
       const worker = new Worker(scriptPath, {
         workerData: {
           mode,
@@ -458,11 +475,18 @@ export class Simulation {
                   completedSimulations % 1000 === 0 ||
                   completedSimulations === totalSims
                 ) {
+                  // Time remaining in seconds
+                  const elapsedTime = Date.now() - startTime
+                  const simsLeft = totalSims - completedSimulations
+                  const timePerSim = elapsedTime / completedSimulations
+                  const timeRemaining = Math.round((simsLeft * timePerSim) / 1000)
+
                   this.socket.emit("simulationProgress", {
                     mode,
                     percentage: (completedSimulations / totalSims) * 100,
                     current: completedSimulations,
                     total: totalSims,
+                    timeRemaining,
                   })
 
                   this.socket.emit(
@@ -894,9 +918,11 @@ export class Simulation {
       const lutStream = fs.createWriteStream(outPath, {
         highWaterMark: this.streamHighWaterMark,
       })
-      const lutIndexStream = lutIndexPath ? fs.createWriteStream(lutIndexPath, {
-        highWaterMark: this.streamHighWaterMark,
-      }) : undefined
+      const lutIndexStream = lutIndexPath
+        ? fs.createWriteStream(lutIndexPath, {
+            highWaterMark: this.streamHighWaterMark,
+          })
+        : undefined
       let offset = 0n
 
       for (let i = 0; i < chunks.length; i++) {
@@ -919,7 +945,7 @@ export class Simulation {
             }
 
             const lineWithNewline = line + "\n"
-            if(!lutStream.write(lineWithNewline)) {
+            if (!lutStream.write(lineWithNewline)) {
               await new Promise<void>((resolve) => lutStream.once("drain", resolve))
             }
             offset += BigInt(Buffer.byteLength(lineWithNewline, "utf8"))

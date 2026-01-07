@@ -59,6 +59,11 @@ export const GameSimulation = () => {
         }, {}),
       })
     },
+    onMutate: () => {
+      setModesToSimulate((prev) =>
+        prev.map((m) => ({ ...m, isSimulating: false, progress: 0 })),
+      )
+    },
   })
 
   const stopMutation = useMutation({
@@ -68,8 +73,10 @@ export const GameSimulation = () => {
     },
   })
 
+  const [status, setStatus] = useState("Working on your stuff")
+
   useEffect(() => {
-    if (!data) return
+    if (!data || simulationMutation.isPending) return
 
     if (lastDataTimestamp.current === dataUpdatedAt) return
 
@@ -79,6 +86,7 @@ export const GameSimulation = () => {
         amount,
         isSimulating: false,
         progress: 0,
+        timeRemaining: 0,
       }),
     )
 
@@ -89,11 +97,11 @@ export const GameSimulation = () => {
       maxDiskBuffer: data.simulation.maxDiskBuffer,
     })
     lastDataTimestamp.current = dataUpdatedAt
-  }, [data, dataUpdatedAt])
+  }, [data, dataUpdatedAt, simulationMutation.isPending])
 
   useEffect(() => {
     if (!isUserChange.current) return
-    if (!data) return
+    if (!data || simulationMutation.isPending) return
 
     const simRunsAmount: Record<string, number> = {}
     modesToSimulate.forEach((m) => {
@@ -109,7 +117,7 @@ export const GameSimulation = () => {
 
     updateConfMutation.mutate(newData)
     isUserChange.current = false
-  }, [modesToSimulate, simSettings, data])
+  }, [modesToSimulate, simSettings, data, simulationMutation.isPending])
 
   useEffect(() => {
     lastDataTimestamp.current = null
@@ -121,29 +129,41 @@ export const GameSimulation = () => {
       setModesToSimulate((prev) =>
         prev.map((m) =>
           m.name === data.mode
-            ? { ...m, isSimulating: true, progress: data.percentage }
+            ? {
+                ...m,
+                isSimulating: true,
+                progress: data.percentage,
+                timeRemaining: data.timeRemaining,
+              }
             : m,
         ),
       )
     })
 
+    socket.on("simulationStatus", (message) => {
+      setStatus(message)
+    })
+
     return () => {
       socket.off("simulationProgress")
+      socket.off("simulationStatus")
     }
   }, [])
 
   if (error) return <ErrorDisplay error={error} />
 
   if (!data || isFetching) {
-    return <div className="grid grid-cols-[2fr_1fr] gap-4 items-start">
-      <div>
-        <Skeleton className="h-32" />
-        <Skeleton className="h-32 mt-4" />
-        <Skeleton className="h-32 mt-4" />
-        <Skeleton className="h-32 mt-4" />
+    return (
+      <div className="grid grid-cols-[2fr_1fr] gap-4 items-start">
+        <div>
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32 mt-4" />
+          <Skeleton className="h-32 mt-4" />
+          <Skeleton className="h-32 mt-4" />
+        </div>
+        <Skeleton className="h-140" />
       </div>
-      <Skeleton className="h-140" />
-    </div>
+    )
   }
 
   const allModes = data.modes.map((m) => m.name)
@@ -155,7 +175,7 @@ export const GameSimulation = () => {
     isUserChange.current = true
     setModesToSimulate((prev) => [
       ...prev,
-      { name, amount: 10_000, isSimulating: false, progress: 0 },
+      { name, amount: 10_000, isSimulating: false, progress: 0, timeRemaining: 0 },
     ])
   }
 
@@ -166,6 +186,7 @@ export const GameSimulation = () => {
       amount: 10_000,
       isSimulating: false,
       progress: 0,
+      timeRemaining: 0,
     }))
     setModesToSimulate(newModes)
   }
@@ -275,6 +296,15 @@ export const GameSimulation = () => {
                 style={{ clipPath: `inset(0 ${100 - mode.progress}% 0 0)` }}
               />
             </div>
+            {mode.isSimulating && (
+              <div className="absolute bottom-2 right-2 text-xs text-ui-500 flex gap-2 items-center">
+                <span>
+                  {new Date(mode.timeRemaining * 1000).toISOString().slice(11, 19)}
+                </span>
+                <span>-</span>
+                <span>{mode.progress.toFixed(2)}%</span>
+              </div>
+            )}
           </div>
         ))}
         {modesToSimulate.length > 0 && availableModes.length > 0 && (
@@ -335,8 +365,9 @@ export const GameSimulation = () => {
           />
           <div className="mt-6">
             {simulationMutation.isPending ? (
-              <div className="h-22 bg-ui-800 rounded-lg flex items-center justify-center">
+              <div className="h-22 bg-ui-800 rounded-lg flex flex-col gap-2 items-center justify-center">
                 <SimulationLoading isLoading={true} />
+                {status && <div className="text-xs">{status}</div>}
               </div>
             ) : (
               <Button
@@ -381,4 +412,5 @@ interface GameModeSimulation {
   amount: number
   isSimulating: boolean
   progress: number
+  timeRemaining: number
 }

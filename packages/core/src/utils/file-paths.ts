@@ -16,6 +16,8 @@ export type PermanentFilePaths = {
   publishFiles: string
   optimizationFiles: string
   simulationSummary: string
+  statsPayouts: string
+  statsSummary: string
 }
 
 export type TemporaryFilePaths = {
@@ -48,6 +50,8 @@ export function createPermanentFilePaths(basePath: string): PermanentFilePaths {
     optimizationFiles: path.join(basePath, "optimization_files"),
     publishFiles: path.join(basePath, "publish_files"),
     simulationSummary: path.join(basePath, "simulation_summary.json"),
+    statsPayouts: path.join(basePath, "stats_payouts.json"),
+    statsSummary: path.join(basePath, "stats_summary.json"),
   }
 }
 

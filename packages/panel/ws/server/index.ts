@@ -26,6 +26,10 @@ export function startWsServer(httpServer: HTTPServer, panelConfig: PanelConfig) 
       io.emit("simulationSummary", data)
     }).setMaxListeners(MAX_LISTENERS)
 
+    socket.on("simulationStatus", (message) => {
+      io.emit("simulationStatus", message)
+    }).setMaxListeners(MAX_LISTENERS)
+
     socket.on("simulationShouldStop", (gameId, response) => {
       const game = games.find((g) => g.getConfig().id === gameId)
       if (!game) {

@@ -72,14 +72,9 @@ export class SlotGame<
   /**
    * Runs the analysis based on the configured settings.
    */
-  private async runAnalysis(opts: AnalysisOpts) {
-    if (!this.optimizer) {
-      throw new Error(
-        "Optimization must be configured to run analysis. Do so by calling configureOptimization() first.",
-      )
-    }
-    this.analyzer = new Analysis(this.optimizer)
-    await this.analyzer.runAnalysis(opts.gameModes)
+  private runAnalysis(opts: AnalysisOpts) {
+    this.analyzer = new Analysis(this)
+    this.analyzer.runAnalysis(opts.gameModes)
   }
 
   /**
@@ -121,12 +116,17 @@ export class SlotGame<
       await this.runSimulation(opts.simulationOpts || {})
     }
 
-    if (opts.doOptimization) {
-      await this.runOptimization(opts.optimizationOpts || { gameModes: [] })
+    if (opts.doAnalysis) {
+      this.runAnalysis(opts.analysisOpts || { gameModes: [] })
     }
 
-    if (opts.doAnalysis) {
-      await this.runAnalysis(opts.analysisOpts || { gameModes: [] })
+    if (opts.doOptimization) {
+      await this.runOptimization(opts.optimizationOpts || { gameModes: [] })
+
+      // Run analysis again because LUTs have changed
+      if (opts.doAnalysis) {
+        this.runAnalysis(opts.analysisOpts || { gameModes: [] })
+      }
     }
 
     if (isMainThread) console.log("Done!")

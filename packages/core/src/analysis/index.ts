@@ -1,7 +1,4 @@
 import fs from "fs"
-import path from "path"
-import { GameConfig, GameMetadata } from "../game-config"
-import { Optimizer, OptimzierGameModeConfig } from "../optimizer"
 import assert from "assert"
 import {
   getAvgWin,
@@ -22,16 +19,13 @@ import {
 } from "./utils"
 import { writeJsonFile } from "../../utils"
 import { isMainThread } from "worker_threads"
+import { SlotGame } from "../slot-game"
 
 export class Analysis {
-  protected readonly gameConfig: GameConfig
-  protected readonly meta: GameMetadata
-  protected readonly optimizerConfig: OptimzierGameModeConfig
+  protected readonly game: SlotGame
 
-  constructor(optimizer: Optimizer) {
-    this.gameConfig = optimizer.getGameConfig()
-    this.meta = optimizer.getGameMeta()
-    this.optimizerConfig = optimizer.getOptimizerGameModes()
+  constructor(game: SlotGame<any, any, any>) {
+    this.game = game
   }
 
   async runAnalysis(gameModes: string[]) {
@@ -43,13 +37,14 @@ export class Analysis {
   }
 
   private getNumberStats(gameModes: string[]) {
+    const meta = this.game.getMetadata()
     const stats: Statistics[] = []
 
     for (const modeStr of gameModes) {
       const mode = this.getGameModeConfig(modeStr)
 
       const lutOptimized = parseLookupTable(
-        fs.readFileSync(this.meta.paths.lookupTablePublish(modeStr), "utf-8"),
+        fs.readFileSync(meta.paths.lookupTablePublish(modeStr), "utf-8"),
       )
       const totalWeight = getTotalLutWeight(lutOptimized)
       const payoutWeights = getPayoutWeights(lutOptimized)
@@ -71,10 +66,7 @@ export class Analysis {
       })
     }
 
-    writeJsonFile(
-      path.join(this.meta.rootDir, this.meta.outputDir, "stats_summary.json"),
-      stats,
-    )
+    writeJsonFile(meta.paths.statsSummary, stats)
   }
 
   private getWinRanges(gameModes: string[]) {
@@ -113,11 +105,13 @@ export class Analysis {
       }
     > = {}
 
+    const meta = this.game.getMetadata()
+
     for (const modeStr of gameModes) {
       payoutRanges[modeStr] = { overall: {}, criteria: {} }
 
       const lutSegmented = parseLookupTableSegmented(
-        fs.readFileSync(this.meta.paths.lookupTableSegmented(modeStr), "utf-8"),
+        fs.readFileSync(meta.paths.lookupTableSegmented(modeStr), "utf-8"),
       )
 
       lutSegmented.forEach(([, criteria, bp, fsp]) => {
@@ -177,18 +171,15 @@ export class Analysis {
 
       payoutRanges[modeStr] = {
         overall: orderedOverall,
-        criteria: {},
+        criteria: orderedCriteria,
       }
     }
 
-    writeJsonFile(
-      path.join(this.meta.rootDir, this.meta.outputDir, "stats_payouts.json"),
-      payoutRanges,
-    )
+    writeJsonFile(meta.paths.statsPayouts, payoutRanges)
   }
 
   private getGameModeConfig(mode: string) {
-    const config = this.gameConfig.gameModes[mode]
+    const config = this.game.getConfig().gameModes[mode]
     assert(config, `Game mode "${mode}" not found in game config`)
     return config
   }

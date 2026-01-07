@@ -29,7 +29,7 @@ export const LookupTableRow = ({
   const [id, weight, payout] = lut
   const [, criteria, bsWins, fsWins] = lutSegmented
 
-  const formatter = new Intl.NumberFormat("en-US", { style: "decimal" })
+  const formatter = new Intl.NumberFormat("en-DE", { style: "decimal" })
   const formattedPayout = formatter.format(payout / 100)
   const formattedBsWins = formatter.format(bsWins)
   const formattedFsWins = formatter.format(fsWins)
