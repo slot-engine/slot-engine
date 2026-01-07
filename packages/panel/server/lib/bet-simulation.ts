@@ -32,8 +32,10 @@ const createDefaultResults = (): BetSimulationStats => ({
   low20PercentileProfit: 0,
   high20PercentileProfit: 0,
   medianProfit: 0,
+  payoutStdDev: 0,
   longestWinStreak: 0,
   longestLoseStreak: 0,
+  longest0Streak: 0,
   highestBalance: 0,
   lowestBalance: 0,
   avgRtp: 0,
@@ -45,6 +47,9 @@ const createDefaultResults = (): BetSimulationStats => ({
   hits15: 0,
   hits40: 0,
   hits90: 0,
+  visualization: {
+    criteriaPerGroup: {},
+  },
 })
 
 export async function betSimulation(game: SlotGame, config: BetSimulationConfig) {
@@ -58,8 +63,14 @@ export async function betSimulation(game: SlotGame, config: BetSimulationConfig)
     (_, i) => new VirtualPlayer(i, config.players.startingBalance),
   )
 
+  const criteriaPerGroup: Record<string, Record<string, number>> = {}
+
   for (const group of config.betGroups) {
     players.forEach((p) => p.resetForGroup())
+
+    if (!criteriaPerGroup[group.id]) {
+      criteriaPerGroup[group.id] = {}
+    }
 
     const meta = game.getMetadata()
     const mode = game.getConfig().gameModes[group.mode]
@@ -112,8 +123,15 @@ export async function betSimulation(game: SlotGame, config: BetSimulationConfig)
 
         const [_, __, pay] = lutEntry
         const [___, criteria] = lutSegEntry
-        const payout = pay / 100
-        const returnMultiplier = payout / totalCost
+        const payout = round((pay / 100) * group.betAmount, 4)
+        const returnMultiplier = totalCost > 0 ? round(payout / totalCost, 4) : 0
+
+        if (criteriaPerGroup[group.id]![criteria]) {
+          criteriaPerGroup[group.id]![criteria] =
+            criteriaPerGroup[group.id]![criteria]! + 1
+        } else {
+          criteriaPerGroup[group.id]![criteria] = 1
+        }
 
         player.recordBet({
           criteria,
@@ -125,10 +143,14 @@ export async function betSimulation(game: SlotGame, config: BetSimulationConfig)
     }
   }
 
-  return getBetStats(players)
+  return getBetStats({ players, criteriaPerGroup })
 }
 
-function getBetStats(players: VirtualPlayer[]): BetSimulationStats {
+function getBetStats(opts: {
+  players: VirtualPlayer[]
+  criteriaPerGroup: Record<string, Record<string, number>>
+}): BetSimulationStats {
+  const { players, criteriaPerGroup } = opts
   if (players.length === 0) return createDefaultResults()
 
   const profits = players.map((p) => p.profit).sort((a, b) => a - b)
@@ -154,8 +176,29 @@ function getBetStats(players: VirtualPlayer[]): BetSimulationStats {
     }
   })
 
+  let longest0Streak = 0
+  players.forEach((p) => {
+    if (p.longest0Streak > longest0Streak) {
+      longest0Streak = p.longest0Streak
+    }
+  })
+
   const totalProfit = profits.reduce((sum, p) => sum + p, 0)
   const rtpSum = playerRtps.reduce((sum, rtp) => sum + rtp, 0)
+
+  const allReturns: number[] = []
+  for (const p of players) {
+    for (const h of p.history) {
+      allReturns.push(h.returnMultiplier)
+    }
+  }
+
+  const payoutStdDev = (() => {
+    const mean = allReturns.reduce((sum, r) => sum + r, 0) / allReturns.length
+    const variance =
+      allReturns.reduce((sum, r) => sum + (r - mean) ** 2, 0) / allReturns.length
+    return round(Math.sqrt(variance), 4)
+  })()
 
   return {
     totalBets,
@@ -176,8 +219,10 @@ function getBetStats(players: VirtualPlayer[]): BetSimulationStats {
     low20PercentileProfit: percentile(profits, 0.2),
     high20PercentileProfit: percentile(profits, 0.8),
     medianProfit: percentile(profits, 0.5),
+    payoutStdDev,
     longestWinStreak,
     longestLoseStreak,
+    longest0Streak,
     highestBalance: balances.at(-1)!,
     lowestBalance: balances[0]!,
     avgRtp: playerRtps.length > 0 ? round(rtpSum / playerRtps.length, 4) : 0,
@@ -189,6 +234,9 @@ function getBetStats(players: VirtualPlayer[]): BetSimulationStats {
     hits15: players.reduce((acc, curr) => acc + curr.hits15, 0),
     hits40: players.reduce((acc, curr) => acc + curr.hits40, 0),
     hits90: players.reduce((acc, curr) => acc + curr.hits90, 0),
+    visualization: {
+      criteriaPerGroup,
+    },
   }
 }
 
@@ -206,14 +254,23 @@ class VirtualPlayer {
 
   private currentWinStreak = 0
   private currentLoseStreak = 0
+  private current0Streak = 0
   longestWinStreak = 0
   longestLoseStreak = 0
+  longest0Streak = 0
 
   hits15 = 0 // 15x - 40x
   hits40 = 0 // 40x - 90x
   hits90 = 0 // 90x+
 
   criteriaHit: Record<string, number> = {}
+
+  history: Array<{
+    wager: number
+    payout: number
+    balance: number
+    returnMultiplier: number
+  }> = []
 
   constructor(id: number, startingBalance: number) {
     this.id = id
@@ -249,12 +306,18 @@ class VirtualPlayer {
       this.betsWon++
       this.currentWinStreak++
       this.currentLoseStreak = 0
+      this.current0Streak = 0
       this.longestWinStreak = Math.max(this.longestWinStreak, this.currentWinStreak)
     } else {
       this.betsLost++
       this.currentLoseStreak++
       this.currentWinStreak = 0
       this.longestLoseStreak = Math.max(this.longestLoseStreak, this.currentLoseStreak)
+
+      if (payout === 0) {
+        this.current0Streak++
+        this.longest0Streak = Math.max(this.longest0Streak, this.current0Streak)
+      }
     }
 
     if (returnMultiplier >= 90) {
@@ -264,28 +327,19 @@ class VirtualPlayer {
     } else if (returnMultiplier >= 15) {
       this.hits15++
     }
-  }
 
-  snapshot(): PlayerSnapshot {
-    return {
-      playerId: this.id,
-      betsPlaced: this.betsPlaced,
-      betsWon: this.betsWon,
-      betsLost: this.betsLost,
-      profit: this.profit,
-      wager: this.wager,
+    this.history.push({
+      wager,
+      payout,
       balance: this.balance,
-      longestWinStreak: this.longestWinStreak,
-      longestLoseStreak: this.longestLoseStreak,
-      hits15: this.hits15,
-      hits40: this.hits40,
-      hits90: this.hits90,
-    }
+      returnMultiplier,
+    })
   }
 
   resetForGroup() {
     this.currentWinStreak = 0
     this.currentLoseStreak = 0
+    this.current0Streak = 0
   }
 }
 
@@ -318,19 +372,4 @@ class LutSelector {
     }
     return low
   }
-}
-
-interface PlayerSnapshot {
-  playerId: number
-  betsPlaced: number
-  betsWon: number
-  betsLost: number
-  profit: number
-  wager: number
-  balance: number
-  longestWinStreak: number
-  longestLoseStreak: number
-  hits15: number
-  hits40: number
-  hits90: number
 }

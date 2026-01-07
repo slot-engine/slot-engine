@@ -2,9 +2,12 @@ import {
   IconBusinessplan,
   IconInfoCircle,
   IconLoader2,
+  IconMoodPuzzled,
   IconPlayerPlay,
   IconPlus,
+  IconReport,
   IconReportAnalytics,
+  IconReportMoney,
   IconSettings,
   IconTrash,
   IconUsers,
@@ -17,11 +20,12 @@ import { mutation, query } from "../../lib/queries"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { ErrorDisplay } from "../Error"
 import { Skeleton } from "../Skeleton"
-import type { BetSimulationConfig } from "../../../../server/types"
+import type { BetSimulationConfig, BetSimulationStats } from "../../../../server/types"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "../Select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../Tabs"
 import { SimulationLoading } from "../Loading"
-import { Checkbox } from "../Checkbox"
+import { cn } from "../../lib/cn"
+import { de } from "zod/v4/locales"
 
 const DEFAULT_CONFIG: BetSimulationConfig = {
   id: "",
@@ -35,13 +39,13 @@ const DEFAULT_CONFIG: BetSimulationConfig = {
 function makeDefaultConfig(): BetSimulationConfig {
   return {
     ...DEFAULT_CONFIG,
-    id: crypto.randomUUID(),
+    id: crypto.randomUUID().split("-")[0],
   }
 }
 
 function makeDefaultBetGroup(mode: string) {
   return {
-    id: crypto.randomUUID(),
+    id: crypto.randomUUID().split("-")[0],
     mode,
     betAmount: 1,
     spins: 500,
@@ -192,6 +196,8 @@ const BetSimulation = ({
 }: BetSimulationProps) => {
   const { game, gameId } = useGameContext()
 
+  const [tab, setTab] = useState("config")
+
   function updatePlayerCount(count: number | null) {
     const newConfig = {
       ...config,
@@ -270,10 +276,16 @@ const BetSimulation = ({
     return mode ? mode.cost : 1
   }
 
+  const [results, setResults] = useState<BetSimulationStats | null>(null)
+
   const simulationMutation = useMutation({
     mutationKey: ["game", "bet-simulation", gameId, config.id],
     mutationFn: async () => {
       return await mutation.startBetSimulation(gameId, config)
+    },
+    onSuccess(data, _, __, context) {
+      setTab("results")
+      setResults(data.results)
     },
   })
 
@@ -286,7 +298,7 @@ const BetSimulation = ({
 
   return (
     <div className="mb-4 rounded-lg overflow-clip bg-ui-900 border border-ui-700">
-      <Tabs>
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="config" className="rounded-none">
             <IconSettings />
@@ -296,16 +308,33 @@ const BetSimulation = ({
             <IconReportAnalytics />
             Results
           </TabsTrigger>
-          <Button
-            variant="ghost-destructive"
-            className="rounded-none ml-auto"
-            onClick={() => removeSimulation(config.id)}
-          >
-            <IconTrash />
-            Remove Simulation
-          </Button>
+          <div className="ml-auto flex items-center">
+            <Button
+              variant="ghost"
+              className="rounded-none"
+              disabled={canNotSimulate}
+              onClick={() => simulationMutation.mutate()}
+            >
+              {isBusy ? <IconLoader2 className="animate-spin" /> : <IconPlayerPlay />}
+              Start Simulation
+            </Button>
+            <Button
+              variant="ghost-destructive"
+              className="rounded-none"
+              onClick={() => removeSimulation(config.id)}
+            >
+              <IconTrash />
+              Remove Simulation
+            </Button>
+          </div>
         </TabsList>
-        <TabsContent value="config" className="p-6">
+        <TabsContent value="config" className="p-6 relative">
+          {simulationMutation.isPending && (
+            <div className="absolute z-1 w-full h-full top-0 left-0 bg-ui-800/75 backdrop-blur-sm flex items-center justify-center">
+              <SimulationLoading isLoading={true} />
+            </div>
+          )}
+
           <h5 className="flex items-center gap-2">
             <IconUsers />
             Virtual Players
@@ -343,11 +372,16 @@ const BetSimulation = ({
             </Button>
           </div>
           <div className="mt-2 mb-4 text-ui-100">
-            Bet groups are played sequentially for each player, reflecting a virtual betting session.
+            Bet groups are played sequentially for each player, reflecting a virtual
+            betting session.
           </div>
           <div className="grid grid-cols-2 gap-4 max-h-96 pr-2 scrollbar-thin overflow-y-auto">
             {config.betGroups.map((bg, index) => (
-              <div key={index} className="p-4 rounded-lg bg-ui-950 flex flex-col gap-2">
+              <div
+                key={index}
+                className="relative p-4 rounded-lg bg-ui-950 flex flex-col gap-2"
+              >
+                <div className="text-xs text-ui-500 absolute top-2 right-2">{bg.id}</div>
                 <Select
                   label="Mode"
                   value={bg.mode}
@@ -427,24 +461,201 @@ const BetSimulation = ({
               </div>
             ))}
           </div>
-          <div className="mt-6">
-            {simulationMutation.isPending ? (
-              <div className="h-24 bg-ui-800 rounded-lg flex items-center justify-center">
-                <SimulationLoading isLoading={true} />
-              </div>
-            ) : (
-              <Button
-                disabled={canNotSimulate}
-                onClick={() => simulationMutation.mutate()}
-              >
-                {isBusy ? <IconLoader2 className="animate-spin" /> : <IconPlayerPlay />}
-                Start Simulation
-              </Button>
-            )}
-          </div>
         </TabsContent>
-        <TabsContent value="results" className="p-6"></TabsContent>
+        <TabsContent value="results" className="relative p-6">
+          {simulationMutation.isPending && (
+            <div className="absolute z-1 w-full h-full top-0 left-0 bg-ui-800/75 backdrop-blur-sm flex items-center justify-center">
+              <SimulationLoading isLoading={true} />
+            </div>
+          )}
+
+          {!results && (
+            <div className="flex flex-col justify-center items-center">
+              <IconMoodPuzzled size={64} stroke={1} />
+              <h5>No Results available</h5>
+              <div className="text-ui-100">Start the simulation to see results</div>
+            </div>
+          )}
+          {results && (
+            <div className="max-h-124 overflow-y-auto pr-2">
+              <h5 className="flex items-center gap-2 mb-4">
+                <IconReportAnalytics />
+                Bet Results
+              </h5>
+              <div className="grid grid-cols-3 gap-2">
+                <StatsBox label="Total Bets" value={results.totalBets} />
+                <StatsBox label="Average Bets" value={results.avgBets} />
+                <StatsBox label="Median Bets" value={results.medianBets} />
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <StatsBox label="P20 Bets" value={results.low20PercentileBets} />
+                <StatsBox label="P80 Bets" value={results.high20PercentileBets} />
+              </div>
+
+              <h5 className="flex items-center gap-2 mt-6 mb-4">
+                <IconReportMoney />
+                Profit Results
+              </h5>
+              <div className="grid grid-cols-2 gap-2">
+                <StatsBox label="Total Wager" value={results.totalWager} />
+                <StatsBox
+                  label="Total Profit"
+                  value={results.totalProfit}
+                  description="Should be negative. This (positive) amount would go to the casino"
+                  shouldWarn={(v) => [
+                    v === 0 || v === null,
+                    "An error occurred, try again",
+                  ]}
+                />
+                <StatsBox label="Num Bets Profit" value={results.numBetsProfit} />
+                <StatsBox label="Num Bets Loss" value={results.numBetsLoss} />
+              </div>
+              <div className="grid grid-cols-4 gap-2 mt-2">
+                <StatsBox label="Average Profit" value={results.avgProfit} />
+                <StatsBox label="Median Profit" value={results.medianProfit} />
+                <StatsBox
+                  label="Min Profit"
+                  value={results.minProfit}
+                  description="Of player at end of simulations"
+                />
+                <StatsBox
+                  label="Max Profit"
+                  value={results.maxProfit}
+                  description="Of player at end of simulations"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <StatsBox label="P20 Profit" value={results.low20PercentileProfit} />
+                <StatsBox label="P80 Profit" value={results.high20PercentileProfit} />
+                <StatsBox
+                  label="Standard Deviation"
+                  value={results.payoutStdDev}
+                  description="This value might vary strongly. It's best to run multiple simulations to get a better idea of this value"
+                />
+              </div>
+
+              <h5 className="flex items-center gap-2 mt-6 mb-4">
+                <IconReportMoney />
+                Miscellaneous
+              </h5>
+              <div className="grid grid-cols-3 gap-2">
+                <StatsBox label="Longest Win Streak" value={results.longestWinStreak} />
+                <StatsBox
+                  label="Longest Lose Streak"
+                  value={results.longestLoseStreak}
+                  shouldWarn={(v) => [v >= 50, "Value is quite high"]}
+                />
+                <StatsBox
+                  label="Longest 0-Win Streak"
+                  value={results.longest0Streak}
+                  shouldWarn={(v) => [v >= 20, "Value is quite high"]}
+                />
+                <StatsBox
+                  label="Nice Wins"
+                  value={results.hits15}
+                  description=">= 15x, < 40x"
+                />
+                <StatsBox
+                  label="Mega Wins"
+                  value={results.hits40}
+                  description=">= 40x, < 90x"
+                />
+                <StatsBox
+                  label="Sensational Wins"
+                  value={results.hits90}
+                  description=">= 90x"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <StatsBox
+                  label="Highest Balance"
+                  value={results.highestBalance}
+                  description="Of player at end of simulations"
+                />
+                <StatsBox
+                  label="Lowest Balance"
+                  value={results.lowestBalance}
+                  description="Of player at end of simulations"
+                />
+              </div>
+
+              <h5 className="flex items-center gap-2 mt-6 mb-4">
+                <IconReport />
+                RTP Results
+              </h5>
+              <div className="grid grid-cols-2 gap-2">
+                <StatsBox
+                  label="Average RTP"
+                  value={results.avgRtp}
+                  description="Might be inaccurate for smaller simulations"
+                />
+                <StatsBox
+                  label="Median RTP"
+                  value={results.medianRtp}
+                  description="Might be inaccurate for smaller simulations"
+                />
+                <StatsBox label="Highest RTP" value={results.highestRtp} />
+                <StatsBox label="Lowest RTP" value={results.lowestRtp} />
+              </div>
+
+              <h5 className="flex items-center gap-2 mt-6 mb-4">
+                <IconReport />
+                ResultSet Criteria
+              </h5>
+              <div>
+                {Object.entries(results.visualization.criteriaPerGroup).map(
+                  ([groupId, criteria]) => (
+                    <div key={groupId} className="mt-4">
+                      <h6 className="font-bold mb-2">Group {groupId}</h6>
+                      <div className="grid grid-cols-4 gap-2">
+                        {Object.entries(criteria).map(([crit, count]) => (
+                          <StatsBox key={crit} label={crit} value={count} />
+                        ))}
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
+    </div>
+  )
+}
+
+interface StatsBoxProps {
+  label: string
+  value: number
+  description?: string
+  info?: string
+  shouldWarn?: (v: number) => [boolean, string?]
+}
+
+const StatsBox = ({ label, value, description, info, shouldWarn }: StatsBoxProps) => {
+  const frmt = new Intl.NumberFormat("en-DE")
+
+  const isWarning = shouldWarn && shouldWarn(value)[0]
+
+  return (
+    <div
+      className={cn(
+        "px-4 py-3 rounded-r-lg bg-ui-950 border-l-4 border-ui-500",
+        value < 0 && "border-red-500 bg-red-950",
+        isWarning && "border-orange-500 bg-orange-950",
+      )}
+    >
+      <div>{label}</div>
+      {description && (
+        <div className="text-xs mt-1 mb-1 leading-4 text-ui-100">{description}</div>
+      )}
+      <div className="font-bold text-2xl">{frmt.format(value)}</div>
+      {info && <div className="text-xs mt-1 leading-4 text-ui-500">{info}</div>}
+      {isWarning && (
+        <div className="mt-1 text-xs text-orange-500">
+          {shouldWarn(value)[1] || "This value seems unusual"}
+        </div>
+      )}
     </div>
   )
 }

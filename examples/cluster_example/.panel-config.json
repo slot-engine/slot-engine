@@ -14,14 +14,14 @@
       "id": "6cb8763c-9463-4731-8826-416a4ce074e9",
       "players": {
         "count": 300,
-        "startingBalance": 1000
+        "startingBalance": 750
       },
       "betGroups": [
         {
-          "id": "284b7d63-04ed-44af-870a-70dd2d8a7c05",
+          "id": "613ab92a",
           "mode": "base",
           "betAmount": 1,
-          "spins": 500
+          "spins": 1000
         }
       ]
     }

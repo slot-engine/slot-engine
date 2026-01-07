@@ -1,1 +1,0 @@
-- In game file (e.g. index.ts), if game.runTasks() disables simulation, panel will be unable to simulate (starts but doesn't progress)

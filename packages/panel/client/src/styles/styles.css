@@ -14,7 +14,11 @@
   --color-red-500: #f55d42;
   --color-red-600: #bd4833;
   --color-red-700: #8f3627;
-  --color-red-950: #3d1812;
+  --color-red-900: #361a15;
+  --color-red-950: #1f1311;
+
+  --color-orange-500: #f09c1f;
+  --color-orange-950: #211a10;
 
   --color-cyan: #86E9FF;
   --color-emerald: #1FE39E;

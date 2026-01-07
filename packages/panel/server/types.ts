@@ -96,11 +96,13 @@ export interface BetSimulationStats {
   avgProfit: number
   minProfit: number
   maxProfit: number
+  payoutStdDev: number
   low20PercentileProfit: number
   high20PercentileProfit: number
   medianProfit: number
   longestWinStreak: number
   longestLoseStreak: number
+  longest0Streak: number
   highestBalance: number
   lowestBalance: number
   avgRtp: number
@@ -112,6 +114,9 @@ export interface BetSimulationStats {
   hits15: number
   hits40: number
   hits90: number
+  visualization: {
+    criteriaPerGroup: Record<string, Record<string, number>>
+  }
 }
 
 export type APIGameGetSimConfResponse = PanelGameConfig["simulation"]
@@ -145,5 +150,5 @@ export type APIGamePostBetSimConfResponse = {
 }
 
 export type APIGamePostBetSimRunResponse = {
-  results: {}
+  results: BetSimulationStats
 }
