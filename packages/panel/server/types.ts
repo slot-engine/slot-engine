@@ -117,6 +117,7 @@ export interface BetSimulationStats {
   visualization: {
     criteriaPerGroup: Record<string, Record<string, number>>
   }
+  warnings: string[]
 }
 
 export type APIGameGetSimConfResponse = PanelGameConfig["simulation"]

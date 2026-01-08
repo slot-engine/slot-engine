@@ -292,7 +292,7 @@ export const GameSimulation = () => {
             </div>
             <div className="absolute bottom-0 left-0 w-full h-1 bg-ui-800">
               <div
-                className="absolute top-0 left-0 w-full h-full bg-linear-to-r from-cyan to-emerald duration-1000"
+                className="absolute top-0 left-0 w-full h-full bg-linear-to-r from-cyan-500 to-emerald-500 duration-1000"
                 style={{ clipPath: `inset(0 ${100 - mode.progress}% 0 0)` }}
               />
             </div>

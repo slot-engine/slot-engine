@@ -50,6 +50,7 @@ const createDefaultResults = (): BetSimulationStats => ({
   visualization: {
     criteriaPerGroup: {},
   },
+  warnings: [],
 })
 
 export async function betSimulation(game: SlotGame, config: BetSimulationConfig) {
@@ -64,6 +65,8 @@ export async function betSimulation(game: SlotGame, config: BetSimulationConfig)
   )
 
   const criteriaPerGroup: Record<string, Record<string, number>> = {}
+
+  let booksWithLowWeight = 0
 
   for (const group of config.betGroups) {
     players.forEach((p) => p.resetForGroup())
@@ -121,10 +124,14 @@ export async function betSimulation(game: SlotGame, config: BetSimulationConfig)
           continue
         }
 
-        const [_, __, pay] = lutEntry
+        const [_, weight, pay] = lutEntry
         const [___, criteria] = lutSegEntry
         const payout = round((pay / 100) * group.betAmount, 4)
         const returnMultiplier = totalCost > 0 ? round(payout / totalCost, 4) : 0
+
+        if (weight <= 1) {
+          booksWithLowWeight++
+        }
 
         if (criteriaPerGroup[group.id]![criteria]) {
           criteriaPerGroup[group.id]![criteria] =
@@ -143,14 +150,15 @@ export async function betSimulation(game: SlotGame, config: BetSimulationConfig)
     }
   }
 
-  return getBetStats({ players, criteriaPerGroup })
+  return getBetStats({ players, criteriaPerGroup, booksWithLowWeight })
 }
 
 function getBetStats(opts: {
   players: VirtualPlayer[]
   criteriaPerGroup: Record<string, Record<string, number>>
+  booksWithLowWeight: number
 }): BetSimulationStats {
-  const { players, criteriaPerGroup } = opts
+  const { players, criteriaPerGroup, booksWithLowWeight } = opts
   if (players.length === 0) return createDefaultResults()
 
   const profits = players.map((p) => p.profit).sort((a, b) => a - b)
@@ -200,6 +208,14 @@ function getBetStats(opts: {
     return round(Math.sqrt(variance), 4)
   })()
 
+  const warnings: string[] = []
+
+  if (opts.booksWithLowWeight >= totalBets * 0.5) {
+    warnings.push(
+      `${opts.booksWithLowWeight} bet results come from books with very low weight (<= 1). Is this intended?`,
+    )
+  }
+
   return {
     totalBets,
     avgBets: betCounts.length > 0 ? round(totalBets / betCounts.length, 2) : 0,
@@ -237,6 +253,7 @@ function getBetStats(opts: {
     visualization: {
       criteriaPerGroup,
     },
+    warnings,
   }
 }
 

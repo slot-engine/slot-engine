@@ -20,8 +20,10 @@
   --color-orange-500: #f09c1f;
   --color-orange-950: #211a10;
 
-  --color-cyan: #86E9FF;
-  --color-emerald: #1FE39E;
+  --color-cyan-500: #86E9FF;
+
+  --color-emerald-500: #1FE39E;
+  --color-emerald-950: #152b24;
 
   --spacing-page-width: 1400px;
   --spacing-nav-height: 57px;

@@ -2,7 +2,7 @@
 
 import { createPanel } from "./server"
 import { game as ClusterGame } from "../../examples/cluster_example"
-import { game as LinesGame } from "../../examples/lines_example"
+import { game as LinesGame } from "../../examples/lines_example_OUTDATED"
 
 const panel = createPanel({
   games: [ClusterGame, LinesGame],

@@ -74,7 +74,7 @@ export const SelectItem = ({ children, className, ...props }: Primitive.Item.Pro
       )}
     >
       <Primitive.ItemIndicator
-        render={(p) => <span className="size-2 inline-block rounded-full bg-emerald" />}
+        render={(p) => <span className="size-2 inline-block rounded-full bg-emerald-500" />}
       />
       {children}
     </Primitive.Item>

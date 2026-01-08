@@ -1,4 +1,5 @@
 import {
+  IconAlertCircle,
   IconBusinessplan,
   IconInfoCircle,
   IconLoader2,
@@ -24,7 +25,7 @@ import type { BetSimulationConfig, BetSimulationStats } from "../../../../server
 import { Select, SelectContent, SelectItem, SelectTrigger } from "../Select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../Tabs"
 import { SimulationLoading } from "../Loading"
-import { cn } from "../../lib/cn"
+import { Statistics } from "../Statistics"
 
 const DEFAULT_CONFIG: BetSimulationConfig = {
   id: "",
@@ -194,6 +195,8 @@ const BetSimulation = ({
   isSaving,
 }: BetSimulationProps) => {
   const { game, gameId } = useGameContext()
+  const avgRtps =
+    game.modes.map((m) => m.rtp).reduce((a, b) => a + b, 0) / game.modes.length
 
   const [tab, setTab] = useState("config")
 
@@ -288,7 +291,7 @@ const BetSimulation = ({
     },
   })
 
-  const frmt = new Intl.NumberFormat("en-DE")
+  const frmt = new Intl.NumberFormat("en-DE").format
 
   const canNotSimulate =
     config.betGroups.length === 0 || isSaving || simulationMutation.isPending
@@ -424,22 +427,18 @@ const BetSimulation = ({
                     <div>Estimated Balance Loss:</div>
                     <div className="flex gap-2">
                       <span className="font-bold">0% RTP:</span>
-                      <span>
-                        {frmt.format(bg.betAmount * bg.spins * getModeCost(bg.mode))}
-                      </span>
+                      <span>{frmt(bg.betAmount * bg.spins * getModeCost(bg.mode))}</span>
                     </div>
                     <div className="flex gap-2">
                       <span className="font-bold">50% RTP:</span>
                       <span>
-                        {frmt.format(
-                          (bg.betAmount * bg.spins * getModeCost(bg.mode)) / 2,
-                        )}
+                        {frmt((bg.betAmount * bg.spins * getModeCost(bg.mode)) / 2)}
                       </span>
                     </div>
                     <div className="flex gap-2">
                       <span className="font-bold">{getModeRtp(bg.mode)}% RTP:</span>
                       <span>
-                        {frmt.format(
+                        {frmt(
                           (bg.betAmount *
                             bg.spins *
                             getModeCost(bg.mode) *
@@ -477,18 +476,28 @@ const BetSimulation = ({
           )}
           {results && (
             <div className="max-h-124 overflow-y-auto pr-2">
+              {results.warnings.map((w, i) => (
+                <div
+                  key={i}
+                  className="pl-2 pr-4 py-2 rounded-lg border border-orange-500 bg-orange-950 mb-4 flex gap-2"
+                >
+                  <IconAlertCircle className="text-orange-500" />
+                  {w}
+                </div>
+              ))}
+
               <h5 className="flex items-center gap-2 mb-4">
                 <IconReportAnalytics />
                 Bet Results
               </h5>
               <div className="grid grid-cols-3 gap-2">
-                <StatsBox label="Total Bets" value={results.totalBets} />
-                <StatsBox label="Average Bets" value={results.avgBets} />
-                <StatsBox label="Median Bets" value={results.medianBets} />
+                <Statistics label="Total Bets" value={frmt(results.totalBets)} />
+                <Statistics label="Average Bets" value={frmt(results.avgBets)} />
+                <Statistics label="Median Bets" value={frmt(results.medianBets)} />
               </div>
               <div className="grid grid-cols-2 gap-2 mt-2">
-                <StatsBox label="P20 Bets" value={results.low20PercentileBets} />
-                <StatsBox label="P80 Bets" value={results.high20PercentileBets} />
+                <Statistics label="P20 Bets" value={frmt(results.low20PercentileBets)} />
+                <Statistics label="P80 Bets" value={frmt(results.high20PercentileBets)} />
               </div>
 
               <h5 className="flex items-center gap-2 mt-6 mb-4">
@@ -496,39 +505,54 @@ const BetSimulation = ({
                 Profit Results
               </h5>
               <div className="grid grid-cols-2 gap-2">
-                <StatsBox label="Total Wager" value={results.totalWager} />
-                <StatsBox
+                <Statistics label="Total Wager" value={frmt(results.totalWager)} />
+                <Statistics
                   label="Total Profit"
-                  value={results.totalProfit}
+                  value={frmt(results.totalProfit)}
                   description="Should be negative. This (positive) amount would go to the casino"
-                  shouldWarn={(v) => [
-                    v === 0 || v === null,
-                    "An error occurred, try again",
-                  ]}
+                  isSuccess={results.totalProfit < 0}
+                  successText={`${(frmt(Math.abs(results.totalProfit)))} goes to the casino`}
+                  isDanger={results.totalProfit > 0}
+                  dangerText={`${frmt(results.totalProfit)} profit for players!`}
+                  isWarning={!results.totalProfit}
+                  warningText="An error occurred, try again"
                 />
-                <StatsBox label="Num Bets Profit" value={results.numBetsProfit} />
-                <StatsBox label="Num Bets Loss" value={results.numBetsLoss} />
+                <Statistics label="Num Bets Profit" value={frmt(results.numBetsProfit)} />
+                <Statistics label="Num Bets Loss" value={frmt(results.numBetsLoss)} />
               </div>
               <div className="grid grid-cols-4 gap-2 mt-2">
-                <StatsBox label="Average Profit" value={results.avgProfit} />
-                <StatsBox label="Median Profit" value={results.medianProfit} />
-                <StatsBox
+                <Statistics
+                  label="Average Profit"
+                  value={frmt(results.avgProfit)}
+                  isSuccess={results.totalProfit < 0}
+                  successText="Avg. amount per player goes to the casino"
+                  isDanger={results.totalProfit > 0}
+                  dangerText="Avg. amount per player is profit!"
+                />
+                <Statistics label="Median Profit" value={frmt(results.medianProfit)} />
+                <Statistics
                   label="Min Profit"
-                  value={results.minProfit}
+                  value={frmt(results.minProfit)}
                   description="Of player at end of simulations"
                 />
-                <StatsBox
+                <Statistics
                   label="Max Profit"
-                  value={results.maxProfit}
+                  value={frmt(results.maxProfit)}
                   description="Of player at end of simulations"
                 />
               </div>
               <div className="grid grid-cols-2 gap-2 mt-2">
-                <StatsBox label="P20 Profit" value={results.low20PercentileProfit} />
-                <StatsBox label="P80 Profit" value={results.high20PercentileProfit} />
-                <StatsBox
+                <Statistics
+                  label="P20 Profit"
+                  value={frmt(results.low20PercentileProfit)}
+                />
+                <Statistics
+                  label="P80 Profit"
+                  value={frmt(results.high20PercentileProfit)}
+                />
+                <Statistics
                   label="Standard Deviation"
-                  value={results.payoutStdDev}
+                  value={frmt(results.payoutStdDev)}
                   description="This value might vary strongly. It's best to run multiple simulations to get a better idea of this value"
                 />
               </div>
@@ -538,42 +562,47 @@ const BetSimulation = ({
                 Miscellaneous
               </h5>
               <div className="grid grid-cols-3 gap-2">
-                <StatsBox label="Longest Win Streak" value={results.longestWinStreak} />
-                <StatsBox
+                <Statistics
+                  label="Longest Win Streak"
+                  value={frmt(results.longestWinStreak)}
+                />
+                <Statistics
                   label="Longest Lose Streak"
-                  value={results.longestLoseStreak}
-                  shouldWarn={(v) => [v >= 50, "Value is quite high"]}
+                  value={frmt(results.longestLoseStreak)}
+                  isWarning={results.longestLoseStreak >= 50}
+                  warningText="Value is quite high"
                 />
-                <StatsBox
+                <Statistics
                   label="Longest 0-Win Streak"
-                  value={results.longest0Streak}
-                  shouldWarn={(v) => [v >= 20, "Value is quite high"]}
+                  value={frmt(results.longest0Streak)}
+                  isWarning={results.longest0Streak >= 25}
+                  warningText="Value is quite high"
                 />
-                <StatsBox
+                <Statistics
                   label="Nice Wins"
-                  value={results.hits15}
+                  value={frmt(results.hits15)}
                   description=">= 15x, < 40x"
                 />
-                <StatsBox
+                <Statistics
                   label="Mega Wins"
-                  value={results.hits40}
+                  value={frmt(results.hits40)}
                   description=">= 40x, < 90x"
                 />
-                <StatsBox
+                <Statistics
                   label="Sensational Wins"
-                  value={results.hits90}
+                  value={frmt(results.hits90)}
                   description=">= 90x"
                 />
               </div>
               <div className="grid grid-cols-2 gap-2 mt-2">
-                <StatsBox
+                <Statistics
                   label="Highest Balance"
-                  value={results.highestBalance}
+                  value={frmt(results.highestBalance)}
                   description="Of player at end of simulations"
                 />
-                <StatsBox
+                <Statistics
                   label="Lowest Balance"
-                  value={results.lowestBalance}
+                  value={frmt(results.lowestBalance)}
                   description="Of player at end of simulations"
                 />
               </div>
@@ -583,18 +612,26 @@ const BetSimulation = ({
                 RTP Results
               </h5>
               <div className="grid grid-cols-2 gap-2">
-                <StatsBox
+                <Statistics
                   label="Average RTP"
-                  value={results.avgRtp}
+                  value={frmt(results.avgRtp)}
                   description="Might be inaccurate for smaller simulations"
+                  isWarning={Math.abs(results.avgRtp - avgRtps) >= 7}
+                  warningText="RTP deviates significantly"
+                  isSuccess={Math.abs(results.avgRtp - avgRtps) < 7}
+                  successText="RTP is within expected range"
                 />
-                <StatsBox
+                <Statistics
                   label="Median RTP"
-                  value={results.medianRtp}
+                  value={frmt(results.medianRtp)}
                   description="Might be inaccurate for smaller simulations"
+                  isWarning={Math.abs(results.avgRtp - avgRtps) >= 7}
+                  warningText="RTP deviates significantly"
+                  isSuccess={Math.abs(results.avgRtp - avgRtps) < 7}
+                  successText="RTP is within expected range"
                 />
-                <StatsBox label="Highest RTP" value={results.highestRtp} />
-                <StatsBox label="Lowest RTP" value={results.lowestRtp} />
+                <Statistics label="Highest RTP" value={frmt(results.highestRtp)} />
+                <Statistics label="Lowest RTP" value={frmt(results.lowestRtp)} />
               </div>
 
               <h5 className="flex items-center gap-2 mt-6 mb-4">
@@ -608,7 +645,7 @@ const BetSimulation = ({
                       <h6 className="font-bold mb-2">Group {groupId}</h6>
                       <div className="grid grid-cols-4 gap-2">
                         {Object.entries(criteria).map(([crit, count]) => (
-                          <StatsBox key={crit} label={crit} value={count} />
+                          <Statistics key={crit} label={crit} value={frmt(count)} />
                         ))}
                       </div>
                     </div>
@@ -619,42 +656,6 @@ const BetSimulation = ({
           )}
         </TabsContent>
       </Tabs>
-    </div>
-  )
-}
-
-interface StatsBoxProps {
-  label: string
-  value: number
-  description?: string
-  info?: string
-  shouldWarn?: (v: number) => [boolean, string?]
-}
-
-const StatsBox = ({ label, value, description, info, shouldWarn }: StatsBoxProps) => {
-  const frmt = new Intl.NumberFormat("en-DE")
-
-  const isWarning = shouldWarn && shouldWarn(value)[0]
-
-  return (
-    <div
-      className={cn(
-        "px-4 py-3 rounded-r-lg bg-ui-950 border-l-4 border-ui-500",
-        value < 0 && "border-red-500 bg-red-950",
-        isWarning && "border-orange-500 bg-orange-950",
-      )}
-    >
-      <div>{label}</div>
-      {description && (
-        <div className="text-xs mt-1 mb-1 leading-4 text-ui-100">{description}</div>
-      )}
-      <div className="font-bold text-2xl">{frmt.format(value)}</div>
-      {info && <div className="text-xs mt-1 leading-4 text-ui-500">{info}</div>}
-      {isWarning && (
-        <div className="mt-1 text-xs text-orange-500">
-          {shouldWarn(value)[1] || "This value seems unusual"}
-        </div>
-      )}
     </div>
   )
 }
