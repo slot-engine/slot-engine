@@ -3,7 +3,9 @@
 import type {
   LookupTable,
   LookupTableSegmented,
+  PayoutStatistics,
   SimulationSummary,
+  Statistics,
   WrittenBook,
 } from "@slot-engine/core/types"
 
@@ -152,4 +154,12 @@ export type APIGamePostBetSimConfResponse = {
 
 export type APIGamePostBetSimRunResponse = {
   results: BetSimulationStats
+}
+
+export type APIGameStatsPayoutsResponse = {
+  statistics: PayoutStatistics[]
+}
+
+export type APIGameStatsSummaryResponse = {
+  statistics: Statistics[]
 }

@@ -21,12 +21,6 @@ export const GameInformation = () => {
           <TableRow key={i} label={info.label} value={info.value} />
         ))}
       </div>
-      <div className="mt-8">
-        <h3 className="mb-4">Game Modes</h3>
-        <div className="grid grid-cols-5 gap-4">
-
-        </div>
-      </div>
     </div>
   )
 }

@@ -97,19 +97,26 @@ export class Analysis {
       [100000, Infinity],
     ]
 
-    const payoutRanges: Record<string, PayoutRanges> = {}
+    const payoutRanges: PayoutStatistics[] = []
 
     const meta = this.game.getMetadata()
 
     for (const modeStr of gameModes) {
-      payoutRanges[modeStr] = {
-        allPayouts: { overall: {}, criteria: {} },
-        uniquePayouts: { overall: {}, criteria: {} },
-      }
-
       const lutSegmented = parseLookupTableSegmented(
         fs.readFileSync(meta.paths.lookupTableSegmented(modeStr), "utf-8"),
       )
+
+      const range: PayoutStatistics = {
+        gameMode: modeStr,
+        allPayouts: {
+          overall: {},
+          criteria: {},
+        },
+        uniquePayouts: {
+          overall: {},
+          criteria: {},
+        },
+      }
 
       const uniquePayoutsOverall = new Map<string, Set<number>>()
       const uniquePayoutsCriteria = new Map<string, Map<string, Set<number>>>()
@@ -124,19 +131,19 @@ export class Analysis {
             const rangeKey = `${min}-${max}`
 
             // Overall
-            if (!payoutRanges[modeStr]!.allPayouts.overall[rangeKey]) {
-              payoutRanges[modeStr]!.allPayouts.overall[rangeKey] = 0
+            if (!range.allPayouts.overall[rangeKey]) {
+              range.allPayouts.overall[rangeKey] = 0
             }
-            payoutRanges[modeStr]!.allPayouts.overall[rangeKey] += 1
+            range.allPayouts.overall[rangeKey] += 1
 
             // Criteria
-            if (!payoutRanges[modeStr]!.allPayouts.criteria[criteria]) {
-              payoutRanges[modeStr]!.allPayouts.criteria[criteria] = {}
+            if (!range.allPayouts.criteria[criteria]) {
+              range.allPayouts.criteria[criteria] = {}
             }
-            if (!payoutRanges[modeStr]!.allPayouts.criteria[criteria]![rangeKey]) {
-              payoutRanges[modeStr]!.allPayouts.criteria[criteria]![rangeKey] = 0
+            if (!range.allPayouts.criteria[criteria]![rangeKey]) {
+              range.allPayouts.criteria[criteria]![rangeKey] = 0
             }
-            payoutRanges[modeStr]!.allPayouts.criteria[criteria]![rangeKey] += 1
+            range.allPayouts.criteria[criteria]![rangeKey] += 1
 
             // Overall
             if (!uniquePayoutsOverall.has(rangeKey)) {
@@ -159,33 +166,33 @@ export class Analysis {
       })
 
       uniquePayoutsOverall.forEach((payoutSet, rangeKey) => {
-        payoutRanges[modeStr]!.uniquePayouts.overall[rangeKey] = payoutSet.size
+        range.uniquePayouts.overall[rangeKey] = payoutSet.size
       })
 
       uniquePayoutsCriteria.forEach((rangeMap, criteria) => {
-        if (!payoutRanges[modeStr]!.uniquePayouts.criteria[criteria]) {
-          payoutRanges[modeStr]!.uniquePayouts.criteria[criteria] = {}
+        if (!range.uniquePayouts.criteria[criteria]) {
+          range.uniquePayouts.criteria[criteria] = {}
         }
         rangeMap.forEach((payoutSet, rangeKey) => {
-          payoutRanges[modeStr]!.uniquePayouts.criteria[criteria]![rangeKey] =
+          range.uniquePayouts.criteria[criteria]![rangeKey] =
             payoutSet.size
         })
       })
 
       const orderedAllOverall: Record<string, number> = {}
-      Object.keys(payoutRanges[modeStr]!.allPayouts.overall)
+      Object.keys(range.allPayouts.overall)
         .sort((a, b) => {
           const [aMin] = a.split("-").map(Number)
           const [bMin] = b.split("-").map(Number)
           return aMin! - bMin!
         })
         .forEach((key) => {
-          orderedAllOverall[key] = payoutRanges[modeStr]!.allPayouts.overall[key]!
+          orderedAllOverall[key] = range.allPayouts.overall[key]!
         })
 
       const orderedAllCriteria: Record<string, Record<string, number>> = {}
-      Object.keys(payoutRanges[modeStr]!.allPayouts.criteria).forEach((crit) => {
-        const critMap = payoutRanges[modeStr]!.allPayouts.criteria[crit]!
+      Object.keys(range.allPayouts.criteria).forEach((crit) => {
+        const critMap = range.allPayouts.criteria[crit]!
         const orderedCritMap: Record<string, number> = {}
         Object.keys(critMap)
           .sort((a, b) => {
@@ -200,19 +207,19 @@ export class Analysis {
       })
 
       const orderedUniqueOverall: Record<string, number> = {}
-      Object.keys(payoutRanges[modeStr]!.uniquePayouts.overall)
+      Object.keys(range.uniquePayouts.overall)
         .sort((a, b) => {
           const [aMin] = a.split("-").map(Number)
           const [bMin] = b.split("-").map(Number)
           return aMin! - bMin!
         })
         .forEach((key) => {
-          orderedUniqueOverall[key] = payoutRanges[modeStr]!.uniquePayouts.overall[key]!
+          orderedUniqueOverall[key] = range.uniquePayouts.overall[key]!
         })
 
       const orderedUniqueCriteria: Record<string, Record<string, number>> = {}
-      Object.keys(payoutRanges[modeStr]!.uniquePayouts.criteria).forEach((crit) => {
-        const critMap = payoutRanges[modeStr]!.uniquePayouts.criteria[crit]!
+      Object.keys(range.uniquePayouts.criteria).forEach((crit) => {
+        const critMap = range.uniquePayouts.criteria[crit]!
         const orderedCritMap: Record<string, number> = {}
         Object.keys(critMap)
           .sort((a, b) => {
@@ -226,7 +233,8 @@ export class Analysis {
         orderedUniqueCriteria[crit] = orderedCritMap
       })
 
-      payoutRanges[modeStr] = {
+      payoutRanges.push({
+        gameMode: modeStr,
         allPayouts: {
           overall: orderedAllOverall,
           criteria: orderedAllCriteria,
@@ -235,7 +243,7 @@ export class Analysis {
           overall: orderedUniqueOverall,
           criteria: orderedUniqueCriteria,
         },
-      }
+      })
     }
 
     writeJsonFile(meta.paths.statsPayouts, payoutRanges)
@@ -248,7 +256,8 @@ export class Analysis {
   }
 }
 
-export interface PayoutRanges {
+export interface PayoutStatistics {
+  gameMode: string
   allPayouts: {
     overall: Record<string, number>
     criteria: Record<string, Record<string, number>>
@@ -263,7 +272,7 @@ export interface AnalysisOpts {
   gameModes: string[]
 }
 
-interface Statistics {
+export interface Statistics {
   gameMode: string
   totalWeight: number
   rtp: number

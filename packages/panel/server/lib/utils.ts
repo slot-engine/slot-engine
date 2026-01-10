@@ -7,6 +7,8 @@ import { Variables } from ".."
 import {
   parseLookupTable,
   parseLookupTableSegmented,
+  Statistics,
+  type PayoutStatistics,
   type RecordItem,
   type SimulationSummary,
   type SlotGame,
@@ -125,6 +127,34 @@ export function loadSummaryFile(game: SlotGame) {
       encoding: "utf-8",
     }),
   ) as SimulationSummary
+
+  return data
+}
+
+export function loadStatsSummaryFile(game: SlotGame) {
+  const meta = game.getMetadata()
+  const filePath = meta.paths.statsSummary
+  if (!fs.existsSync(filePath)) return
+
+  const data = JSON.parse(
+    fs.readFileSync(filePath, {
+      encoding: "utf-8",
+    }),
+  ) as Statistics[]
+
+  return data
+}
+
+export function loadStatsPayoutsFile(game: SlotGame) {
+  const meta = game.getMetadata()
+  const filePath = meta.paths.statsPayouts
+  if (!fs.existsSync(filePath)) return
+
+  const data = JSON.parse(
+    fs.readFileSync(filePath, {
+      encoding: "utf-8",
+    }),
+  ) as PayoutStatistics[]
 
   return data
 }

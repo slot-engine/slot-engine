@@ -18,6 +18,8 @@ import { GameSimulation } from "../../components/GameSimulation"
 import { GameSimulationSummary } from "../../components/GameSimulationSummary"
 import { GameExplorer } from "../../components/GameExplorer"
 import { GameBetSimulation } from "../../components/GameBetSimulation"
+import { StatisticsSummary } from "../../components/GameStatsSummary"
+import { StatisticsPayouts } from "../../components/GameStatsPayouts"
 
 const tabsNames = {
   info: "info",
@@ -131,6 +133,13 @@ const InfoTab = () => {
         description="Basic information about the game."
       />
       <GameInformation />
+      
+      <div className="mt-8">
+        <StatisticsSummary />
+      </div>
+      <div className="mt-8">
+        <StatisticsPayouts />
+      </div>
     </div>
   )
 }

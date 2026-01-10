@@ -18,7 +18,7 @@ export const GameSimulationSummary = () => {
   })
 
   useEffect(() => {
-    socket.on("simulationSummary", (data) => {
+    socket.on("simulationSummary", () => {
       refetch()
     })
 

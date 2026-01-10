@@ -13,6 +13,8 @@ import {
   APIGameGetBetSimConfResponse,
   APIGamePostBetSimConfResponse,
   APIGamePostBetSimRunResponse,
+  APIGameStatsSummaryResponse,
+  APIGameStatsPayoutsResponse,
 } from "../../types"
 import { Hono } from "hono"
 import {
@@ -22,6 +24,8 @@ import {
   getGameById,
   getGameInfo,
   loadOrCreatePanelGameConfig,
+  loadStatsPayoutsFile,
+  loadStatsSummaryFile,
   loadSummaryFile,
   savePanelGameConfig,
 } from "../../lib/utils"
@@ -346,6 +350,40 @@ app.post("/:id/bet-sim-run", async (c) => {
   const results = await betSimulation(game, simConfig)
 
   return c.json<APIGamePostBetSimRunResponse>({ results })
+})
+
+app.get("/:id/stats-payouts", (c) => {
+  const gameId = c.req.param("id")
+  const game = getGameById(gameId, c)
+
+  if (!game) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  const statistics = loadStatsPayoutsFile(game)
+
+  if (!statistics) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  return c.json<APIGameStatsPayoutsResponse>({ statistics })
+})
+
+app.get("/:id/stats-summary", (c) => {
+  const gameId = c.req.param("id")
+  const game = getGameById(gameId, c)
+
+  if (!game) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  const statistics = loadStatsSummaryFile(game)
+
+  if (!statistics) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  return c.json<APIGameStatsSummaryResponse>({ statistics })
 })
 
 export default app

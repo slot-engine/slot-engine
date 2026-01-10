@@ -14,6 +14,8 @@ import {
   type APIGamePostSimConfResponse,
   type BetSimulationConfig,
   type APIGamePostBetSimRunResponse,
+  type APIGameStatsSummaryResponse,
+  type APIGameStatsPayoutsResponse,
 } from "../../../server/types"
 import type { SimulationOptions } from "./types"
 
@@ -75,6 +77,10 @@ export const query = {
     api<APIGameExploreBookResponse>(`games/${id}/explore/${mode}/${bookId}`),
   gameForceKeys: (id: string, mode: string) =>
     api<APIGameForceKeysResponse>(`games/${id}/force-keys/${mode}`),
+  gameStatsSummary: (id: string) =>
+    api<APIGameStatsSummaryResponse>(`games/${id}/stats-summary`),
+  gameStatsPayouts: (id: string) =>
+    api<APIGameStatsPayoutsResponse>(`games/${id}/stats-payouts`),
 }
 
 export const mutation = {
@@ -107,13 +113,16 @@ export const mutation = {
       method: "POST",
     }),
   startBetSimulation: (gameId: string, config: BetSimulationConfig) =>
-    api<APIGamePostBetSimRunResponse>(`games/${gameId}/bet-sim-run?configId=${config.id}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    api<APIGamePostBetSimRunResponse>(
+      `games/${gameId}/bet-sim-run?configId=${config.id}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(config),
       },
-      body: JSON.stringify(config),
-    }),
+    ),
 }
 
 export type APIResponse<T> = T extends keyof typeof query
