@@ -34,6 +34,7 @@ export {
 } from "./src/optimizer"
 
 export { parseLookupTable, parseLookupTableSegmented } from "./src/analysis/utils"
+export { type PayoutRanges } from "./src/analysis"
 
 export { type RecordItem } from "./src/recorder"
 

@@ -97,22 +97,22 @@ export class Analysis {
       [100000, Infinity],
     ]
 
-    const payoutRanges: Record<
-      string,
-      {
-        overall: Record<string, number>
-        criteria: Record<string, Record<string, number>>
-      }
-    > = {}
+    const payoutRanges: Record<string, PayoutRanges> = {}
 
     const meta = this.game.getMetadata()
 
     for (const modeStr of gameModes) {
-      payoutRanges[modeStr] = { overall: {}, criteria: {} }
+      payoutRanges[modeStr] = {
+        allPayouts: { overall: {}, criteria: {} },
+        uniquePayouts: { overall: {}, criteria: {} },
+      }
 
       const lutSegmented = parseLookupTableSegmented(
         fs.readFileSync(meta.paths.lookupTableSegmented(modeStr), "utf-8"),
       )
+
+      const uniquePayoutsOverall = new Map<string, Set<number>>()
+      const uniquePayoutsCriteria = new Map<string, Map<string, Set<number>>>()
 
       lutSegmented.forEach(([, criteria, bp, fsp]) => {
         const basePayout = bp
@@ -124,38 +124,68 @@ export class Analysis {
             const rangeKey = `${min}-${max}`
 
             // Overall
-            if (!payoutRanges[modeStr]!.overall[rangeKey]) {
-              payoutRanges[modeStr]!.overall[rangeKey] = 0
+            if (!payoutRanges[modeStr]!.allPayouts.overall[rangeKey]) {
+              payoutRanges[modeStr]!.allPayouts.overall[rangeKey] = 0
             }
-            payoutRanges[modeStr]!.overall[rangeKey] += 1
+            payoutRanges[modeStr]!.allPayouts.overall[rangeKey] += 1
 
             // Criteria
-            if (!payoutRanges[modeStr]!.criteria[criteria]) {
-              payoutRanges[modeStr]!.criteria[criteria] = {}
+            if (!payoutRanges[modeStr]!.allPayouts.criteria[criteria]) {
+              payoutRanges[modeStr]!.allPayouts.criteria[criteria] = {}
             }
-            if (!payoutRanges[modeStr]!.criteria[criteria]![rangeKey]) {
-              payoutRanges[modeStr]!.criteria[criteria]![rangeKey] = 0
+            if (!payoutRanges[modeStr]!.allPayouts.criteria[criteria]![rangeKey]) {
+              payoutRanges[modeStr]!.allPayouts.criteria[criteria]![rangeKey] = 0
             }
-            payoutRanges[modeStr]!.criteria[criteria]![rangeKey] += 1
+            payoutRanges[modeStr]!.allPayouts.criteria[criteria]![rangeKey] += 1
+
+            // Overall
+            if (!uniquePayoutsOverall.has(rangeKey)) {
+              uniquePayoutsOverall.set(rangeKey, new Set())
+            }
+            uniquePayoutsOverall.get(rangeKey)!.add(payout)
+
+            // Criteria
+            if (!uniquePayoutsCriteria.has(criteria)) {
+              uniquePayoutsCriteria.set(criteria, new Map())
+            }
+            if (!uniquePayoutsCriteria.get(criteria)!.has(rangeKey)) {
+              uniquePayoutsCriteria.get(criteria)!.set(rangeKey, new Set())
+            }
+            uniquePayoutsCriteria.get(criteria)!.get(rangeKey)!.add(payout)
+
             break
           }
         }
       })
 
-      const orderedOverall: Record<string, number> = {}
-      Object.keys(payoutRanges[modeStr]!.overall)
+      uniquePayoutsOverall.forEach((payoutSet, rangeKey) => {
+        payoutRanges[modeStr]!.uniquePayouts.overall[rangeKey] = payoutSet.size
+      })
+
+      uniquePayoutsCriteria.forEach((rangeMap, criteria) => {
+        if (!payoutRanges[modeStr]!.uniquePayouts.criteria[criteria]) {
+          payoutRanges[modeStr]!.uniquePayouts.criteria[criteria] = {}
+        }
+        rangeMap.forEach((payoutSet, rangeKey) => {
+          payoutRanges[modeStr]!.uniquePayouts.criteria[criteria]![rangeKey] =
+            payoutSet.size
+        })
+      })
+
+      const orderedAllOverall: Record<string, number> = {}
+      Object.keys(payoutRanges[modeStr]!.allPayouts.overall)
         .sort((a, b) => {
           const [aMin] = a.split("-").map(Number)
           const [bMin] = b.split("-").map(Number)
           return aMin! - bMin!
         })
         .forEach((key) => {
-          orderedOverall[key] = payoutRanges[modeStr]!.overall[key]!
+          orderedAllOverall[key] = payoutRanges[modeStr]!.allPayouts.overall[key]!
         })
 
-      const orderedCriteria: Record<string, Record<string, number>> = {}
-      Object.keys(payoutRanges[modeStr]!.criteria).forEach((crit) => {
-        const critMap = payoutRanges[modeStr]!.criteria[crit]!
+      const orderedAllCriteria: Record<string, Record<string, number>> = {}
+      Object.keys(payoutRanges[modeStr]!.allPayouts.criteria).forEach((crit) => {
+        const critMap = payoutRanges[modeStr]!.allPayouts.criteria[crit]!
         const orderedCritMap: Record<string, number> = {}
         Object.keys(critMap)
           .sort((a, b) => {
@@ -166,12 +196,45 @@ export class Analysis {
           .forEach((key) => {
             orderedCritMap[key] = critMap[key]!
           })
-        orderedCriteria[crit] = orderedCritMap
+        orderedAllCriteria[crit] = orderedCritMap
+      })
+
+      const orderedUniqueOverall: Record<string, number> = {}
+      Object.keys(payoutRanges[modeStr]!.uniquePayouts.overall)
+        .sort((a, b) => {
+          const [aMin] = a.split("-").map(Number)
+          const [bMin] = b.split("-").map(Number)
+          return aMin! - bMin!
+        })
+        .forEach((key) => {
+          orderedUniqueOverall[key] = payoutRanges[modeStr]!.uniquePayouts.overall[key]!
+        })
+
+      const orderedUniqueCriteria: Record<string, Record<string, number>> = {}
+      Object.keys(payoutRanges[modeStr]!.uniquePayouts.criteria).forEach((crit) => {
+        const critMap = payoutRanges[modeStr]!.uniquePayouts.criteria[crit]!
+        const orderedCritMap: Record<string, number> = {}
+        Object.keys(critMap)
+          .sort((a, b) => {
+            const [aMin] = a.split("-").map(Number)
+            const [bMin] = b.split("-").map(Number)
+            return aMin! - bMin!
+          })
+          .forEach((key) => {
+            orderedCritMap[key] = critMap[key]!
+          })
+        orderedUniqueCriteria[crit] = orderedCritMap
       })
 
       payoutRanges[modeStr] = {
-        overall: orderedOverall,
-        criteria: orderedCriteria,
+        allPayouts: {
+          overall: orderedAllOverall,
+          criteria: orderedAllCriteria,
+        },
+        uniquePayouts: {
+          overall: orderedUniqueOverall,
+          criteria: orderedUniqueCriteria,
+        },
       }
     }
 
@@ -182,6 +245,17 @@ export class Analysis {
     const config = this.game.getConfig().gameModes[mode]
     assert(config, `Game mode "${mode}" not found in game config`)
     return config
+  }
+}
+
+export interface PayoutRanges {
+  allPayouts: {
+    overall: Record<string, number>
+    criteria: Record<string, Record<string, number>>
+  }
+  uniquePayouts: {
+    overall: Record<string, number>
+    criteria: Record<string, Record<string, number>>
   }
 }
 
