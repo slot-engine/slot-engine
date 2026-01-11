@@ -27,6 +27,7 @@ import {
   createTemporaryFilePaths,
   FilePaths,
 } from "../utils/file-paths"
+import { SimulationLogger } from "../logging"
 
 let completedSimulations = 0
 const TEMP_FILENAME = "__temp_compiled_src_IGNORE.js"
@@ -66,6 +67,7 @@ export class Simulation {
   private panelActive: boolean = false
   private panelWsUrl: string | undefined
   private socket: Socket | undefined
+  private logger: SimulationLogger | undefined
 
   PATHS = {} as FilePaths
 
@@ -97,6 +99,11 @@ export class Simulation {
       ...createPermanentFilePaths(basePath),
       ...createTemporaryFilePaths(basePath, TEMP_FOLDER),
     }
+
+    this.logger = new SimulationLogger({
+      gameMode: "N/A",
+      criteria: "N/A",
+    })
   }
 
   async runSimulation(opts: SimulationConfigOptions) {
@@ -147,14 +154,17 @@ export class Simulation {
         }
       })
 
+      this.logger?.start()
+
       for (const mode of gameModesToSimulate) {
         completedSimulations = 0
         this.wallet = new Wallet()
+        this.logger?.setDetails({ gameMode: mode, criteria: "N/A" })
         this.hasWrittenRecord = false
 
         const startTime = Date.now()
         statusMessage = `Simulating mode "${mode}" with ${this.simRunsAmount[mode]} runs.`
-        console.log(statusMessage)
+        this.logger?.log(statusMessage)
         if (this.socket && this.panelActive) {
           this.socket.emit("simulationStatus", statusMessage)
         }
@@ -207,7 +217,7 @@ export class Simulation {
         createDirIfNotExists(this.PATHS.publishFiles)
 
         statusMessage = `Writing final files for game mode "${mode}". This may take a while...`
-        console.log(statusMessage)
+        this.logger?.log(statusMessage)
         if (this.socket && this.panelActive) {
           this.socket.emit("simulationStatus", statusMessage)
         }
@@ -300,11 +310,13 @@ export class Simulation {
         const prettyTime = new Date(endTime - startTime).toISOString().slice(11, -1)
 
         statusMessage = `Mode ${mode} done! Time taken: ${prettyTime}`
-        console.log(statusMessage)
+        this.logger?.log(statusMessage)
         if (this.socket && this.panelActive) {
           this.socket.emit("simulationStatus", statusMessage)
         }
       }
+
+      this.logger?.stop()
 
       await this.printSimulationSummary()
     }
@@ -344,10 +356,11 @@ export class Simulation {
         }
       }
 
-      if (this.debug) {
+      // TODO: Reimplement better, later
+      /* if (this.debug) {
         console.log(`Desired ${desiredSims}, Actual ${actualSims}`)
         console.log(`Retries per criteria:`, criteriaToRetries)
-      }
+      } */
 
       parentPort?.postMessage({
         type: "done",
@@ -402,17 +415,6 @@ export class Simulation {
   }) {
     const { mode, simEnd, simStart, basePath, index, totalSims, criteriaCounts } = opts
 
-    function logArrowProgress(current: number, total: number) {
-      const percentage = (current / total) * 100
-      const progressBarLength = 50
-      const filledLength = Math.round((progressBarLength * current) / total)
-      const bar = "█".repeat(filledLength) + "-".repeat(progressBarLength - filledLength)
-      process.stdout.write(`\r[${bar}] ${percentage.toFixed(2)}%   (${current}/${total})`)
-      if (current === total) {
-        process.stdout.write("\n")
-      }
-    }
-
     const write = async (stream: fs.WriteStream, chunk: string) => {
       if (!stream.write(chunk)) {
         await new Promise<void>((resolve) => stream.once("drain", resolve))
@@ -455,7 +457,15 @@ export class Simulation {
 
       worker.on("message", (msg) => {
         if (msg.type === "log") {
+          this.logger?.log(msg.message)
           return
+        }
+
+        if (msg.type === "log-exit") {
+          this.logger?.log(msg.message)
+          this.logger?.stop()
+          console.log(msg.message)
+          process.exit(1)
         }
 
         if (msg.type === "complete") {
@@ -467,7 +477,11 @@ export class Simulation {
                 completedSimulations % 250 === 0 ||
                 completedSimulations === totalSims
               ) {
-                logArrowProgress(completedSimulations, totalSims)
+                const percentage = (completedSimulations / totalSims) * 100
+                this.logger?.setProgress(
+                  percentage,
+                  this.getTimeRemaining(startTime, totalSims),
+                )
               }
 
               if (this.socket && this.panelActive) {
@@ -475,18 +489,12 @@ export class Simulation {
                   completedSimulations % 1000 === 0 ||
                   completedSimulations === totalSims
                 ) {
-                  // Time remaining in seconds
-                  const elapsedTime = Date.now() - startTime
-                  const simsLeft = totalSims - completedSimulations
-                  const timePerSim = elapsedTime / completedSimulations
-                  const timeRemaining = Math.round((simsLeft * timePerSim) / 1000)
-
                   this.socket.emit("simulationProgress", {
                     mode,
                     percentage: (completedSimulations / totalSims) * 100,
                     current: completedSimulations,
                     total: totalSims,
-                    timeRemaining,
+                    timeRemaining: this.getTimeRemaining(startTime, totalSims),
                   })
 
                   this.socket.emit(
@@ -574,14 +582,13 @@ export class Simulation {
       })
 
       worker.on("error", (error) => {
-        process.stdout.write(`\n${error.message}\n`)
-        process.stdout.write(`\n${error.stack}\n`)
+        this.logger?.log(error.message)
         reject(error)
       })
 
       worker.on("exit", (code) => {
         if (code !== 0) {
-          console.log(chalk.yellow(`\nWorker stopped with exit code ${code}`))
+          this.logger?.log(chalk.yellow(`Worker stopped with exit code ${code}`))
           reject()
         }
       })
@@ -598,6 +605,7 @@ export class Simulation {
     index: number
   }) {
     const { simId, mode, criteria } = opts
+    let retries = 0
 
     const ctx = createGameContext({
       config: this.gameConfig,
@@ -622,6 +630,24 @@ export class Simulation {
 
       if (resultSet.meetsCriteria(ctx)) {
         ctx.state.isCriteriaMet = true
+      }
+
+      retries++
+
+      if (!ctx.state.isCriteriaMet && retries % 10_000 === 0) {
+        parentPort?.postMessage({
+          type: "log",
+          message: chalk.yellow(
+            `Excessive retries @ #${simId} @ criteria "${criteria}": ${retries} retries`,
+          ),
+        })
+      }
+
+      if (!ctx.state.isCriteriaMet && retries % 50_000 === 0) {
+        parentPort?.postMessage({
+          type: "log-exit",
+          message: chalk.red("Possible infinite loop detected, exiting simulation."),
+        })
       }
     }
 
@@ -904,6 +930,14 @@ export class Simulation {
         )
       }
     }
+  }
+
+  private getTimeRemaining(startTime: number, totalSims: number) {
+    const elapsedTime = Date.now() - startTime
+    const simsLeft = totalSims - completedSimulations
+    const timePerSim = elapsedTime / completedSimulations
+    const timeRemaining = Math.round((simsLeft * timePerSim) / 1000)
+    return timeRemaining
   }
 
   private async mergeCsv(
