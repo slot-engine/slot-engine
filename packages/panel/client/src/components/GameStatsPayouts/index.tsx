@@ -3,7 +3,7 @@ import { useGameContext } from "../../context/GameContext"
 import { query } from "../../lib/queries"
 import { ErrorDisplay } from "../Error"
 import { Skeleton } from "../Skeleton"
-import { IconInfoCircle } from "@tabler/icons-react"
+import { IconChartBar, IconInfoCircle, IconMinus, IconPlus } from "@tabler/icons-react"
 import {
   BarChart,
   Bar,
@@ -13,6 +13,10 @@ import {
   type LabelProps,
   ResponsiveContainer,
 } from "recharts"
+import { Accordion } from "@base-ui/react/accordion"
+import type { PayoutStatistics } from "@slot-engine/core"
+import { useState } from "react"
+import { cn } from "../../lib/cn"
 
 export const StatisticsPayouts = () => {
   const { gameId } = useGameContext()
@@ -46,21 +50,26 @@ export const StatisticsPayouts = () => {
       </div>
       <div className="grid gap-4">
         {data.statistics.map((s) => (
-          <div key={s.gameMode} className="p-4 border border-ui-700 rounded-lg">
+          <div key={s.gameMode} className="p-4 bg-ui-900 border border-ui-700 rounded-lg">
             <h4 className="flex items-center gap-2 mb-2">
               <IconInfoCircle />
               {s.gameMode}
             </h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <h5>Payout Occurrences</h5>
-                <PayoutDistribution stats={s.allPayouts.overall} />
-              </div>
-              <div>
-                <h5>Unique Payouts</h5>
-                <PayoutDistribution stats={s.uniquePayouts.overall} />
-              </div>
-            </div>
+            <Accordion.Root multiple={true}>
+              <ModeStatsEntry
+                id="payout-occurrences"
+                stats={s.allPayouts}
+                title="Payout Occurrences"
+                description="How often a payout range occurrs in the lookup table"
+              />
+              <ModeStatsEntry
+                id="unique-payouts"
+                stats={s.uniquePayouts}
+                title="Unique Payouts"
+                className="mt-2"
+                description="The amount of unique payouts per range"
+              />
+            </Accordion.Root>
           </div>
         ))}
       </div>
@@ -68,9 +77,72 @@ export const StatisticsPayouts = () => {
   )
 }
 
+interface ModeStatsEntryProps extends Accordion.Item.Props {
+  id: string
+  stats: PayoutStatistics["allPayouts"]
+  title: string
+  description: string
+}
+
+const ModeStatsEntry = ({
+  id,
+  description,
+  stats,
+  title,
+  ...props
+}: ModeStatsEntryProps) => {
+  const s = stats
+
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Accordion.Item
+      onOpenChange={setOpen}
+      value={id}
+      {...props}
+      className={cn(
+        "bg-ui-950 rounded-lg border border-ui-700 overflow-clip",
+        props.className,
+      )}
+    >
+      <Accordion.Trigger className="p-4 flex gap-8 justify-between items-center w-full cursor-pointer hover:bg-ui-800 data-panel-open:bg-ui-800">
+        <div className="flex items-center gap-4">
+          <IconChartBar />
+          <div className="text-left">
+            <div className="text-xl">{title}</div>
+            <div className="text-sm text-ui-100">{description}</div>
+          </div>
+        </div>
+        {open ? <IconMinus /> : <IconPlus />}
+      </Accordion.Trigger>
+      <Accordion.Panel className="border-t border-ui-700 h-(--accordion-panel-height) data-starting-style:h-0 data-ending-style:h-0 duration-200">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="p-4">
+            <h5>Overall</h5>
+            <div className="mb-2 text-ui-100">Values combined across all result sets</div>
+            <PayoutDistribution stats={s.overall} />
+          </div>
+          <div className="p-4 border-l border-ui-700">
+            <h5>Result Sets Payouts</h5>
+            <div className="mb-2 text-ui-100">Values divided into result sets</div>
+            <div className="flex items-start gap-4 overflow-x-auto">
+              {Object.keys(s.criteria).map((crit) => (
+                <div key={crit} className="p-4 rounded-lg bg-ui-900 min-w-lg">
+                  <h6 className="mb-2">Result Set: {crit}</h6>
+                  <PayoutDistribution stats={s.criteria[crit]} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Accordion.Panel>
+    </Accordion.Item>
+  )
+}
+
 const PayoutDistribution = ({ stats }: { stats: Record<string, number> }) => {
   const ENTRY_HEIGHT = 32
-  const chartHeight = Object.keys(stats).length * ENTRY_HEIGHT
+  const chartHeight = Object.keys(stats).length * ENTRY_HEIGHT + 32
   const data = Object.keys(stats).map((key) => ({
     label: key.split("-").join(" - "),
     value: stats[key],
@@ -90,6 +162,8 @@ const PayoutDistribution = ({ stats }: { stats: Record<string, number> }) => {
         <Tooltip
           wrapperClassName="bg-ui-900! border-ui-700! rounded-lg"
           cursor={{ fill: "var(--color-ui-800)", radius: 4 }}
+          formatter={(value) => [value, "Amount"]}
+          animationDuration={50}
         />
         <Bar
           dataKey="value"

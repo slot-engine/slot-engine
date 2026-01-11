@@ -32,11 +32,10 @@ export const StatisticsSummary = () => {
 
   return (
     <div>
-      <h3 className="mb-2">Game Statistics</h3>
-      <div className="mb-4 text-sm text-ui-500">Thousands Seperator: . (Dot), Decimal Seperator: , (Comma)</div>
+      <h3 className="mb-4">Game Statistics</h3>
       <div className="grid grid-cols-3 gap-4">
         {data.statistics.map((s) => (
-          <div key={s.gameMode} className="p-4 border border-ui-700 rounded-lg">
+          <div key={s.gameMode} className="p-4 bg-ui-900 border border-ui-700 rounded-lg">
             <h4 className="flex items-center gap-2">
               <IconInfoCircle />
               {s.gameMode}
@@ -44,8 +43,8 @@ export const StatisticsSummary = () => {
             <TableRow label="Total LUT Weight" value={frmt(s.totalWeight)} />
             <TableRow label="Average Win" value={frmt(s.avgWin)} />
             <TableRow label="RTP" value={frmt(s.rtp)} />
-            <TableRow label="Minimum Win" value={frmt(s.minWin)} />
-            <TableRow label="Maximum Win" value={frmt(s.maxWin)} />
+            <TableRow label="Minimum Win" value={`${frmt(s.minWin)}x`} />
+            <TableRow label="Maximum Win" value={`${frmt(s.maxWin)}x`} />
             <TableRow label="Standard Deviation" value={frmt(s.stdDev)} />
             <TableRow label="Variance" value={frmt(s.variance)} />
             <TableRow label="Non-zero Hit Rate" value={frmt(s.nonZeroHitRate)} />
