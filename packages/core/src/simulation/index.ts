@@ -27,7 +27,7 @@ import {
   createTemporaryFilePaths,
   FilePaths,
 } from "../utils/file-paths"
-import { SimulationLogger } from "../logging"
+import { TerminalUi } from "../tui"
 
 let completedSimulations = 0
 const TEMP_FILENAME = "__temp_compiled_src_IGNORE.js"
@@ -67,7 +67,7 @@ export class Simulation {
   private panelActive: boolean = false
   private panelWsUrl: string | undefined
   private socket: Socket | undefined
-  private logger: SimulationLogger | undefined
+  private tui: TerminalUi | undefined
 
   PATHS = {} as FilePaths
 
@@ -82,8 +82,8 @@ export class Simulation {
     this.gameConfigOpts = gameConfigOpts
     this.simRunsAmount = opts.simRunsAmount || {}
     this.concurrency = (opts.concurrency || 6) >= 2 ? opts.concurrency || 6 : 2
-    this.maxPendingSims = opts.maxPendingSims ?? 250
-    this.maxHighWaterMark = (opts.maxDiskBuffer ?? 50) * 1024 * 1024
+    this.maxPendingSims = opts.maxPendingSims ?? 25
+    this.maxHighWaterMark = (opts.maxDiskBuffer ?? 150) * 1024 * 1024
 
     const gameModeKeys = Object.keys(this.gameConfig.gameModes)
     assert(
@@ -100,9 +100,8 @@ export class Simulation {
       ...createTemporaryFilePaths(basePath, TEMP_FOLDER),
     }
 
-    this.logger = new SimulationLogger({
+    this.tui = new TerminalUi({
       gameMode: "N/A",
-      criteria: "N/A",
     })
   }
 
@@ -154,17 +153,20 @@ export class Simulation {
         }
       })
 
-      this.logger?.start()
+      this.tui?.start()
 
       for (const mode of gameModesToSimulate) {
         completedSimulations = 0
         this.wallet = new Wallet()
-        this.logger?.setDetails({ gameMode: mode, criteria: "N/A" })
+        this.tui?.setDetails({
+          gameMode: mode,
+          totalSims: this.simRunsAmount[mode] || 0,
+        })
         this.hasWrittenRecord = false
 
         const startTime = Date.now()
         statusMessage = `Simulating mode "${mode}" with ${this.simRunsAmount[mode]} runs.`
-        this.logger?.log(statusMessage)
+        this.tui?.log(statusMessage)
         if (this.socket && this.panelActive) {
           this.socket.emit("simulationStatus", statusMessage)
         }
@@ -217,7 +219,7 @@ export class Simulation {
         createDirIfNotExists(this.PATHS.publishFiles)
 
         statusMessage = `Writing final files for game mode "${mode}". This may take a while...`
-        this.logger?.log(statusMessage)
+        this.tui?.log(statusMessage)
         if (this.socket && this.panelActive) {
           this.socket.emit("simulationStatus", statusMessage)
         }
@@ -310,13 +312,13 @@ export class Simulation {
         const prettyTime = new Date(endTime - startTime).toISOString().slice(11, -1)
 
         statusMessage = `Mode ${mode} done! Time taken: ${prettyTime}`
-        this.logger?.log(statusMessage)
+        this.tui?.log(statusMessage)
         if (this.socket && this.panelActive) {
           this.socket.emit("simulationStatus", statusMessage)
         }
       }
 
-      this.logger?.stop()
+      this.tui?.stop()
 
       await this.printSimulationSummary()
     }
@@ -457,59 +459,55 @@ export class Simulation {
 
       worker.on("message", (msg) => {
         if (msg.type === "log") {
-          this.logger?.log(msg.message)
+          this.tui?.log(msg.message)
           return
         }
 
         if (msg.type === "log-exit") {
-          this.logger?.log(msg.message)
-          this.logger?.stop()
+          this.tui?.log(msg.message)
+          this.tui?.stop()
           console.log(msg.message)
           process.exit(1)
         }
 
         if (msg.type === "complete") {
+          completedSimulations++
+
+          // Moving this out of the writeChain hopefully doesn't cause desync, let's pray
+          if (completedSimulations % 250 === 0 || completedSimulations === totalSims) {
+            const percentage = (completedSimulations / totalSims) * 100
+            this.tui?.setProgress(
+              percentage,
+              this.getTimeRemaining(startTime, totalSims),
+              completedSimulations,
+            )
+          }
+
+          if (this.socket && this.panelActive) {
+            if (completedSimulations % 1000 === 0 || completedSimulations === totalSims) {
+              this.socket.emit("simulationProgress", {
+                mode,
+                percentage: (completedSimulations / totalSims) * 100,
+                current: completedSimulations,
+                total: totalSims,
+                timeRemaining: this.getTimeRemaining(startTime, totalSims),
+              })
+
+              this.socket.emit(
+                "simulationShouldStop",
+                this.gameConfig.id,
+                (shouldStop: boolean) => {
+                  if (shouldStop) {
+                    worker.terminate()
+                  }
+                },
+              )
+            }
+          }
+
           writeChain = writeChain
             .then(async () => {
-              completedSimulations++
-
-              if (
-                completedSimulations % 250 === 0 ||
-                completedSimulations === totalSims
-              ) {
-                const percentage = (completedSimulations / totalSims) * 100
-                this.logger?.setProgress(
-                  percentage,
-                  this.getTimeRemaining(startTime, totalSims),
-                )
-              }
-
-              if (this.socket && this.panelActive) {
-                if (
-                  completedSimulations % 1000 === 0 ||
-                  completedSimulations === totalSims
-                ) {
-                  this.socket.emit("simulationProgress", {
-                    mode,
-                    percentage: (completedSimulations / totalSims) * 100,
-                    current: completedSimulations,
-                    total: totalSims,
-                    timeRemaining: this.getTimeRemaining(startTime, totalSims),
-                  })
-
-                  this.socket.emit(
-                    "simulationShouldStop",
-                    this.gameConfig.id,
-                    (shouldStop: boolean) => {
-                      if (shouldStop) {
-                        worker.terminate()
-                      }
-                    },
-                  )
-                }
-              }
-
-              const book = msg.book as ReturnType<Book["serialize"]>
+              const book = msg.book as ReturnType<Book["_serialize"]>
               const bookData = {
                 id: book.id,
                 payoutMultiplier: book.payout,
@@ -582,13 +580,13 @@ export class Simulation {
       })
 
       worker.on("error", (error) => {
-        this.logger?.log(error.message)
+        this.tui?.log(error.message)
         reject(error)
       })
 
       worker.on("exit", (code) => {
         if (code !== 0) {
-          this.logger?.log(chalk.yellow(`Worker stopped with exit code ${code}`))
+          this.tui?.log(chalk.yellow(`Worker stopped with exit code ${code}`))
           reject()
         }
       })
@@ -614,6 +612,14 @@ export class Simulation {
     ctx.state.currentGameMode = mode
     ctx.state.currentSimulationId = simId
     ctx.state.isCriteriaMet = false
+    ctx.services.data._setBook(
+      new Book({
+        id: simId,
+        criteria,
+      }),
+    )
+    ctx.services.wallet._setWallet(new Wallet())
+    ctx.services.data._setRecorder(new Recorder())
 
     const resultSet = ctx.services.game.getResultSetByCriteria(
       ctx.state.currentGameMode,
@@ -669,7 +675,7 @@ export class Simulation {
     parentPort?.postMessage({
       type: "complete",
       simId,
-      book: ctx.services.data._getBook().serialize(),
+      book: ctx.services.data._getBook()._serialize(),
       wallet: ctx.services.wallet._getWallet().serialize(),
       records: ctx.services.data._getRecords(),
     })
@@ -715,17 +721,12 @@ export class Simulation {
   protected resetSimulation(ctx: GameContext) {
     this.resetState(ctx)
     ctx.services.board.resetBoard()
-    ctx.services.data._setRecorder(new Recorder())
-    ctx.services.wallet._setWallet(new Wallet())
-    ctx.services.data._setBook(
-      new Book({
-        id: ctx.state.currentSimulationId,
-        criteria: ctx.state.currentResultSet.criteria,
-      }),
-    )
-    Object.values(ctx.config.gameModes).forEach((mode) => {
-      mode._resetTempValues()
-    })
+    ctx.services.data._getRecorder()._reset()
+    ctx.services.wallet._getWallet()._reset()
+    ctx.services.data
+      ._getBook()
+      ._reset(ctx.state.currentSimulationId, ctx.state.currentResultSet.criteria)
+    ctx.services.game.getCurrentGameMode()._resetTempValues()
   }
 
   protected resetState(ctx: GameContext) {
@@ -1019,24 +1020,23 @@ export class Simulation {
     const recorder = ctx.services.data._getRecorder()
 
     for (const pendingRecord of recorder.pendingRecords) {
-      const search = Object.entries(pendingRecord.properties)
-        .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => a.name.localeCompare(b.name))
+      const key = Object.keys(pendingRecord.properties)
+        .sort()
+        .map((k) => `${k}:${pendingRecord.properties[k]}`)
+        .join("|")
 
-      let record = recorder.records.find((r) => {
-        if (r.search.length !== search.length) return false
-        for (let i = 0; i < r.search.length; i++) {
-          if (r.search[i]!.name !== search[i]!.name) return false
-          if (r.search[i]!.value !== search[i]!.value) return false
-        }
-        return true
-      })
+      let record = recorder.recordsMap.get(key)
       if (!record) {
+        const search = Object.entries(pendingRecord.properties)
+          .map(([name, value]) => ({ name, value }))
+          .sort((a, b) => a.name.localeCompare(b.name))
+
         record = {
           search,
           timesTriggered: 0,
           bookIds: [],
         }
+        recorder.recordsMap.set(key, record)
         recorder.records.push(record)
       }
       record.timesTriggered++

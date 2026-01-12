@@ -56,6 +56,24 @@ export class Wallet {
   constructor() {}
 
   /**
+   * Intended for internal use only.
+   */
+  _reset() {
+    this.cumulativeWins = 0
+    this.cumulativeWinsPerSpinType = {
+      [SPIN_TYPE.BASE_GAME]: 0,
+      [SPIN_TYPE.FREE_SPINS]: 0,
+    }
+    this.currentWin = 0
+    this.currentWinPerSpinType = {
+      [SPIN_TYPE.BASE_GAME]: 0,
+      [SPIN_TYPE.FREE_SPINS]: 0,
+    }
+    this.currentSpinWin = 0
+    this.currentTumbleWin = 0
+  }
+
+  /**
    * Updates the win for the current spin.
    *
    * Should be called after each tumble event, if applicable.\

@@ -1,9 +1,20 @@
 export class Recorder {
   records: RecordItem[]
+  recordsMap: Map<string, RecordItem>
   pendingRecords: PendingRecord[]
 
   constructor() {
     this.records = []
+    this.recordsMap = new Map()
+    this.pendingRecords = []
+  }
+
+  /**
+   * Intended for internal use only.
+   */
+  _reset() {
+    this.records = []
+    this.recordsMap = new Map()
     this.pendingRecords = []
   }
 }

@@ -1,8 +1,9 @@
-export class SimulationLogger {
+export class TerminalUi {
   private progress: number = 0
   private timeRemaining: number = 0
   private gameMode: string
-  private criteria: string
+  private currentSims: number = 0
+  private totalSims: number = 0
 
   private logs: string[] = []
   private logScrollOffset: number = 0
@@ -17,9 +18,8 @@ export class SimulationLogger {
   private sigintHandler: () => void
   private keyHandler: (data: Buffer) => void
 
-  constructor(opts: SimulationLoggerOptions) {
+  constructor(opts: TerminalUiOptions) {
     this.gameMode = opts.gameMode
-    this.criteria = opts.criteria
 
     this.resizeHandler = () => {
       this.clearScreen()
@@ -96,14 +96,15 @@ export class SimulationLogger {
     process.off("SIGINT", this.sigintHandler)
   }
 
-  setProgress(progress: number, timeRemaining: number) {
+  setProgress(progress: number, timeRemaining: number, completedSims: number) {
     this.progress = Math.max(0, Math.min(100, progress))
     this.timeRemaining = Math.max(0, timeRemaining)
+    this.currentSims = completedSims
   }
 
-  setDetails(opts: { gameMode: string; criteria: string }) {
+  setDetails(opts: { gameMode: string; totalSims: number }) {
     this.gameMode = opts.gameMode
-    this.criteria = opts.criteria
+    this.totalSims = opts.totalSims
   }
 
   log(message: string) {
@@ -200,7 +201,10 @@ export class SimulationLogger {
       const visibleLogs = this.getVisibleLogs(logAreaHeight)
 
       for (const log of visibleLogs) {
-        lines.push(this.contentLine(" " + this.truncate(log, width - 4), width))
+        const logIndex = this.logs.indexOf(log)
+        lines.push(
+          this.contentLine(` (${logIndex}) ` + this.truncate(log, width - 4), width),
+        )
       }
 
       for (let i = visibleLogs.length; i < logAreaHeight; i++) {
@@ -215,8 +219,8 @@ export class SimulationLogger {
       lines.push(this.boxLine("middle", width))
 
       const modeText = `Mode: ${this.gameMode}`
-      const criteriaText = `Criteria: ${this.criteria}`
-      const infoLine = this.createInfoLine(modeText, criteriaText, width)
+      const simsText = `${this.currentSims}/${this.totalSims}`
+      const infoLine = this.createInfoLine(modeText, simsText, width)
       lines.push(infoLine)
 
       lines.push(this.boxLine("middle", width))
@@ -304,7 +308,6 @@ export class SimulationLogger {
   }
 }
 
-interface SimulationLoggerOptions {
+interface TerminalUiOptions {
   gameMode: string
-  criteria: string
 }

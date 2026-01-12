@@ -78,12 +78,12 @@ simulation count, thread concurrency, and your hardware.
 
 ### configureSimulation() options [#options]
 
-| Property         | Type                     | Description                                                                                                                                                          | Required |
-| ---------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `simRunsAmount`  | `Record<string, number>` | List of game modes and their simulation count.                                                                                                                       | yes      |
-| `concurrency`    | `number`                 | Number of threads (Node worker threads) to use. More threads = faster simulation, but higher CPU usage.<br/>Default: 6                                               |          |
-| `maxPendingSims` | `number`                 | The maximum number of simulation results to keep pending in memory before writing to disk. Higher values may speed up simulations but use more RAM.<br/>Default: 250 |          |
-| `maxDiskBuffer`  | `number`                 | The maximum data buffer in MB for writing simulation results to disk. Higher values may speed up simulations but use more RAM.<br/>Default: 50                       |          |
+| Property         | Type                     | Description                                                                                                                                                                | Required |
+| ---------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `simRunsAmount`  | `Record<string, number>` | List of game modes and their simulation count.                                                                                                                             | yes      |
+| `concurrency`    | `number`                 | Number of threads (Node worker threads) to use. More threads = faster simulation, but higher CPU usage.<br/>Default: 6                                                     |          |
+| `maxPendingSims` | `number`                 | The maximum number of simulation results to keep pending in memory before writing to disk. Basically batch update size. Variable performance / RAM impact.<br/>Default: 25 |          |
+| `maxDiskBuffer`  | `number`                 | The maximum data buffer in MB for writing simulation results to disk. Variable performance / RAM impact.<br/>Default: 150                                                  |          |
 
 ## Output Files / Publish Files
 
@@ -139,11 +139,13 @@ to achieve a specific target RTP with high precision.
     - Make it easier for the program to simulate rare outcomes, for example by using a dedicated
     reel set with more wilds and generally higher symbols.
     - Programmatically force the desired outcome (board setup, multipliers, etc.)
+
   </Accordion>
   <Accordion title="I'm getting 'Module not found' errors when running the game">
     Ensure you `cd`'ed into the game directory where your game file is.
 
     If you're running the game from a different directory, add `rootDir: __dirname` to your game configuration.
+
   </Accordion>
   <Accordion title="JavaScript heap out of memory">
     If Node runs out of memory, you have a few options to consider:
@@ -151,5 +153,6 @@ to achieve a specific target RTP with high precision.
     - Reduce the amount of simulations for a game mode. You generally don't need more than 1-2 million simulations per game mode
     - Increase memory limit in Node
     - Tune the simulation options, specifically `maxPendingSims` and/or `maxDiskBuffer`
+
   </Accordion>
 </Accordions>
