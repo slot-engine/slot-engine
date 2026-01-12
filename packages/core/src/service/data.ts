@@ -18,14 +18,6 @@ export class DataService<
     super(ctx)
   }
 
-  private ensureRecorder() {
-    assert(this.recorder, "Recorder not set in DataService. Call setRecorder() first.")
-  }
-
-  private ensureBook() {
-    assert(this.book, "Book not set in DataService. Call setBook() first.")
-  }
-
   /**
    * Intended for internal use only.
    */
@@ -58,7 +50,6 @@ export class DataService<
    * Intended for internal use only.
    */
   _getRecords() {
-    this.ensureRecorder()
     return this.recorder.records
   }
 
@@ -66,8 +57,6 @@ export class DataService<
    * Record data for statistical analysis.
    */
   record(data: Record<string, string | number | boolean>) {
-    this.ensureRecorder()
-
     this.recorder.pendingRecords.push({
       bookId: this.ctx().state.currentSimulationId,
       properties: Object.fromEntries(
@@ -94,7 +83,6 @@ export class DataService<
    * Adds an event to the book.
    */
   addBookEvent(event: Omit<BookEvent, "index">) {
-    this.ensureBook()
     this.book.addEvent(event)
   }
 
@@ -102,7 +90,6 @@ export class DataService<
    * Intended for internal use only.
    */
   _clearPendingRecords() {
-    this.ensureRecorder()
     this.recorder.pendingRecords = []
   }
 }

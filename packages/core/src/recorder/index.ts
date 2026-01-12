@@ -14,7 +14,7 @@ export class Recorder {
    */
   _reset() {
     this.records = []
-    this.recordsMap = new Map()
+    this.recordsMap.clear()
     this.pendingRecords = []
   }
 }

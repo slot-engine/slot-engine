@@ -12,7 +12,7 @@ import {
   GameMetadata,
 } from "../game-config"
 import { createGameContext, GameContext } from "../game-context"
-import { copy, createDirIfNotExists, JSONL, round, writeFile } from "../../utils"
+import { copy, createDirIfNotExists, round, writeFile } from "../../utils"
 import { SPIN_TYPE } from "../constants"
 import { Book } from "../book"
 import { Recorder, RecordItem } from "../recorder"
@@ -531,7 +531,7 @@ export class Simulation {
               this.summary[mode]!.criteria[book.criteria]!.fsWins! += fsWins
 
               const prefix = book.id === simStart ? "" : "\n"
-              await write(bookStream, prefix + JSONL.stringify([bookData]))
+              await write(bookStream, prefix + JSON.stringify(bookData))
               await write(lookupStream, `${book.id},1,${Math.round(book.payout)}\n`)
               await write(
                 lookupSegmentedStream,
@@ -543,7 +543,7 @@ export class Simulation {
                   const recordPrefix = this.hasWrittenRecord ? "\n" : ""
                   await write(
                     this.recordsWriteStream,
-                    recordPrefix + JSONL.stringify([record]),
+                    recordPrefix + JSON.stringify(record),
                   )
                   this.hasWrittenRecord = true
                 }
