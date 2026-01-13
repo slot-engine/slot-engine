@@ -531,12 +531,14 @@ export class Simulation {
               this.summary[mode]!.criteria[book.criteria]!.fsWins! += fsWins
 
               const prefix = book.id === simStart ? "" : "\n"
-              await write(bookStream, prefix + JSON.stringify(bookData))
-              await write(lookupStream, `${book.id},1,${Math.round(book.payout)}\n`)
-              await write(
-                lookupSegmentedStream,
-                `${book.id},${book.criteria},${book.basegameWins},${book.freespinsWins}\n`,
-              )
+              await Promise.all([
+                write(bookStream, prefix + JSON.stringify(bookData)),
+                write(lookupStream, `${book.id},1,${Math.round(book.payout)}\n`),
+                write(
+                  lookupSegmentedStream,
+                  `${book.id},${book.criteria},${book.basegameWins},${book.freespinsWins}\n`,
+                ),
+              ])
 
               if (this.recordsWriteStream) {
                 for (const record of msg.records) {
