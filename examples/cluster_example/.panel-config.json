@@ -7,7 +7,7 @@
       "bonus": 250000
     },
     "maxPendingSims": 25,
-    "maxDiskBuffer": 250
+    "maxDiskBuffer": 150
   },
   "betSimulations": [
     {
@@ -26,5 +26,5 @@
       ]
     }
   ],
-  "forceStop": false
+  "forceStop": true
 }

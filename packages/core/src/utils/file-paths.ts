@@ -3,7 +3,9 @@ import path from "path"
 export type PermanentFilePaths = {
   base: string
   books: (mode: string) => string
-  booksIndex: (mode: string) => string
+  booksIndex: (mode: string, worker: number) => string
+  booksIndexMeta: (mode: string) => string
+  booksChunk: (mode: string, worker: number, chunk: number) => string
   booksCompressed: (mode: string) => string
   lookupTable: (mode: string) => string
   lookupTableIndex: (mode: string) => string
@@ -33,7 +35,16 @@ export function createPermanentFilePaths(basePath: string): PermanentFilePaths {
   return {
     base: basePath,
     books: (mode: string) => path.join(basePath, `books_${mode}.jsonl`),
-    booksIndex: (mode: string) => path.join(basePath, `books_${mode}.index`),
+    booksIndexMeta: (mode: string) =>
+      path.join(basePath, `books_${mode}.index.meta.json`),
+    booksIndex: (mode: string, worker: number) =>
+      path.join(basePath, "books_chunks", `books_${mode}_${worker}.index.txt`),
+    booksChunk: (mode: string, worker: number, chunk: number) =>
+      path.join(
+        basePath,
+        "books_chunks",
+        `books_${mode}_chunk_${worker}-${chunk}.jsonl.zst`,
+      ),
     booksCompressed: (mode: string) =>
       path.join(basePath, "publish_files", `books_${mode}.jsonl.zst`),
     lookupTable: (mode: string) => path.join(basePath, `lookUpTable_${mode}.csv`),

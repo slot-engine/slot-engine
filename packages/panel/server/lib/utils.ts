@@ -1,4 +1,5 @@
 import fs from "fs"
+import zlib from "zlib"
 import fsAsync from "fs/promises"
 import readline from "readline"
 import path from "path"
@@ -274,29 +275,64 @@ export async function getBook(opts: { game: SlotGame; mode: string; bookId: numb
   const { game, mode, bookId } = opts
   const meta = game.getMetadata()
 
-  const bookPath = meta.paths.books(mode)
-  if (!fs.existsSync(bookPath)) return
+  const bookIndexMetaPath = meta.paths.booksIndexMeta(mode)
+  if (!fs.existsSync(bookIndexMetaPath)) return
 
-  const indexPath = meta.paths.booksIndex(mode)
-  const byteOffset = await getByteOffsetFromIndex(indexPath, bookId - 1) // -1 because index is 0-based
-  const stream = fs.createReadStream(bookPath, { start: byteOffset })
+  const booksMeta = JSON.parse(
+    fs.readFileSync(bookIndexMetaPath, {
+      encoding: "utf-8",
+    }),
+  ) as Array<{ worker: number; chunks: number; simStart: number; simEnd: number }>
+
+  const metaObj = booksMeta.find((m) => bookId >= m.simStart && bookId <= m.simEnd)
+  if (!metaObj) return
+
+  const bookIndexPath = meta.paths.booksIndex(mode, metaObj.worker)
+  if (!fs.existsSync(bookIndexPath)) return
+
+  const stream = fs.createReadStream(bookIndexPath)
   const rl = readline.createInterface({
     input: stream,
     crlfDelay: Infinity,
   })
 
-  let line: string | null = null
+  let chunk = 0
 
   for await (const l of rl) {
-    line = l
+    const line = l.trim()
+    if (!line) continue
+
+    const [id, workerStr, chunkStr] = line.split(",")
+    if (parseInt(id!, 10) !== bookId) continue
+    chunk = parseInt(chunkStr!, 10)
     break
   }
 
   stream.destroy()
 
-  if (!line) return undefined
+  const bookChunkPath = meta.paths.booksChunk(mode, metaObj.worker, chunk)
+  if (!fs.existsSync(bookChunkPath)) return
 
-  return JSON.parse(line) as WrittenBook
+  const compressedData = fs.readFileSync(bookChunkPath)
+  const decompressedData = zlib.zstdDecompressSync(compressedData)
+  const bookLines = decompressedData.toString("utf-8").split("\n")
+
+  let book: WrittenBook | undefined
+
+  for (const l of bookLines) {
+    const line = l.trim()
+    if (!line) continue
+
+    const record = JSON.parse(line) as WrittenBook
+    if (record.id === bookId) {
+      book = record
+      break
+    }
+  }
+
+  if (!book) return
+
+  return book
 }
 
 export function getForceKeys(opts: { game: SlotGame; mode: string }) {

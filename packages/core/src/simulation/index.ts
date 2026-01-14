@@ -28,6 +28,7 @@ import {
   FilePaths,
 } from "../utils/file-paths"
 import { TerminalUi } from "../tui"
+import { Readable } from "stream"
 
 let completedSimulations = 0
 const TEMP_FILENAME = "__temp_compiled_src_IGNORE.js"
@@ -68,6 +69,13 @@ export class Simulation {
   private panelWsUrl: string | undefined
   private socket: Socket | undefined
   private tui: TerminalUi | undefined
+  private tempBookIndexPaths: string[] = []
+  private bookIndexMetas: Array<{
+    worker: number
+    chunks: number
+    simStart: number
+    simEnd: number
+  }> = []
 
   PATHS = {} as FilePaths
 
@@ -75,6 +83,9 @@ export class Simulation {
   private credits = 0
   private creditWaiters: Array<() => void> = []
   private creditListenerInit = false
+  private bookBuffers = new Map<number, string[]>()
+  private bookBufferSizes = new Map<number, number>()
+  private bookChunkIndexes = new Map<number, number>()
 
   constructor(opts: SimulationOptions, gameConfigOpts: GameConfigOptions) {
     const { config, metadata } = createGameConfig(gameConfigOpts)
@@ -155,6 +166,11 @@ export class Simulation {
 
       this.tui?.start()
 
+      fs.rmSync(path.join(this.PATHS.base, "books_chunks"), {
+        recursive: true,
+        force: true,
+      })
+
       for (const mode of gameModesToSimulate) {
         completedSimulations = 0
         this.wallet = new Wallet()
@@ -163,6 +179,11 @@ export class Simulation {
           totalSims: this.simRunsAmount[mode] || 0,
         })
         this.hasWrittenRecord = false
+        this.bookIndexMetas = []
+        this.tempBookIndexPaths = []
+        this.bookChunkIndexes = new Map()
+        this.bookBuffers = new Map()
+        this.bookBufferSizes = new Map()
 
         const startTime = Date.now()
         statusMessage = `Simulating mode "${mode}" with ${this.simRunsAmount[mode]} runs.`
@@ -185,7 +206,6 @@ export class Simulation {
           criteria: {},
         }
 
-        const booksPath = this.PATHS.books(mode)
         const tempRecordsPath = this.PATHS.tempRecords(mode)
 
         createDirIfNotExists(this.PATHS.base)
@@ -224,54 +244,36 @@ export class Simulation {
           this.socket.emit("simulationStatus", statusMessage)
         }
 
+        writeFile(
+          this.PATHS.booksIndexMeta(mode),
+          JSON.stringify(
+            this.bookIndexMetas.sort((a, b) => a.worker - b.worker),
+            null,
+            2,
+          ),
+        )
+
         // Merge temporary book files into the final sorted file.
-        // Also write index file for lookup
+        const booksPath = this.PATHS.booksCompressed(mode)
+
         try {
           const finalBookStream = fs.createWriteStream(booksPath, {
             highWaterMark: this.streamHighWaterMark,
           })
 
-          const bookIndexStream = fs.createWriteStream(this.PATHS.booksIndex(mode), {
-            highWaterMark: this.streamHighWaterMark,
-          })
-          let offset = 0n
-
-          for (let i = 0; i < chunks.length; i++) {
-            const tempBookPath = this.PATHS.tempBooks(mode, i)
-            if (!fs.existsSync(tempBookPath)) continue
-
-            const rl = readline.createInterface({
-              input: fs.createReadStream(tempBookPath),
-              crlfDelay: Infinity,
-            })
-
-            for await (const line of rl) {
-              const indexBuffer = Buffer.alloc(8)
-              indexBuffer.writeBigUInt64LE(offset)
-              if (!bookIndexStream.write(indexBuffer)) {
-                await new Promise<void>((resolve) =>
-                  bookIndexStream.once("drain", resolve),
-                )
+          for (const { worker, chunks } of this.bookIndexMetas) {
+            for (let chunk = 0; chunk < chunks; chunk++) {
+              const bookChunkPath = this.PATHS.booksChunk(mode, worker, chunk)
+              if (!fs.existsSync(bookChunkPath)) continue
+              const chunkData = fs.readFileSync(bookChunkPath)
+              if (!finalBookStream.write(chunkData)) {
+                await new Promise<void>((r) => finalBookStream.once("drain", () => r()))
               }
-
-              const lineWithNewline = line + "\n"
-              if (!finalBookStream.write(lineWithNewline)) {
-                await new Promise<void>((resolve) =>
-                  finalBookStream.once("drain", resolve),
-                )
-              }
-              offset += BigInt(Buffer.byteLength(lineWithNewline, "utf8"))
             }
-
-            fs.rmSync(tempBookPath)
           }
 
           finalBookStream.end()
-          bookIndexStream.end()
-          await Promise.all([
-            new Promise<void>((r) => finalBookStream.on("finish", () => r())),
-            new Promise<void>((r) => bookIndexStream.on("finish", () => r())),
-          ])
+          await new Promise<void>((r) => finalBookStream.on("finish", () => r()))
         } catch (error) {
           throw new Error(`Error merging book files: ${(error as Error).message}`)
         }
@@ -305,7 +307,6 @@ export class Simulation {
         }
 
         await this.writeRecords(mode)
-        await this.writeBooksJson(mode)
         this.writeIndexJson()
 
         const endTime = Date.now()
@@ -391,19 +392,24 @@ export class Simulation {
   }) {
     const { mode, chunks, chunkCriteriaCounts, totalSims } = opts
 
-    await Promise.all(
-      chunks.map(([simStart, simEnd], index) => {
-        return this.callWorker({
-          basePath: this.PATHS.base,
-          mode,
-          simStart,
-          simEnd,
-          index,
-          totalSims,
-          criteriaCounts: chunkCriteriaCounts[index]!,
-        })
-      }),
-    )
+    try {
+      await Promise.all(
+        chunks.map(([simStart, simEnd], index) => {
+          return this.callWorker({
+            basePath: this.PATHS.base,
+            mode,
+            simStart,
+            simEnd,
+            index,
+            totalSims,
+            criteriaCounts: chunkCriteriaCounts[index]!,
+          })
+        }),
+      )
+    } catch (error) {
+      this.tui?.stop()
+      throw error
+    }
   }
 
   async callWorker(opts: {
@@ -425,6 +431,7 @@ export class Simulation {
 
     return new Promise((resolve, reject) => {
       const scriptPath = path.join(basePath, TEMP_FILENAME)
+      createDirIfNotExists(path.join(this.PATHS.base, "books_chunks"))
 
       const startTime = Date.now()
 
@@ -440,8 +447,32 @@ export class Simulation {
 
       worker.postMessage({ type: "credit", amount: this.maxPendingSims })
 
-      const tempBookPath = this.PATHS.tempBooks(mode, index)
-      const bookStream = fs.createWriteStream(tempBookPath, {
+      const flushBookChunk = async (isLastChunk = false) => {
+        if (this.bookBuffers.get(index)?.length === 0) return
+
+        if (!this.bookChunkIndexes.has(index)) {
+          this.bookChunkIndexes.set(index, 0)
+        }
+
+        const chunkIndex = this.bookChunkIndexes.get(index)!
+
+        const bookChunkPath = this.PATHS.booksChunk(mode, index, chunkIndex)
+        let data = this.bookBuffers.get(index)!.join("\n")
+        if (isLastChunk) data += "\n"
+
+        await pipeline(
+          Readable.from([Buffer.from(data, "utf8")]),
+          zlib.createZstdCompress(),
+          fs.createWriteStream(bookChunkPath),
+        )
+
+        this.bookBuffers.set(index, [])
+        this.bookBufferSizes.set(index, 0)
+        this.bookChunkIndexes.set(index, chunkIndex + 1)
+      }
+
+      const booksIndexPath = this.PATHS.booksIndex(mode, index)
+      const booksIndexStream = fs.createWriteStream(booksIndexPath, {
         highWaterMark: this.maxHighWaterMark,
       })
 
@@ -530,15 +561,39 @@ export class Simulation {
               this.summary[mode]!.criteria[book.criteria]!.bsWins! += bsWins
               this.summary[mode]!.criteria[book.criteria]!.fsWins! += fsWins
 
-              const prefix = book.id === simStart ? "" : "\n"
+              const bookLine = JSON.stringify(bookData)
+              const lineSize = Buffer.byteLength(bookLine + "\n", "utf8")
+
+              if (this.bookBuffers.has(index)) {
+                this.bookBuffers.get(index)!.push(bookLine)
+                this.bookBufferSizes.set(
+                  index,
+                  this.bookBufferSizes.get(index)! + lineSize,
+                )
+              } else {
+                this.bookBuffers.set(index, [bookLine])
+                this.bookBufferSizes.set(index, lineSize)
+              }
+
+              if (!this.tempBookIndexPaths.includes(booksIndexPath)) {
+                this.tempBookIndexPaths.push(booksIndexPath)
+              }
+
               await Promise.all([
-                write(bookStream, prefix + JSON.stringify(bookData)),
+                write(
+                  booksIndexStream,
+                  `${book.id},${index},${this.bookChunkIndexes.get(index) || 0}\n`,
+                ),
                 write(lookupStream, `${book.id},1,${Math.round(book.payout)}\n`),
                 write(
                   lookupSegmentedStream,
                   `${book.id},${book.criteria},${book.basegameWins},${book.freespinsWins}\n`,
                 ),
               ])
+
+              if (this.bookBufferSizes.get(index)! >= 12 * 1024 * 1024) {
+                await flushBookChunk()
+              }
 
               if (this.recordsWriteStream) {
                 for (const record of msg.records) {
@@ -563,15 +618,24 @@ export class Simulation {
         if (msg.type === "done") {
           writeChain
             .then(async () => {
-              bookStream.end()
+              await flushBookChunk(true)
               lookupStream.end()
               lookupSegmentedStream.end()
+              booksIndexStream.end()
 
               await Promise.all([
-                new Promise<void>((r) => bookStream.on("finish", () => r())),
                 new Promise<void>((r) => lookupStream.on("finish", () => r())),
                 new Promise<void>((r) => lookupSegmentedStream.on("finish", () => r())),
+                new Promise<void>((r) => booksIndexStream.on("finish", () => r())),
               ])
+
+              const bookIndexMeta = {
+                worker: index,
+                chunks: this.bookChunkIndexes.get(index)! + 2,
+                simStart,
+                simEnd,
+              }
+              this.bookIndexMetas.push(bookIndexMeta)
 
               resolve(true)
             })
@@ -583,13 +647,13 @@ export class Simulation {
 
       worker.on("error", (error) => {
         this.tui?.log(error.message)
-        reject(error)
+        resolve(error)
       })
 
       worker.on("exit", (code) => {
         if (code !== 0) {
           this.tui?.log(chalk.yellow(`Worker stopped with exit code ${code}`))
-          reject()
+          resolve(false)
         }
       })
     })
@@ -854,27 +918,6 @@ export class Simulation {
     })
 
     writeFile(outputFilePath, JSON.stringify({ modes }, null, 2))
-  }
-
-  private async writeBooksJson(gameMode: string) {
-    const outputFilePath = this.PATHS.books(gameMode)
-    const compressedFilePath = this.PATHS.booksCompressed(gameMode)
-
-    fs.rmSync(compressedFilePath, { force: true })
-
-    if (fs.existsSync(outputFilePath)) {
-      await pipeline(
-        fs.createReadStream(outputFilePath),
-        zlib.createZstdCompress(),
-        fs.createWriteStream(compressedFilePath),
-      )
-    }
-
-    // We can save space by removing uncompressed file if panel is not active.
-    // For active panel, we need this file for easier data access.
-    if (!this.panelActive) {
-      fs.rmSync(outputFilePath, { force: true })
-    }
   }
 
   /**
