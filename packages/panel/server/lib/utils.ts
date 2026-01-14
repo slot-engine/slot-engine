@@ -275,6 +275,12 @@ export async function getBook(opts: { game: SlotGame; mode: string; bookId: numb
   const { game, mode, bookId } = opts
   const meta = game.getMetadata()
 
+  /**
+   * 1) Get meta object to find which worker made that book
+   * 2) Load index file by worker number and find chunk number for that book
+   * 3) Load chunk file and find the book
+   */
+
   const bookIndexMetaPath = meta.paths.booksIndexMeta(mode)
   if (!fs.existsSync(bookIndexMetaPath)) return
 
