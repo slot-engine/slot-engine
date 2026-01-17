@@ -56,7 +56,7 @@ export function createPanel(opts?: PanelOptions): Panel {
     return c.html(html)
   })
 
-  const run = () => {
+  const start = () => {
     const server = serve({
       fetch: app.fetch,
       port: panelConfig.port,
@@ -71,7 +71,7 @@ export function createPanel(opts?: PanelOptions): Panel {
     console.log(`:: ${panelConfig.games.length} games loaded`)
   }
 
-  return { run }
+  return { start }
 }
 
 interface PanelOptions {
@@ -84,5 +84,5 @@ export interface PanelConfig {
 }
 
 export interface Panel {
-  run: () => void
+  start: () => void
 }

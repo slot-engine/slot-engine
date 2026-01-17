@@ -8,4 +8,4 @@ const panel = createPanel({
   games: [ClusterGame, LinesGame],
 })
 
-panel.run()
+panel.start()
