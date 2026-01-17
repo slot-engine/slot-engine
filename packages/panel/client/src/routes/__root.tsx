@@ -1,6 +1,6 @@
 import "@/styles/styles.css"
 import { Outlet, createRootRoute } from "@tanstack/react-router"
-import { Navigation } from "../components/Navigation"
+import { Navigation } from "@/components/Navigation"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { WebsocketProvider } from "../context/Websocket"
 
@@ -20,9 +20,9 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <WebsocketProvider>
-        <div className="root">
+        <div className="root grid grid-cols-[16rem_auto] min-h-screen">
           <Navigation />
-          <main className="px-4 py-8 max-w-page-width mx-auto w-full border-x border-ui-700 min-h-content-height">
+          <main>
             <Outlet />
           </main>
         </div>

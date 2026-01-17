@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import type { LinkItem } from "../lib/types"
 import { IconBook, IconDeviceGamepad2 } from "@tabler/icons-react"
 import { cn } from "../lib/cn"
+import { GridBackground } from "@/components/GridBackground"
 
 export const Route = createFileRoute("/")({
   component: RouteComponent,
@@ -34,7 +35,7 @@ function RouteComponent() {
               to={link.href}
               key={link.href}
               target={link.target}
-              className="flex items-center gap-4 text-3xl p-6 bg-ui-900 border border-ui-700 rounded-lg hover:bg-ui-800"
+              className="relative overflow-clip flex items-center gap-4 text-xl p-6 border border-ui-700 rounded-lg"
             >
               {link.icon}
               <div>
@@ -43,6 +44,7 @@ function RouteComponent() {
                   <p className="text-sm text-ui-100">{link.description}</p>
                 )}
               </div>
+              <GridBackground />
             </Link>
           ))}
         </div>

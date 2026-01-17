@@ -16,6 +16,8 @@ import {
   type APIGamePostBetSimRunResponse,
   type APIGameStatsSummaryResponse,
   type APIGameStatsPayoutsResponse,
+  type APIGameReelSetsResponse,
+  type APIGameGetReelSetResponse,
 } from "../../../server/types"
 import type { SimulationOptions } from "./types"
 
@@ -81,6 +83,9 @@ export const query = {
     api<APIGameStatsSummaryResponse>(`games/${id}/stats-summary`),
   gameStatsPayouts: (id: string) =>
     api<APIGameStatsPayoutsResponse>(`games/${id}/stats-payouts`),
+  gameReelSets: (id: string) => api<APIGameReelSetsResponse>(`games/${id}/reel-sets`),
+  gameReelSet: (id: string, reelSetName: string) =>
+    api<APIGameGetReelSetResponse>(`games/${id}/reel-sets/${reelSetName}`),
 }
 
 export const mutation = {

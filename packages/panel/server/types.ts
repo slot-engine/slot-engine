@@ -163,3 +163,16 @@ export type APIGameStatsPayoutsResponse = {
 export type APIGameStatsSummaryResponse = {
   statistics: Statistics[]
 }
+
+export type APIGameReelSetsResponse = {
+  reelSets: Array<{
+    path: string
+    name: string
+  }>
+}
+
+export type APIGameGetReelSetResponse = {
+  path: string
+  name: string
+  reels: string[][]
+}

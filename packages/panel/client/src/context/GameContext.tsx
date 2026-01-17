@@ -3,8 +3,8 @@ import type { PropsWithGameId } from "../lib/types"
 import { useQuery } from "@tanstack/react-query"
 import { query } from "../lib/queries"
 import type { APIGameInfoResponse } from "../../../server/types"
-import { ErrorDisplay } from "../components/Error"
-import { Loading } from "../components/Loading"
+import { ErrorDisplay } from "@/components/Error"
+import { Loading } from "@/components/Loading"
 
 export interface GameContext {
   gameId: string

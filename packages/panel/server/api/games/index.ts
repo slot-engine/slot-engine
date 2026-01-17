@@ -15,6 +15,8 @@ import {
   APIGamePostBetSimRunResponse,
   APIGameStatsSummaryResponse,
   APIGameStatsPayoutsResponse,
+  APIGameReelSetsResponse,
+  APIGameGetReelSetResponse,
 } from "../../types"
 import { Hono } from "hono"
 import {
@@ -30,11 +32,13 @@ import {
   savePanelGameConfig,
 } from "../../lib/utils"
 import { zValidator } from "@hono/zod-validator"
+import fs from "fs"
+import { glob } from "fs/promises"
 import z from "zod"
 import chalk from "chalk"
 import qs from "qs"
-import { count } from "console"
 import { betSimulation } from "../../lib/bet-simulation"
+import path from "path"
 
 const app = new Hono<{ Variables: Variables }>()
 
@@ -384,6 +388,80 @@ app.get("/:id/stats-summary", (c) => {
   }
 
   return c.json<APIGameStatsSummaryResponse>({ statistics })
+})
+
+app.get("/:id/reel-sets", async (c) => {
+  const gameId = c.req.param("id")
+  const game = getGameById(gameId, c)
+
+  if (!game) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  const buildPath = game.getMetadata().rootDir
+  const reelSetPaths: string[] = []
+  for await (const p of glob(`${buildPath}/**/reels_*.csv`)) {
+    reelSetPaths.push(p)
+  }
+
+  const reelSets = reelSetPaths.map((p) => {
+    const filename = path.basename(p)
+    return {
+      path: p,
+      name: filename,
+    }
+  })
+
+  return c.json<APIGameReelSetsResponse>({ reelSets })
+})
+
+app.get("/:id/reel-sets/:rs", async (c) => {
+  const gameId = c.req.param("id")
+  const game = getGameById(gameId, c)
+
+  if (!game) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  const buildPath = game.getMetadata().rootDir
+  const reelSetFile = c.req.param("rs")
+  const reelSetPaths: string[] = []
+  for await (const p of glob(`${buildPath}/**/${reelSetFile}`)) {
+    reelSetPaths.push(p)
+  }
+
+  if (reelSetPaths.length === 0) {
+    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  }
+
+  if (reelSetPaths.length > 1) {
+    return c.json<APIMessageResponse>(
+      { message: `Multiple reels with name ${reelSetFile} found!` },
+      500,
+    )
+  }
+
+  const content = fs.readFileSync(reelSetPaths[0]!, "utf-8")
+  const rows = content.split("\n").filter((line) => line.trim() !== "")
+  const reels: string[][] = []
+
+  rows.forEach((row) => {
+    const symsInRow = row.split(",")
+    symsInRow.forEach((symbol, ridx) => {
+      if (!reels[ridx]) {
+        reels[ridx] = []
+      }
+      reels[ridx]!.push(symbol)
+    })
+  })
+
+  const reelSet = {
+    path: reelSetPaths[0]!,
+    name: reelSetFile,
+    reels,
+  }
+
+  return c.json<APIGameGetReelSetResponse>(reelSet)
 })
 
 export default app
