@@ -20,10 +20,13 @@
   --color-orange-500: #f09c1f;
   --color-orange-950: #211a10;
 
-  --color-cyan-500: #86E9FF;
+  --color-cyan-500: #86e9ff;
 
-  --color-emerald-500: #1FE39E;
+  --color-emerald-500: #1fe39e;
   --color-emerald-950: #152b24;
+
+  --color-yellow-500: #ebde28;
+  --color-yellow-950: #2e2c19;
 
   --spacing-page-width: 1400px;
   --spacing-nav-height: 56px;
@@ -97,7 +100,8 @@
   }
 
   @keyframes wiggle {
-    0%, 100% {
+    0%,
+    100% {
       transform: rotate(-2deg);
     }
     50% {
@@ -110,7 +114,7 @@
   .text-slot-letter {
     transform: translateY(-3rem);
     display: block;
-    animation: spin-slot 2s cubic-bezier(.54,-0.27,.31,1.27) infinite;
+    animation: spin-slot 2s cubic-bezier(0.54, -0.27, 0.31, 1.27) infinite;
   }
 
   @keyframes spin-slot {

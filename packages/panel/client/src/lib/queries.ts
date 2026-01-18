@@ -18,6 +18,7 @@ import {
   type APIGameStatsPayoutsResponse,
   type APIGameReelSetsResponse,
   type APIGameGetReelSetResponse,
+  type APIMessageResponse,
 } from "../../../server/types"
 import type { SimulationOptions } from "./types"
 
@@ -128,6 +129,18 @@ export const mutation = {
         body: JSON.stringify(config),
       },
     ),
+  saveReelSet: (
+    gameId: string,
+    reelSetName: string,
+    data: { reels: string[][]; colors: Record<string, string> },
+  ) =>
+    api<APIMessageResponse>(`games/${gameId}/reel-sets/${reelSetName}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }),
 }
 
 export type APIResponse<T> = T extends keyof typeof query

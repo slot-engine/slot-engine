@@ -178,8 +178,13 @@ export type APIGameReelSetsResponse = {
 }
 
 export type APIGameGetReelSetResponse = {
-  path: string
-  name: string
-  reels: Array<Array<{ id: string; symbol: string }>>
-  colors: Record<string, string>
+  reelSet: {
+    path: string
+    name: string
+    reels: Array<Array<{ id: string; symbol: string }>>
+    colors: Record<string, string>
+  }
+  options: {
+    symbols: string[]
+  }
 }

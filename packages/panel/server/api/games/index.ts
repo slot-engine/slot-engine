@@ -32,6 +32,7 @@ import {
   loadStatsSummaryFile,
   loadSummaryFile,
   savePanelGameConfig,
+  writeReelSet,
 } from "../../lib/utils"
 import { zValidator } from "@hono/zod-validator"
 import fs from "fs"
@@ -41,6 +42,7 @@ import chalk from "chalk"
 import qs from "qs"
 import { betSimulation } from "../../lib/bet-simulation"
 import { SYMBOL_COLORS } from "../../lib/constants"
+import { color } from "@uiw/react-color"
 
 const app = new Hono<{ Variables: Variables }>()
 
@@ -468,7 +470,60 @@ app.get("/:id/reel-sets/:rs", async (c) => {
     colors,
   }
 
-  return c.json<APIGameGetReelSetResponse>(reelSet)
+  const options = {
+    symbols: Array.from(game.getConfig().symbols.keys()),
+  }
+
+  return c.json<APIGameGetReelSetResponse>({ reelSet, options })
 })
+
+app.post(
+  "/:id/reel-sets/:rs",
+  zValidator(
+    "json",
+    z.object({
+      reels: z.array(z.string().array()),
+      colors: z.record(z.string(), z.string()),
+    }),
+  ),
+  async (c) => {
+    const gameId = c.req.param("id")
+    const game = getGameById(gameId, c)
+    const config = loadOrCreatePanelGameConfig(game)
+
+    if (!game || !config) {
+      return c.json<APIMessageResponse>({ message: "Game Not found" }, 404)
+    }
+
+    const reelSetFile = c.req.param("rs")
+    const reelSets = await getReelSets(game)
+    const rs = reelSets.find((r) => r.name === reelSetFile)
+
+    if (!rs) {
+      return c.json<APIMessageResponse>({ message: "Reelset Not found" }, 404)
+    }
+
+    const data = c.req.valid("json")
+
+    const newReelsets = config.reelSets.map((r) => {
+      if (r.name === reelSetFile && r.path === rs.path) {
+        return {
+          ...r,
+          symbolColors: data.colors,
+        }
+      }
+      return r
+    })
+
+    writeReelSet(rs.path, data.reels)
+
+    savePanelGameConfig(game, {
+      ...config,
+      reelSets: newReelsets,
+    })
+
+    return c.json<APIMessageResponse>({ message: "ok" })
+  },
+)
 
 export default app

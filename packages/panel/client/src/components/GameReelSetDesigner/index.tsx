@@ -1,77 +1,162 @@
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import { DragDropProvider } from "@dnd-kit/react"
 import { CollisionPriority } from "@dnd-kit/abstract"
 import { useSortable } from "@dnd-kit/react/sortable"
 import { move } from "@dnd-kit/helpers"
-import { IconDragDrop, IconGripHorizontal, IconPlus } from "@tabler/icons-react"
+import {
+  IconDragDrop,
+  IconGripHorizontal,
+  IconPlus,
+  IconTrash,
+} from "@tabler/icons-react"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { cn } from "@/lib/cn"
 import { useEditorContext, type ReelsetEditorReel } from "@/context/ReelsetEditorContext"
+import { Button } from "../Button"
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "../Dialog"
+import { NumberInput } from "../NumberInput"
 
 export const ReelSetDesigner = () => {
-  const { addReel, previousReels, reelsState, reelOrderState } = useEditorContext()
+  const { addReel, previousReels, reelsState, reelOrderState, options } =
+    useEditorContext()
   const [reels, setReels] = reelsState
   const [reelOrder, setReelOrder] = reelOrderState
 
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [symbolCounts, setSymbolCounts] = useState<Record<string, number>>({})
+  const lastInteractedReel = useRef<number | null>(null)
+
+  function updateSymbolCount(symbol: string, count: number) {
+    setSymbolCounts((current) => {
+      return { ...current, [symbol]: count }
+    })
+  }
+
+  function handleDialog(reelId: number) {
+    lastInteractedReel.current = reelId
+    setDialogOpen(true)
+  }
+
+  function confirmSymbols() {
+    const reelId = lastInteractedReel.current
+    if (reelId === null) return
+
+    const newSymbols: Array<{ id: string; symbol: string }> = []
+    for (const [symbol, count] of Object.entries(symbolCounts)) {
+      for (let i = 0; i < count; i++) {
+        newSymbols.push({ id: crypto.randomUUID(), symbol })
+      }
+    }
+
+    const reel = [...(reels[reelId] || []), ...newSymbols]
+    setReels((current) => {
+      return { ...current, [reelId]: reel }
+    })
+
+    lastInteractedReel.current = null
+    setSymbolCounts({})
+    setDialogOpen(false)
+  }
+
+  function deleteReel(reelId: number) {
+    setReels((currentReels) => {
+      const { [reelId]: _, ...remainingReels } = currentReels
+      return remainingReels
+    })
+    setReelOrder((currentOrder) => currentOrder.filter((id) => id !== reelId))
+  }
+
   return (
-    <DragDropProvider
-      onDragStart={() => {
-        previousReels.current = reels
-      }}
-      onDragOver={(event) => {
-        const { source, target } = event.operation
+    <>
+      <DragDropProvider
+        onDragStart={() => {
+          previousReels.current = reels
+        }}
+        onDragOver={(event) => {
+          const { source, target } = event.operation
 
-        if (source?.type === "reel") return
+          if (source?.type === "reel") return
 
-        if (source?.type === "symbol") {
-          if (target?.type && String(target.id).includes("dropzone")) {
-            setReels((currentReels) => {
-              const { reels: reelsWithoutItem, item } = findAndRemoveItem(
-                currentReels,
-                source.id,
-              )
-              if (!item) return currentReels
+          if (source?.type === "symbol") {
+            if (target?.type && String(target.id).includes("dropzone")) {
+              setReels((currentReels) => {
+                const { reels: reelsWithoutItem, item } = findAndRemoveItem(
+                  currentReels,
+                  source.id,
+                )
+                if (!item) return currentReels
 
-              const dropzoneReelId = parseDropzoneId(target.id)!
-              return {
-                ...reelsWithoutItem,
-                [dropzoneReelId]: [...reelsWithoutItem[dropzoneReelId], item],
-              }
-            })
-          } else {
-            setReels((currentReels) => move(currentReels, event))
+                const dropzoneReelId = parseDropzoneId(target.id)!
+                return {
+                  ...reelsWithoutItem,
+                  [dropzoneReelId]: [...reelsWithoutItem[dropzoneReelId], item],
+                }
+              })
+            } else {
+              setReels((currentReels) => move(currentReels, event))
+            }
           }
-        }
-      }}
-      onDragEnd={(event) => {
-        const { source, target } = event.operation
+        }}
+        onDragEnd={(event) => {
+          const { source, target } = event.operation
 
-        if (event.canceled) {
-          if (source?.type == "symbol") {
-            setReels(previousReels.current)
+          if (event.canceled) {
+            if (source?.type == "symbol") {
+              setReels(previousReels.current)
+            }
+            return
           }
-          return
-        }
 
-        if (source?.type === "reel") {
-          setReelOrder((reels) => move(reels, event))
-          return
-        }
-      }}
-    >
-      <div className="flex gap-0.5 overflow-x-auto">
-        {reelOrder.map((reel, i) => (
-          <SortableReel key={reel} reelId={reel} index={i} reel={reels[reel]} />
-        ))}
-        <div
-          onClick={() => addReel()}
-          className="min-w-28 bg-ui-900 hover:bg-ui-800 flex flex-col justify-center items-center gap-2 border-2 border-ui-700 border-dashed cursor-pointer"
-        >
-          <IconPlus />
-          Add Reel
+          if (source?.type === "reel") {
+            setReelOrder((reels) => move(reels, event))
+            return
+          }
+        }}
+      >
+        <div className="flex gap-0.5 overflow-x-auto">
+          {reelOrder.map((reel, i) => (
+            <SortableReel
+              key={reel}
+              reelId={reel}
+              index={i}
+              reel={reels[reel]}
+              onClickPlus={handleDialog}
+              onClickDelete={deleteReel}
+            />
+          ))}
+          <div
+            onClick={() => addReel()}
+            className="min-w-28 bg-ui-900 hover:bg-ui-800 flex flex-col justify-center items-center gap-2 border-2 border-ui-700 border-dashed cursor-pointer"
+          >
+            <IconPlus />
+            Add Reel
+          </div>
         </div>
-      </div>
-    </DragDropProvider>
+      </DragDropProvider>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogTitle>Add Reel Symbols</DialogTitle>
+          <DialogDescription>
+            The selected symbols will be appended to the reel.
+          </DialogDescription>
+          <div className="mt-4">
+            {options.symbols.map((sym) => (
+              <div className="flex gap-4 items-center mb-2" key={sym}>
+                <div className="text-lg w-16">{sym}</div>
+                <NumberInput
+                  value={symbolCounts[sym]}
+                  onValueChange={(v) => updateSymbolCount(sym, v || 0)}
+                />
+              </div>
+            ))}
+          </div>
+          <Button className="mt-4" onClick={confirmSymbols}>
+            Append Symbols
+          </Button>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
@@ -79,9 +164,18 @@ interface SortableReelProps extends React.ComponentPropsWithoutRef<"div"> {
   reelId: number
   index: number
   reel: ReelsetEditorReel
+  onClickPlus?: (reelId: number) => void
+  onClickDelete?: (reelId: number) => void
 }
 
-const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProps) => {
+const SortableReel = ({
+  reelId,
+  index,
+  reel,
+  onClickPlus,
+  onClickDelete,
+  ...props
+}: SortableReelProps) => {
   const { reelsState } = useEditorContext()
   const [reels] = reelsState
 
@@ -101,7 +195,7 @@ const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProps) => {
   const virtualizer = useVirtualizer({
     count: reel.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 78,
+    estimateSize: () => 48,
     overscan: 10,
     gap: 8,
     getItemKey: (itemIdx) => reels[reelId]?.[itemIdx]?.id,
@@ -116,8 +210,23 @@ const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProps) => {
       className="bg-ui-900 overflow-clip h-content-height flex flex-col"
     >
       <div className="px-4 py-2">
-        <div ref={handleRef} className="py-2 flex justify-center cursor-grab bg-ui-900">
-          <IconGripHorizontal />
+        <div className="flex gap-4 items-center justify-between">
+          <div
+            ref={handleRef}
+            className="py-2 flex justify-center cursor-grab bg-ui-900"
+            title="Click and drag to move"
+          >
+            <IconGripHorizontal />
+          </div>
+          <Button
+            isIconButton
+            size="sm"
+            variant="ghost"
+            title="Add Symbols"
+            onClick={() => onClickPlus?.(reelId)}
+          >
+            <IconPlus />
+          </Button>
         </div>
         <div className="text-xs text-center">Symbols: {reel.length}</div>
       </div>
@@ -167,6 +276,18 @@ const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProps) => {
           </div>
         )}
       </div>
+      <div className="px-4 py-2">
+        <Button
+          isIconButton
+          size="sm"
+          variant="ghost-destructive"
+          title="Delete Reel"
+          className="w-full"
+          onClick={() => onClickDelete?.(reelId)}
+        >
+          <IconTrash />
+        </Button>
+      </div>
     </div>
   )
 }
@@ -185,7 +306,8 @@ const SortableSymbol = ({
   className,
   ...props
 }: SortableSymbolProps) => {
-  const { colors } = useEditorContext()
+  const { colorsState } = useEditorContext()
+  const [colors] = colorsState
 
   const { ref } = useSortable({
     id: id!,
@@ -200,7 +322,7 @@ const SortableSymbol = ({
       {...props}
       ref={ref}
       className={cn(
-        "cursor-grab size-20 bg-ui-800 rounded-sm border border-ui-700",
+        "cursor-grab w-20 h-12 bg-ui-800 rounded-sm border border-ui-700",
         "data-[dnd-dragging=true]:opacity-90 data-[dnd-dragging=true]:animate-wiggle",
         className,
       )}

@@ -423,6 +423,22 @@ export async function getReelSets(game: SlotGame) {
   return reelSets
 }
 
+export function writeReelSet(path: string, reels: string[][]) {
+  const maxLength = Math.max(...reels.map((reel) => reel.length))
+
+  const rows: string[] = []
+  for (let s = 0; s < maxLength; s++) {
+    const row: string[] = []
+    for (let r = 0; r < reels.length; r++) {
+      row.push(reels[r]![s] ?? "")
+    }
+    rows.push(row.join(","))
+  }
+
+  const csvContent = rows.join("\n")
+  fs.writeFileSync(path, csvContent, "utf-8")
+}
+
 export function assignColorsToSymbols(game: SlotGame) {
   const symbols = game.getConfig().symbols
   const symbolColors: Record<string, string> = {}

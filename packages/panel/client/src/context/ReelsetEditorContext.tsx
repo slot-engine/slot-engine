@@ -5,6 +5,7 @@ import { query } from "@/lib/queries"
 import { ErrorDisplay } from "@/components/Error"
 import { Skeleton } from "@/components/Skeleton"
 import type { State } from "@/lib/types"
+import type { APIGameGetReelSetResponse } from "../../../server/types"
 
 export type ReelsetEditorReel = Array<{ id: string; symbol: string }>
 
@@ -15,12 +16,13 @@ interface EditorContext {
     path: string
     name: string
   }[]
-  colors: Record<string, string>
-  activeReelsetName: State<string>
+  colorsState: State<Record<string, string>>
+  activeReelsetState: State<string>
   reelsState: State<Record<number, ReelsetEditorReel>>
   reelOrderState: State<number[]>
   previousReels: React.RefObject<Record<number, ReelsetEditorReel>>
   addReel: () => void
+  options: APIGameGetReelSetResponse["options"]
 }
 
 export function useEditorContext() {
@@ -60,18 +62,20 @@ export function ReelsetEditorProvider({
   const [reels, setReels] = useState<Record<number, ReelsetEditorReel>>({})
   const [reelOrder, setReelOrder] = useState<number[]>([])
   const previousReels = useRef<Record<number, ReelsetEditorReel>>({})
+  const [colors, setColors] = useState<Record<string, string>>({})
 
   useEffect(() => {
-    if (!data || !data.reels.length) return
-    setReels(Object.fromEntries(data.reels.map((r, idx) => [idx, r])))
-    setReelOrder(data.reels.map((_, idx) => idx))
+    if (!data || !data.reelSet.reels.length) return
+    setReels(Object.fromEntries(data.reelSet.reels.map((r, idx) => [idx, r])))
+    setReelOrder(data.reelSet.reels.map((_, idx) => idx))
+    setColors(data.reelSet.colors)
   }, [data])
 
   if (error) return <ErrorDisplay error={error} />
 
   if (!data || isLoading) {
     return (
-      <div className="flex gap-4 mt-8">
+      <div className="flex gap-4 p-8">
         <Skeleton className="h-192 w-24" />
         <Skeleton className="h-192 w-24" />
         <Skeleton className="h-192 w-24" />
@@ -97,12 +101,13 @@ export function ReelsetEditorProvider({
 
   const context: EditorContext = {
     reelSets,
-    activeReelsetName: [activeRs, setActiveRs],
-    colors: data.colors,
+    activeReelsetState: [activeRs, setActiveRs],
+    colorsState: [colors, setColors],
     reelOrderState: [reelOrder, setReelOrder],
     previousReels,
     reelsState: [reels, setReels],
     addReel,
+    options: data.options,
   }
 
   return <EditorContext.Provider value={context}>{children}</EditorContext.Provider>
