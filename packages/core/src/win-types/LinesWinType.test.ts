@@ -92,9 +92,9 @@ describe("LinesWinType", () => {
   it("does not count interrupted lines", () => {
     reels = [
       [A, C, B],
-      [A, B, B],
       [A, C, B],
-      [C, B, C],
+      [A, B, B],
+      [C, C, C],
       [A, B, B],
     ]
 
@@ -103,7 +103,8 @@ describe("LinesWinType", () => {
       wildSymbol: W,
       lines: {
         1: [0, 0, 0, 0, 0],
-        2: [2, 2, 2, 2, 2],
+        2: [1, 1, 1, 1, 1],
+        3: [2, 2, 2, 2, 2],
       },
     })
 
