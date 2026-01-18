@@ -44,7 +44,7 @@
       "name": "reels_base.csv",
       "path": "E:\\JONAS\\Sonstiges\\Development\\slot-engine\\examples\\cluster_example\\static-reels\\reels_base.csv",
       "symbolColors": {
-        "S": "#22c55e",
+        "S": "#ffffff",
         "W": "#ef4444",
         "H1": "#3b82f6",
         "H2": "#edcd1a",
@@ -52,7 +52,7 @@
         "H4": "#a855f7",
         "L1": "#f97316",
         "L2": "#ec4899",
-        "L3": "#06b6d4"
+        "L3": "#2fab50"
       }
     },
     {

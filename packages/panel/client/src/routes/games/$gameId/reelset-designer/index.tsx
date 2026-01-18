@@ -8,9 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/S
 import { Skeleton } from "@/components/Skeleton"
 import { useGameContext } from "@/context/GameContext"
 import { ReelsetEditorProvider, useEditorContext } from "@/context/ReelsetEditorContext"
-import { query } from "@/lib/queries"
-import { IconDeviceFloppy } from "@tabler/icons-react"
-import { useQuery } from "@tanstack/react-query"
+import { mutation, query } from "@/lib/queries"
+import { IconDeviceFloppy, IconLoader2 } from "@tabler/icons-react"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 
 export const Route = createFileRoute("/games/$gameId/reelset-designer/")({
@@ -49,9 +49,27 @@ function RouteComponent() {
 }
 
 const Sidebar = () => {
-  const { reelSets, activeReelsetState, colorsState } = useEditorContext()
+  const { gameId } = useGameContext()
+  const { reelSets, activeReelsetState, colorsState, reelsState, reelOrderState } =
+    useEditorContext()
   const [activeReelset, setActiveReelset] = activeReelsetState
+  const [reels] = reelsState
   const [colors] = colorsState
+  const [reelOrder] = reelOrderState
+
+  const updateMutation = useMutation({
+    mutationKey: ["game", "save-reelset", gameId, activeReelset],
+    mutationFn: async () => {
+      const orderedReels = reelOrder.map((idx) => reels[idx] || [])
+
+      return await mutation.saveReelSet(gameId, activeReelset, {
+        reels: orderedReels.map((r) => r.map((s) => s.symbol)),
+        colors,
+      })
+    },
+  })
+
+  const isLoading = updateMutation.isPending
 
   return (
     <div>
@@ -80,8 +98,12 @@ const Sidebar = () => {
           <SymbolColor key={key} symbol={key} color={color} />
         ))}
       </div>
-      <Button className="mt-8">
-        <IconDeviceFloppy />
+      <Button
+        className="mt-8"
+        disabled={isLoading}
+        onClick={() => updateMutation.mutate()}
+      >
+        {isLoading ? <IconLoader2 className="animate-spin mr-2" /> : <IconDeviceFloppy />}
         Save Reels & Settings
       </Button>
     </div>

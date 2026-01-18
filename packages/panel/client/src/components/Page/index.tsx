@@ -54,7 +54,7 @@ export const PageContent = ({
         </ScrollArea.Root>
         <div
           className={cn(
-            "px-4 py-8 border-l border-ui-700 h-content-height sticky top-nav-height",
+            "px-4 py-8 border-l border-ui-700 h-content-height sticky top-nav-height overflow-y-auto",
             classNames?.sidebar,
           )}
         >
