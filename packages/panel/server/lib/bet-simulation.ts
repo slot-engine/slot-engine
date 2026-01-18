@@ -126,7 +126,8 @@ export async function betSimulation(game: SlotGame, config: BetSimulationConfig)
 
         const [_, weight, pay] = lutEntry
         const [___, criteria] = lutSegEntry
-        const payout = round((pay / 100) * group.betAmount, 4)
+        const payoutMultiplier = pay / 100
+        const payout = round(payoutMultiplier * group.betAmount, 4)
         const returnMultiplier = totalCost > 0 ? round(payout / totalCost, 4) : 0
 
         if (weight <= 1) {

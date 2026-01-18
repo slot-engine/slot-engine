@@ -52,7 +52,7 @@ export const GameExplorer = () => {
   }, [hasNextPage, fetchNextPage, luts.length, isFetchingNextPage, items])
 
   return (
-    <div className="grid grid-cols-[1fr_2fr] gap-8">
+    <div className="grid grid-cols-[1fr_3fr] gap-8">
       <div>
         <Select
           label="Mode"

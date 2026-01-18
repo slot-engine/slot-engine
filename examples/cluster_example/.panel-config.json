@@ -1,29 +1,73 @@
 {
   "id": "example-02",
   "simulation": {
-    "concurrency": 16,
-    "simRunsAmount": {
-      "base": 500000,
-      "bonus": 250000
-    },
+    "simRunsAmount": {},
+    "concurrency": 8,
     "maxPendingSims": 25,
     "maxDiskBuffer": 150
   },
   "betSimulations": [
     {
-      "id": "6cb8763c-9463-4731-8826-416a4ce074e9",
+      "id": "851cc15e",
       "players": {
-        "count": 300,
-        "startingBalance": 750
+        "count": 100,
+        "startingBalance": 500
       },
       "betGroups": [
         {
-          "id": "613ab92a",
+          "id": "53b4e010",
           "mode": "base",
           "betAmount": 1,
-          "spins": 1000
+          "spins": 500
         }
       ]
+    }
+  ],
+  "reelSets": [
+    {
+      "name": "reels_base.csv",
+      "path": "E:\\JONAS\\Sonstiges\\Development\\slot-engine\\examples\\cluster_example\\static-reels\\reels_base.csv",
+      "symbolColors": {
+        "S": "#22c55e",
+        "W": "#ef4444",
+        "H1": "#3b82f6",
+        "H2": "#edcd1a",
+        "H3": "#dbac2a",
+        "H4": "#a855f7",
+        "L1": "#f97316",
+        "L2": "#ec4899",
+        "L3": "#06b6d4"
+      }
+    },
+    {
+      "name": "reels_bonus.csv",
+      "path": "E:\\JONAS\\Sonstiges\\Development\\slot-engine\\examples\\cluster_example\\static-reels\\reels_bonus.csv",
+      "symbolColors": {
+        "S": "#22c55e",
+        "W": "#ef4444",
+        "H1": "#3b82f6",
+        "H2": "#edcd1a",
+        "H3": "#dbac2a",
+        "H4": "#a855f7",
+        "L1": "#f97316",
+        "L2": "#ec4899",
+        "L3": "#06b6d4"
+      }
+    },
+    {
+      "name": "reels_maxwin.csv",
+      "path": "E:\\JONAS\\Sonstiges\\Development\\slot-engine\\examples\\cluster_example\\static-reels\\reels_maxwin.csv",
+      "symbolColors": {
+        "S": "#22c55e",
+        "W": "#ef4444",
+        "H1": "#3b82f6",
+        "H2": "#edcd1a",
+        "H3": "#dbac2a",
+        "H4": "#a855f7",
+        "L1": "#f97316",
+        "L2": "#ec4899",
+        "L3": "#06b6d4"
+      }
     }
   ],
   "forceStop": false

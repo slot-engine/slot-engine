@@ -99,13 +99,10 @@ export const GameBetSimulation = () => {
 
   if (!data || isFetching) {
     return (
-      <div className="grid grid-cols-[2fr_1fr] gap-4 items-start">
-        <div>
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32 mt-4" />
-          <Skeleton className="h-32 mt-4" />
-        </div>
-        <Skeleton className="h-96" />
+      <div>
+        <Skeleton className="h-64" />
+        <Skeleton className="h-64 mt-4" />
+        <Skeleton className="h-64 mt-4" />
       </div>
     )
   }
@@ -126,57 +123,35 @@ export const GameBetSimulation = () => {
   }
 
   return (
-    <div className="grid grid-cols-[2fr_1fr] gap-4 items-start">
-      <div>
-        {betConfigs.length > 0 ? (
-          betConfigs.map((config, index) => (
-            <BetSimulation
-              config={config}
-              onValueChange={onConfigChange}
-              removeSimulation={removeSimulation}
-              key={index}
-              isSaving={updateConfMutation.isPending}
-            />
-          ))
-        ) : (
-          <div className="p-8 rounded-lg border border-ui-700 bg-ui-900 flex flex-col items-center">
-            <div className="text-xl mb-2">No simulation configured</div>
-            <div className="mb-4 text-ui-100">
-              See how your game might perform with your current results
-            </div>
-            <Button onClick={() => addBetSimConfig()}>
-              <IconSettings />
-              Configure
-            </Button>
+    <div>
+      {betConfigs.length > 0 ? (
+        betConfigs.map((config, index) => (
+          <BetSimulation
+            config={config}
+            onValueChange={onConfigChange}
+            removeSimulation={removeSimulation}
+            key={index}
+            isSaving={updateConfMutation.isPending}
+          />
+        ))
+      ) : (
+        <div className="p-8 rounded-lg border border-ui-700 bg-ui-900 flex flex-col items-center">
+          <div className="text-xl mb-2">No simulation configured</div>
+          <div className="mb-4 text-ui-100">
+            See how your game might perform with your current results
           </div>
-        )}
-        {betConfigs.length > 0 && (
-          <Button className="mt-4" onClick={() => addBetSimConfig()}>
-            <IconPlus />
-            Add another Simulation
+          <Button onClick={() => addBetSimConfig()}>
+            <IconSettings />
+            Configure
           </Button>
-        )}
-      </div>
-      <div className="p-6 rounded-lg bg-ui-900 border border-ui-700 sticky top-16">
-        <div className="flex items-center gap-2 mb-2">
-          <IconInfoCircle />
-          <h4>How does this work?</h4>
         </div>
-        <p>
-          This module simulates game behavior with multiple players betting on the game
-          under equal circumstances. For each "spin" a virtual player does, a random
-          weighted result from the lookup table is chosen, similar to real Stake RGS
-          functionality.
-        </p>
-        <p>
-          After simulation you'll be presented with the results and how your game performs
-          on average.
-        </p>
-        <p>
-          You can configure and run as many simultaneous simulations as you like. Your
-          configuration will be saved.
-        </p>
-      </div>
+      )}
+      {betConfigs.length > 0 && (
+        <Button className="mt-4" onClick={() => addBetSimConfig()}>
+          <IconPlus />
+          Add another Simulation
+        </Button>
+      )}
     </div>
   )
 }
@@ -511,7 +486,7 @@ const BetSimulation = ({
                   value={frmt(results.totalProfit)}
                   description="Should be negative. This (positive) amount would go to the casino"
                   isSuccess={results.totalProfit < 0}
-                  successText={`${(frmt(Math.abs(results.totalProfit)))} goes to the casino`}
+                  successText={`${frmt(Math.abs(results.totalProfit))} goes to the casino`}
                   isDanger={results.totalProfit > 0}
                   dangerText={`${frmt(results.totalProfit)} profit for players!`}
                   isWarning={!results.totalProfit}

@@ -28,6 +28,8 @@
   --spacing-page-width: 1400px;
   --spacing-nav-height: 56px;
   --spacing-content-height: calc(100vh - var(--spacing-nav-height));
+
+  --animate-wiggle: wiggle 0.5s ease-in-out infinite;
 }
 
 @layer base {
@@ -92,6 +94,15 @@
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: var(--color-ui-700) var(--color-ui-900);
+  }
+
+  @keyframes wiggle {
+    0%, 100% {
+      transform: rotate(-2deg);
+    }
+    50% {
+      transform: rotate(2deg);
+    }
   }
 }
 

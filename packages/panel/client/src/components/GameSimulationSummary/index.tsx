@@ -39,12 +39,13 @@ export const GameSimulationSummary = () => {
   if (!data || isLoading) return <Skeleton className="h-64 mt-8" /> 
 
   const modes = Object.entries(data.summary)
+  const frmt = new Intl.NumberFormat("de-EN").format
 
   return (
     <div>
       <div className="mt-8 mb-4">
         <h3>Simulation Summary</h3>
-        <p className="text-ui-100">Overview of the most recent simulation.</p>
+        <p className="text-ui-100">Overview of the most recent simulation. NOT optimized results.</p>
       </div>
       <div>
         {modes.map(([modeName, summary]) => (
@@ -63,10 +64,10 @@ export const GameSimulationSummary = () => {
                 high if the results include many max wins for variety purposes, for
                 example.
               </div>
-              <TableRow label="Simulations" value={summary.total.numSims} />
-              <TableRow label="RTP (unoptimized)" value={summary.total.rtp} />
-              <TableRow label="Basegame Wins" value={summary.total.bsWins} />
-              <TableRow label="Freespins Wins" value={summary.total.fsWins} />
+              <TableRow label="Simulations" value={frmt(summary.total.numSims)} />
+              <TableRow label="RTP (unoptimized)" value={frmt(summary.total.rtp)} />
+              <TableRow label="Basegame Wins" value={frmt(summary.total.bsWins)} />
+              <TableRow label="Freespins Wins" value={frmt(summary.total.fsWins)} />
             </div>
             <div>
               <div className="text-xl mb-2">Result Sets Breakdown</div>
@@ -82,10 +83,10 @@ export const GameSimulationSummary = () => {
                       {criteria}
                     </div>
                     <div className="text-sm">
-                      <TableRow label="Simulations" value={cs.numSims} />
-                      <TableRow label="RTP (unoptimized)" value={cs.rtp} />
-                      <TableRow label="Basegame Wins" value={cs.bsWins} />
-                      <TableRow label="Freespins Wins" value={cs.fsWins} />
+                      <TableRow label="Simulations" value={frmt(cs.numSims)} />
+                      <TableRow label="RTP (unoptimized)" value={frmt(cs.rtp)} />
+                      <TableRow label="Basegame Wins" value={frmt(cs.bsWins)} />
+                      <TableRow label="Freespins Wins" value={frmt(cs.fsWins)} />
                     </div>
                   </div>
                 ))}

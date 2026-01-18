@@ -8,6 +8,7 @@ import type {
   Statistics,
   WrittenBook,
 } from "@slot-engine/core/types"
+import { SYMBOL_COLORS } from "./lib/constants"
 
 export interface APIMessageResponse {
   message: string
@@ -55,6 +56,11 @@ export interface PanelGameConfig {
     maxDiskBuffer: number
   }
   betSimulations: BetSimulationConfig[]
+  reelSets: Array<{
+    name: string
+    path: string
+    symbolColors: Record<string, string>
+  }>
   forceStop: boolean
 }
 
@@ -174,5 +180,6 @@ export type APIGameReelSetsResponse = {
 export type APIGameGetReelSetResponse = {
   path: string
   name: string
-  reels: string[][]
+  reels: Array<Array<{ id: string; symbol: string }>>
+  colors: Record<string, string>
 }

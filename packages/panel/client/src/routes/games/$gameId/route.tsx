@@ -11,12 +11,7 @@ import {
   IconRepeat,
 } from "@tabler/icons-react"
 import { GameProvider } from "@/context/GameContext"
-import { GameSimulation } from "@/components/GameSimulation"
-import { GameSimulationSummary } from "@/components/GameSimulationSummary"
-import { GameExplorer } from "@/components/GameExplorer"
-import { GameBetSimulation } from "@/components/GameBetSimulation"
-import { ReelSetDesigner } from "@/components/GameReelSetDesigner"
-import { PageContent, PageHeader } from "@/components/Page"
+import { PageHeader } from "@/components/Page"
 import { cn } from "@/lib/cn"
 
 export const Route = createFileRoute("/games/$gameId")({
@@ -89,64 +84,7 @@ function RouteComponent() {
           </Link>
         </div>
       </PageHeader>
-      <PageContent>
-        <Outlet />
-      </PageContent>
+      <Outlet />
     </GameProvider>
-  )
-}
-
-const TabContentHeader = (props: { title: string; description: string }) => {
-  return (
-    <div className="py-4">
-      <h3>{props.title}</h3>
-      <p className="text-ui-100">{props.description}</p>
-    </div>
-  )
-}
-
-const SimulationTab = () => {
-  return (
-    <div>
-      <TabContentHeader title="Simulation" description="Run simulations for this game." />
-      <GameSimulation />
-      <GameSimulationSummary />
-    </div>
-  )
-}
-
-const BetSimulationTab = () => {
-  return (
-    <div>
-      <TabContentHeader
-        title="Bet Simulation"
-        description="Simulate players betting on this game."
-      />
-      <GameBetSimulation />
-    </div>
-  )
-}
-
-const ReelSetDesignerTab = () => {
-  return (
-    <div>
-      <TabContentHeader
-        title="Reel Set Designer"
-        description="Design and modify reel sets for this game."
-      />
-      <ReelSetDesigner />
-    </div>
-  )
-}
-
-const ExplorerTab = () => {
-  return (
-    <div>
-      <TabContentHeader
-        title="Explorer"
-        description="Browse books and events of this game."
-      />
-      <GameExplorer />
-    </div>
   )
 }

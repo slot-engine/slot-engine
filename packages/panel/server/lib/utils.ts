@@ -1,6 +1,6 @@
 import fs from "fs"
 import zlib from "zlib"
-import fsAsync from "fs/promises"
+import fsAsync, { glob } from "fs/promises"
 import readline from "readline"
 import path from "path"
 import { Context } from "hono"
@@ -15,7 +15,7 @@ import {
   type SlotGame,
   type WrittenBook,
 } from "@slot-engine/core"
-import { PANEL_GAME_CONFIG_FILE } from "./constants"
+import { PANEL_GAME_CONFIG_FILE, SYMBOL_COLORS } from "./constants"
 import { PanelGameConfig } from "../types"
 import chalk from "chalk"
 
@@ -69,6 +69,7 @@ export function loadOrCreatePanelGameConfig(game: SlotGame | undefined) {
       config.simulation?.simRunsAmount,
       config.forceStop,
       config.betSimulations,
+      config.reelSets,
     ]
 
     isFileBroken = propsToCheck.some((p) => p === undefined)
@@ -88,6 +89,7 @@ export function loadOrCreatePanelGameConfig(game: SlotGame | undefined) {
       maxDiskBuffer: 150,
     },
     betSimulations: [],
+    reelSets: [],
     forceStop: false,
   }
 
@@ -401,4 +403,39 @@ async function filterForceRecords(opts: {
   stream.destroy()
 
   return Array.from(bookIds)
+}
+
+export async function getReelSets(game: SlotGame) {
+  const buildPath = game.getMetadata().rootDir
+  const reelSetPaths: string[] = []
+  for await (const p of glob(`${buildPath}/**/reels_*.csv`)) {
+    reelSetPaths.push(p)
+  }
+
+  const reelSets = reelSetPaths.map((p) => {
+    const filename = path.basename(p)
+    return {
+      path: p,
+      name: filename,
+    }
+  })
+
+  return reelSets
+}
+
+export function assignColorsToSymbols(game: SlotGame) {
+  const symbols = game.getConfig().symbols
+  const symbolColors: Record<string, string> = {}
+  const colors = Object.values(SYMBOL_COLORS)
+  let colorIndex = 0
+
+  for (const symbol of symbols.values()) {
+    symbolColors[symbol.id] = colors[colorIndex]!
+    colorIndex++
+    if (colorIndex >= colors.length) {
+      colorIndex = 0
+    }
+  }
+
+  return symbolColors
 }

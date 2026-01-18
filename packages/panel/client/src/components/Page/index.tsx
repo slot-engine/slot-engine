@@ -1,3 +1,5 @@
+import { cn } from "@/lib/cn"
+
 interface PageHeaderProps {
   title: string
   children?: React.ReactNode
@@ -14,20 +16,43 @@ export const PageHeader = ({ title, children }: PageHeaderProps) => {
   )
 }
 
-interface PageContentProps {
-  children: React.ReactNode
+interface PageContentProps extends React.ComponentPropsWithoutRef<"div"> {
   sidebar?: React.ReactNode
+  classNames?: {
+    content?: string
+    sidebar?: string
+  }
 }
 
-export const PageContent = ({ children, sidebar }: PageContentProps) => {
+export const PageContent = ({
+  children,
+  sidebar,
+  className,
+  classNames,
+  ...props
+}: PageContentProps) => {
   if (sidebar) {
     return (
-      <div className="grid grid-cols-[auto_24rem]">
-        <div className="px-4 py-8">{children}</div>
-        <div className="px-4 py-8 border-l border-ui-700">{sidebar}</div>
+      <div
+        {...props}
+        className={cn("grid grid-cols-[auto_24rem] items-start", className)}
+      >
+        <div className={cn("px-4 py-8", classNames?.content)}>{children}</div>
+        <div
+          className={cn(
+            "px-4 py-8 border-l border-ui-700 h-content-height sticky top-nav-height",
+            classNames?.sidebar,
+          )}
+        >
+          {sidebar}
+        </div>
       </div>
     )
   }
 
-  return <div className="px-4 py-8">{children}</div>
+  return (
+    <div {...props} className={cn("px-4 py-8", className, classNames?.content)}>
+      {children}
+    </div>
+  )
 }

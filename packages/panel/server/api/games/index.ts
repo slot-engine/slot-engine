@@ -20,11 +20,13 @@ import {
 } from "../../types"
 import { Hono } from "hono"
 import {
+  assignColorsToSymbols,
   exploreLookupTable,
   getBook,
   getForceKeys,
   getGameById,
   getGameInfo,
+  getReelSets,
   loadOrCreatePanelGameConfig,
   loadStatsPayoutsFile,
   loadStatsSummaryFile,
@@ -38,7 +40,7 @@ import z from "zod"
 import chalk from "chalk"
 import qs from "qs"
 import { betSimulation } from "../../lib/bet-simulation"
-import path from "path"
+import { SYMBOL_COLORS } from "../../lib/constants"
 
 const app = new Hono<{ Variables: Variables }>()
 
@@ -398,19 +400,7 @@ app.get("/:id/reel-sets", async (c) => {
     return c.json<APIMessageResponse>({ message: "Not found" }, 404)
   }
 
-  const buildPath = game.getMetadata().rootDir
-  const reelSetPaths: string[] = []
-  for await (const p of glob(`${buildPath}/**/reels_*.csv`)) {
-    reelSetPaths.push(p)
-  }
-
-  const reelSets = reelSetPaths.map((p) => {
-    const filename = path.basename(p)
-    return {
-      path: p,
-      name: filename,
-    }
-  })
+  const reelSets = await getReelSets(game)
 
   return c.json<APIGameReelSetsResponse>({ reelSets })
 })
@@ -443,7 +433,7 @@ app.get("/:id/reel-sets/:rs", async (c) => {
 
   const content = fs.readFileSync(reelSetPaths[0]!, "utf-8")
   const rows = content.split("\n").filter((line) => line.trim() !== "")
-  const reels: string[][] = []
+  const reels: Array<Array<{ id: string; symbol: string }>> = []
 
   rows.forEach((row) => {
     const symsInRow = row.split(",")
@@ -451,14 +441,31 @@ app.get("/:id/reel-sets/:rs", async (c) => {
       if (!reels[ridx]) {
         reels[ridx] = []
       }
-      reels[ridx]!.push(symbol)
+      reels[ridx]!.push({
+        symbol,
+        id: crypto.randomUUID().slice(0, 5), // client needs stable id
+      })
     })
   })
+
+  const config = loadOrCreatePanelGameConfig(game)
+  let colors: Record<string, string> = {}
+  if (config) {
+    const reelSetConfig = config.reelSets.find(
+      (rs) => rs.name === reelSetFile && rs.path === reelSetPaths[0],
+    )
+    if (reelSetConfig) {
+      colors = reelSetConfig.symbolColors
+    } else {
+      colors = assignColorsToSymbols(game)
+    }
+  }
 
   const reelSet = {
     path: reelSetPaths[0]!,
     name: reelSetFile,
     reels,
+    colors,
   }
 
   return c.json<APIGameGetReelSetResponse>(reelSet)

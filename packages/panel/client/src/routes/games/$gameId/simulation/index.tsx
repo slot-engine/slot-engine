@@ -1,9 +1,17 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { GameSimulation } from "@/components/GameSimulation"
+import { GameSimulationSummary } from "@/components/GameSimulationSummary"
+import { PageContent } from "@/components/Page"
+import { createFileRoute } from "@tanstack/react-router"
 
-export const Route = createFileRoute('/games/$gameId/simulation/')({
+export const Route = createFileRoute("/games/$gameId/simulation/")({
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  return <div>Hello "/games/$gameId/simulation/"!</div>
+  return (
+    <PageContent>
+      <GameSimulation />
+      <GameSimulationSummary />
+    </PageContent>
+  )
 }

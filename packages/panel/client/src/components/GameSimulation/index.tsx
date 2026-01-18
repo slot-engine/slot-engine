@@ -379,7 +379,7 @@ export const GameSimulation = () => {
                   {isBusy ? <IconLoader2 className="animate-spin" /> : <IconPlayerPlay />}
                   Start Simulation
                 </div>
-                <div className="text-xs text-ui-700">
+                <div className="text-xs text-ui-700 text-balance">
                   Simulation will override the output files in your game directory.
                   Proceed only if you are aware of this.
                 </div>
