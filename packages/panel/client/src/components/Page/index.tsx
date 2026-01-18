@@ -1,4 +1,5 @@
 import { cn } from "@/lib/cn"
+import { ScrollArea } from "@base-ui/react/scroll-area"
 
 interface PageHeaderProps {
   title: string
@@ -37,7 +38,20 @@ export const PageContent = ({
         {...props}
         className={cn("grid grid-cols-[auto_24rem] items-start", className)}
       >
-        <div className={cn("px-4 py-8", classNames?.content)}>{children}</div>
+        <ScrollArea.Root className="overflow-hidden">
+          <ScrollArea.Viewport>
+            <ScrollArea.Content className={cn("px-4 py-8", classNames?.content)}>
+              {children}
+            </ScrollArea.Content>
+          </ScrollArea.Viewport>
+          <ScrollArea.Scrollbar
+            orientation="horizontal"
+            className="h-6 px-4 bg-ui-800 flex items-center"
+          >
+            <ScrollArea.Thumb className="h-2 bg-ui-500 rounded hover:bg-ui-100 cursor-grab" />
+          </ScrollArea.Scrollbar>
+          <ScrollArea.Corner />
+        </ScrollArea.Root>
         <div
           className={cn(
             "px-4 py-8 border-l border-ui-700 h-content-height sticky top-nav-height",

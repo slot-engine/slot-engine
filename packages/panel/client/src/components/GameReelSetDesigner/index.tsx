@@ -1,9 +1,9 @@
-import { useEffect, useRef } from "react"
+import { useRef } from "react"
 import { DragDropProvider } from "@dnd-kit/react"
 import { CollisionPriority } from "@dnd-kit/abstract"
 import { useSortable } from "@dnd-kit/react/sortable"
 import { move } from "@dnd-kit/helpers"
-import { IconGripHorizontal, IconPlus } from "@tabler/icons-react"
+import { IconDragDrop, IconGripHorizontal, IconPlus } from "@tabler/icons-react"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { cn } from "@/lib/cn"
 import { useEditorContext, type ReelsetEditorReel } from "@/context/ReelsetEditorContext"
@@ -22,16 +22,25 @@ export const ReelSetDesigner = () => {
         const { source, target } = event.operation
 
         if (source?.type === "reel") return
-        if (!source || !target) return
 
-        if (source.type === "symbol") {
-          // Skip if target is a reel - only handle symbol-to-symbol in onDragOver
-          // This prevents duplicates when dragging past the end of a list
-          if (target.type !== "symbol") {
-            return
+        if (source?.type === "symbol") {
+          if (target?.type && String(target.id).includes("dropzone")) {
+            setReels((currentReels) => {
+              const { reels: reelsWithoutItem, item } = findAndRemoveItem(
+                currentReels,
+                source.id,
+              )
+              if (!item) return currentReels
+
+              const dropzoneReelId = parseDropzoneId(target.id)!
+              return {
+                ...reelsWithoutItem,
+                [dropzoneReelId]: [...reelsWithoutItem[dropzoneReelId], item],
+              }
+            })
+          } else {
+            setReels((currentReels) => move(currentReels, event))
           }
-
-          setReels((currentReels) => move(currentReels, event))
         }
       }}
       onDragEnd={(event) => {
@@ -47,23 +56,6 @@ export const ReelSetDesigner = () => {
         if (source?.type === "reel") {
           setReelOrder((reels) => move(reels, event))
           return
-        }
-
-        // Handle symbol dropped onto a reel (empty reel or past end of list)
-        if (source?.type === "symbol" && target?.type === "reel") {
-          setReels((currentReels) => {
-            // Check if source is already in this reel
-            const targetReelId = target.id as number
-            const reelItems = currentReels[targetReelId]
-            const isAlreadyInReel = reelItems?.some((item) => item.id === source.id)
-
-            if (isAlreadyInReel) {
-              // Don't duplicate - item is already in this reel
-              return currentReels
-            }
-
-            return move(currentReels, event)
-          })
         }
       }}
     >
@@ -91,7 +83,7 @@ interface SortableReelProps extends React.ComponentPropsWithoutRef<"div"> {
 
 const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProps) => {
   const { reelsState } = useEditorContext()
-  const [reels, setReels] = reelsState
+  const [reels] = reelsState
 
   const handleRef = useRef<HTMLDivElement>(null)
 
@@ -100,7 +92,7 @@ const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProps) => {
     index,
     type: "reel",
     collisionPriority: CollisionPriority.Low,
-    accept: ["symbol", "reel"],
+    accept: ["reel"],
     handle: handleRef,
   })
 
@@ -109,8 +101,8 @@ const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProps) => {
   const virtualizer = useVirtualizer({
     count: reel.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 80,
-    overscan: 5,
+    estimateSize: () => 78,
+    overscan: 10,
     gap: 8,
     getItemKey: (itemIdx) => reels[reelId]?.[itemIdx]?.id,
   })
@@ -133,43 +125,47 @@ const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProps) => {
         ref={scrollRef}
         className="w-28 p-4 pt-0 scrollbar-thin h-full overflow-x-hidden overflow-y-auto"
       >
-        <div
-          style={{
-            height: virtualizer.getTotalSize(),
-            minHeight: "100%",
-            width: "100%",
-            position: "relative",
-          }}
-        >
+        {reel.length === 0 ? (
+          <SymbolDropArea reelId={reelId} />
+        ) : (
           <div
-            className="flex flex-col gap-2"
             style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
+              height: virtualizer.getTotalSize(),
+              minHeight: "100%",
               width: "100%",
-              transform: `translateY(${symbols[0]?.start ?? 0}px)`,
+              position: "relative",
             }}
           >
-            {symbols.map((virtualRow) => {
-              const sidx = virtualRow.index
-              const sym = reel[sidx]
-              return (
-                <SortableSymbol
-                  key={virtualRow.key}
-                  id={sym.id}
-                  index={sidx}
-                  reelId={reelId}
-                  symbolId={sym.symbol}
-                  style={{
-                    height: `${virtualRow.size}px`,
-                    top: `${virtualRow.start}px`,
-                  }}
-                />
-              )
-            })}
+            <div
+              className="flex flex-col gap-2"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                transform: `translateY(${symbols[0]?.start ?? 0}px)`,
+              }}
+            >
+              {symbols.map((virtualRow) => {
+                const sidx = virtualRow.index
+                const sym = reel[sidx]
+                return (
+                  <SortableSymbol
+                    key={virtualRow.key}
+                    id={sym.id}
+                    index={sidx}
+                    reelId={reelId}
+                    symbolId={sym.symbol}
+                    style={{
+                      height: `${virtualRow.size}px`,
+                      top: `${virtualRow.start}px`,
+                    }}
+                  />
+                )
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
@@ -204,7 +200,7 @@ const SortableSymbol = ({
       {...props}
       ref={ref}
       className={cn(
-        "cursor-grab w-20 min-h-20 bg-ui-800 rounded-sm border border-ui-700",
+        "cursor-grab size-20 bg-ui-800 rounded-sm border border-ui-700",
         "data-[dnd-dragging=true]:opacity-90 data-[dnd-dragging=true]:animate-wiggle",
         className,
       )}
@@ -219,4 +215,56 @@ const SortableSymbol = ({
       </div>
     </div>
   )
+}
+
+interface SymbolDropAreaProps extends React.ComponentPropsWithoutRef<"div"> {
+  reelId: number
+}
+
+const SymbolDropArea = ({ reelId }: SymbolDropAreaProps) => {
+  const { ref } = useSortable({
+    id: `dropzone-${reelId}`,
+    index: 0,
+    type: "symbol",
+    accept: "symbol",
+    group: reelId,
+  })
+
+  return (
+    <div
+      ref={ref}
+      className="py-8 h-128 flex flex-col justify-center items-center gap-2 text-center border border-ui-700 border-dashed rounded-sm"
+    >
+      <IconDragDrop />
+      Drop Symbols here
+    </div>
+  )
+}
+
+function findAndRemoveItem(
+  reels: Record<number, ReelsetEditorReel>,
+  itemId: unknown,
+): {
+  reels: Record<number, ReelsetEditorReel>
+  item: { id: string; symbol: string } | null
+} {
+  for (const [reelId, reel] of Object.entries(reels)) {
+    const index = reel.findIndex((item) => item.id === itemId)
+    if (index !== -1) {
+      const item = reel[index]
+      const newReel = [...reel.slice(0, index), ...reel.slice(index + 1)]
+      return {
+        reels: { ...reels, [reelId]: newReel },
+        item,
+      }
+    }
+  }
+  return { reels, item: null }
+}
+
+function parseDropzoneId(id: unknown): number | null {
+  if (typeof id === "string" && id.startsWith("dropzone-")) {
+    return Number(id.replace("dropzone-", ""))
+  }
+  return null
 }

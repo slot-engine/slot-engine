@@ -21,6 +21,22 @@
           "spins": 500
         }
       ]
+    },
+    {
+      "id": "21357aee",
+      "players": {
+        "count": 100,
+        "startingBalance": 1000
+      },
+      "betGroups": []
+    },
+    {
+      "id": "11039028",
+      "players": {
+        "count": 100,
+        "startingBalance": 1000
+      },
+      "betGroups": []
     }
   ],
   "reelSets": [

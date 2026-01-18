@@ -84,9 +84,15 @@ export function ReelsetEditorProvider({
 
   function addReel() {
     const newIndex = Object.keys(reels).length
-    setReels((r) => ({ ...r, [newIndex]: [] }))
+    setReels((r) => ({
+      ...r,
+      [newIndex]: [],
+    }))
     setReelOrder((order) => [...order, newIndex])
-    previousReels.current = { ...reels, [newIndex]: [] }
+    previousReels.current = {
+      ...reels,
+      [newIndex]: [],
+    }
   }
 
   const context: EditorContext = {

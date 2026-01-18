@@ -36,7 +36,7 @@ function RouteComponent() {
 
   return (
     <ReelsetEditorProvider reelSets={data.reelSets}>
-      <PageContent sidebar={<Sidebar />} classNames={{ content: "py-0 pl-0 overflow-x-auto" }}>
+      <PageContent sidebar={<Sidebar />} classNames={{ content: "py-0 pl-0" }}>
         <ReelSetDesigner />
       </PageContent>
     </ReelsetEditorProvider>
