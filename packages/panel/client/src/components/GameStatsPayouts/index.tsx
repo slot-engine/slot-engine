@@ -184,6 +184,8 @@ const renderBarLabel = ({ x, y, width, height, value }: LabelProps) => {
 
   const isSmallBar = (width as number) > 100
 
+  const frmt = new Intl.NumberFormat("en-DE").format
+
   if (isSmallBar) {
     // inside the bar
     return (
@@ -197,7 +199,7 @@ const renderBarLabel = ({ x, y, width, height, value }: LabelProps) => {
         dy={1}
         fontSize={14}
       >
-        {value}
+        {typeof value === "number" ? frmt(value) : value}
       </text>
     )
   }
@@ -213,7 +215,7 @@ const renderBarLabel = ({ x, y, width, height, value }: LabelProps) => {
       dy={1}
       fontSize={14}
     >
-      {value}
+      {typeof value === "number" ? frmt(value) : value}
     </text>
   )
 }

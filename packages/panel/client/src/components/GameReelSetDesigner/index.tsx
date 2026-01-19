@@ -37,7 +37,7 @@ export const ReelSetDesigner = () => {
     setDialogOpen(true)
   }
 
-  function confirmSymbols() {
+  function confirmSymbols(mode: "prepend" | "append") {
     const reelId = lastInteractedReel.current
     if (reelId === null) return
 
@@ -48,7 +48,12 @@ export const ReelSetDesigner = () => {
       }
     }
 
-    const reel = [...(reels[reelId] || []), ...newSymbols]
+    let reel = []
+    if (mode === "prepend") {
+      reel = [...newSymbols, ...(reels[reelId] || [])]
+    } else {
+      reel = [...(reels[reelId] || []), ...newSymbols]
+    }
     setReels((current) => {
       return { ...current, [reelId]: reel }
     })
@@ -138,11 +143,11 @@ export const ReelSetDesigner = () => {
         <DialogContent>
           <DialogTitle>Add Reel Symbols</DialogTitle>
           <DialogDescription>
-            The selected symbols will be appended to the reel.
+            The selected symbols will be added to the reel.
           </DialogDescription>
-          <div className="mt-4">
+          <div className="mt-4 grid grid-cols-2 gap-x-8">
             {options.symbols.map((sym) => (
-              <div className="flex gap-4 items-center mb-2" key={sym}>
+              <div className="flex gap-3 items-center mb-2" key={sym}>
                 <div className="text-lg w-16">{sym}</div>
                 <NumberInput
                   value={symbolCounts[sym]}
@@ -151,9 +156,14 @@ export const ReelSetDesigner = () => {
               </div>
             ))}
           </div>
-          <Button className="mt-4" onClick={confirmSymbols}>
-            Append Symbols
-          </Button>
+          <div className="mt-4 flex gap-2">
+            <Button onClick={() => confirmSymbols("prepend")}>
+              Prepend Symbols
+            </Button>
+            <Button onClick={() => confirmSymbols("append")}>
+              Append Symbols
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>
@@ -306,16 +316,25 @@ const SortableSymbol = ({
   className,
   ...props
 }: SortableSymbolProps) => {
-  const { colorsState } = useEditorContext()
+  const { colorsState, reelsState } = useEditorContext()
   const [colors] = colorsState
+  const [, setReels] = reelsState
 
-  const { ref } = useSortable({
+  const { ref, isDragging } = useSortable({
     id: id!,
     index,
     type: "symbol",
     accept: "symbol",
     group: reelId,
   })
+
+  function handleDelete() {
+    setReels((currentReels) => {
+      const reel = currentReels[reelId] || []
+      const newReel = [...reel.slice(0, index), ...reel.slice(index + 1)]
+      return { ...currentReels, [reelId]: newReel }
+    })
+  }
 
   return (
     <div
@@ -328,12 +347,21 @@ const SortableSymbol = ({
       )}
     >
       <div className="relative w-full h-full flex items-center justify-center">
-        <span className="text-xl">{symbolId}</span>
+        <span className="text-xl pl-1">{symbolId}</span>
         <span className="absolute text-xs top-0.5 left-1 text-ui-100">{index}</span>
         <span
           className="absolute w-1 h-[calc(100%-0.5rem)] top-1 right-1 rounded"
           style={{ backgroundColor: colors[symbolId] }}
         />
+        {!isDragging && (
+          <span
+            className="cursor-pointer absolute bottom-1 left-1"
+            title="Delete Symbol"
+            onClick={handleDelete}
+          >
+            <IconTrash size={14} />
+          </span>
+        )}
       </div>
     </div>
   )

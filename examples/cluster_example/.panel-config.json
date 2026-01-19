@@ -1,8 +1,11 @@
 {
   "id": "example-02",
   "simulation": {
-    "simRunsAmount": {},
     "concurrency": 8,
+    "simRunsAmount": {
+      "base": 20000,
+      "bonus": 20000
+    },
     "maxPendingSims": 25,
     "maxDiskBuffer": 150
   },
@@ -21,22 +24,6 @@
           "spins": 500
         }
       ]
-    },
-    {
-      "id": "21357aee",
-      "players": {
-        "count": 100,
-        "startingBalance": 1000
-      },
-      "betGroups": []
-    },
-    {
-      "id": "11039028",
-      "players": {
-        "count": 100,
-        "startingBalance": 1000
-      },
-      "betGroups": []
     }
   ],
   "reelSets": [

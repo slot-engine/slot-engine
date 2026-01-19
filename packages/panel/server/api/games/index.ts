@@ -440,6 +440,7 @@ app.get("/:id/reel-sets/:rs", async (c) => {
   rows.forEach((row) => {
     const symsInRow = row.split(",")
     symsInRow.forEach((symbol, ridx) => {
+      if (!symbol.trim()) return
       if (!reels[ridx]) {
         reels[ridx] = []
       }

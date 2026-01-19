@@ -103,7 +103,7 @@ const Sidebar = () => {
         disabled={isLoading}
         onClick={() => updateMutation.mutate()}
       >
-        {isLoading ? <IconLoader2 className="animate-spin mr-2" /> : <IconDeviceFloppy />}
+        {isLoading ? <IconLoader2 className="animate-spin" /> : <IconDeviceFloppy />}
         Save Reels & Settings
       </Button>
     </div>
