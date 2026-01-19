@@ -18,5 +18,5 @@ runs:
       shell: bash
 
     - name: Install Dependencies
-      run: pnpm install
+      run: pnpm install --frozen-lockfile=false
       shell: bash
