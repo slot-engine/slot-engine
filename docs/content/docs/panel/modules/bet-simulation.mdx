@@ -1,0 +1,33 @@
+---
+title: Bet Simulation
+description: Simulate how your game may perform in a real environment.
+icon: UsersRound
+---
+
+---
+
+## Overview
+
+The bet simulation (or crowd simulation) module simulates game behavior with multiple players betting on the game under equal circumstances.
+For each "spin" a virtual player does, a random weighted result from the lookup table is chosen, similar to real Stake RGS functionality.
+
+There can be multiple simulation configurations and each can be run independently and simultaneously.
+
+## Configuration
+
+### Virtual Players
+
+| Name             | Description                                      |
+| ---------------- | ------------------------------------------------ |
+| Player Count     | How many players are betting on the game.        |
+| Starting Balance | Number of balance units each player starts with. |
+
+### Bet Groups
+
+Bet groups allow simulating complex betting sessions. Bet groups are played sequentially.
+
+| Name           | Description                      |
+| -------------- | -------------------------------- |
+| Mode           | Which mode to bet on.            |
+| Number of Bets | How many bets to place.          |
+| Bet            | Number of balance units per bet. |
