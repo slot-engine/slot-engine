@@ -21,12 +21,12 @@
   },
   "devDependencies": {
     "@types/node": "24.9.1",
-    "@types/react": "^19.2.7",
-    "@types/react-dom": "^19.2.3",
-    "typescript": "^5.9.3",
-    "@types/mdx": "^2.0.13",
-    "@tailwindcss/postcss": "^4.1.14",
-    "tailwindcss": "^4.1.14",
-    "postcss": "^8.5.6"
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "typescript": "5.9.3",
+    "@types/mdx": "2.0.13",
+    "@tailwindcss/postcss": "4.1.14",
+    "tailwindcss": "4.1.14",
+    "postcss": "8.5.6"
   }
 }
