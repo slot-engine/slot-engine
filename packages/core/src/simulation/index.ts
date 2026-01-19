@@ -447,7 +447,7 @@ export class Simulation {
 
       worker.postMessage({ type: "credit", amount: this.maxPendingSims })
 
-      const flushBookChunk = async (isLastChunk = false) => {
+      const flushBookChunk = async () => {
         if (this.bookBuffers.get(index)?.length === 0) return
 
         if (!this.bookChunkIndexes.has(index)) {
@@ -457,8 +457,7 @@ export class Simulation {
         const chunkIndex = this.bookChunkIndexes.get(index)!
 
         const bookChunkPath = this.PATHS.booksChunk(mode, index, chunkIndex)
-        let data = this.bookBuffers.get(index)!.join("\n")
-        if (isLastChunk) data += "\n"
+        const data = this.bookBuffers.get(index)!.join("\n") + "\n"
 
         await pipeline(
           Readable.from([Buffer.from(data, "utf8")]),
@@ -489,7 +488,7 @@ export class Simulation {
       let writeChain: Promise<void> = Promise.resolve()
 
       worker.on("message", (msg) => {
-        if (msg.type === "log") {
+        if (msg.type === "log" || msg.type === "user-log") {
           this.tui?.log(msg.message)
           return
         }
@@ -618,7 +617,7 @@ export class Simulation {
         if (msg.type === "done") {
           writeChain
             .then(async () => {
-              await flushBookChunk(true)
+              await flushBookChunk()
               lookupStream.end()
               lookupSegmentedStream.end()
               booksIndexStream.end()

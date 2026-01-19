@@ -1,9 +1,9 @@
-import assert from "assert"
 import { AbstractService } from "."
 import { GameContext } from "../game-context"
 import { Recorder } from "../recorder"
 import { AnyGameModes, AnySymbols, AnyUserData, SpinType } from "../types"
 import { Book, BookEvent } from "../book"
+import { isMainThread, parentPort } from "worker_threads"
 
 export class DataService<
   TGameModes extends AnyGameModes = AnyGameModes,
@@ -84,6 +84,14 @@ export class DataService<
    */
   addBookEvent(event: Omit<BookEvent, "index">) {
     this.book.addEvent(event)
+  }
+
+  /**
+   * Write a log message to the terminal UI.
+   */
+  log(message: string) {
+    if (isMainThread) return
+    parentPort?.postMessage({ type: "user-log", message })
   }
 
   /**

@@ -5,7 +5,7 @@ export class TerminalUi {
   private currentSims: number = 0
   private totalSims: number = 0
 
-  private logs: string[] = []
+  private logs: Array<{ i: number; m: string }> = []
   private logScrollOffset: number = 0
   private isScrolled: boolean = false
 
@@ -108,7 +108,7 @@ export class TerminalUi {
   }
 
   log(message: string) {
-    this.logs.push(message)
+    this.logs.push({ i: this.logs.length, m: message })
     if (!this.isScrolled) this.scrollToBottom()
   }
 
@@ -201,9 +201,8 @@ export class TerminalUi {
       const visibleLogs = this.getVisibleLogs(logAreaHeight)
 
       for (const log of visibleLogs) {
-        const logIndex = this.logs.indexOf(log)
         lines.push(
-          this.contentLine(` (${logIndex}) ` + this.truncate(log, width - 4), width),
+          this.contentLine(` (${log.i}) ` + this.truncate(log.m, width - 4), width),
         )
       }
 
@@ -236,7 +235,7 @@ export class TerminalUi {
     }
   }
 
-  private getVisibleLogs(height: number): string[] {
+  private getVisibleLogs(height: number) {
     const start = this.logScrollOffset
     const end = start + height
     return this.logs.slice(start, end)
