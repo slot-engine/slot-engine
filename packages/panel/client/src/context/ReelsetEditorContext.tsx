@@ -65,7 +65,7 @@ export function ReelsetEditorProvider({
   const [colors, setColors] = useState<Record<string, string>>({})
 
   useEffect(() => {
-    if (!data || !data.reelSet.reels.length) return
+    if (!data) return
     setReels(Object.fromEntries(data.reelSet.reels.map((r, idx) => [idx, r])))
     setReelOrder(data.reelSet.reels.map((_, idx) => idx))
     setColors(data.reelSet.colors)

@@ -131,7 +131,7 @@ export const ReelSetDesigner = () => {
           ))}
           <div
             onClick={() => addReel()}
-            className="min-w-28 bg-ui-900 hover:bg-ui-800 flex flex-col justify-center items-center gap-2 border-2 border-ui-700 border-dashed cursor-pointer"
+            className="min-w-28 min-h-content-height bg-ui-900 hover:bg-ui-800 flex flex-col justify-center items-center gap-2 border-2 border-ui-700 border-dashed cursor-pointer"
           >
             <IconPlus />
             Add Reel
