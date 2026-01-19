@@ -22,6 +22,12 @@
           "mode": "base",
           "betAmount": 1,
           "spins": 500
+        },
+        {
+          "id": "e8a72748",
+          "mode": "bonus",
+          "betAmount": 1,
+          "spins": 15
         }
       ]
     }
