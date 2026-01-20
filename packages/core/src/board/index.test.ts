@@ -335,4 +335,34 @@ describe("Board", () => {
       [B, C, X, A, B],
     ])
   })
+
+  it("handles unequal symbols per reel on draw", () => {
+    const reels = [
+      [C, A, A, A, A],
+      [B, B, B, B, B, A],
+      [C, C, C, C, C, B, C],
+      [A, A, A, A, A, C],
+      [C, B, B, B, B],
+    ]
+
+    ctx.services.board.drawBoardWithForcedStops({
+      reels,
+      forcedStops: {
+        "0": 5,
+        "1": 5,
+        "2": 5,
+        "3": 5,
+        "4": 5,
+      },
+      randomOffset: false,
+    })
+
+    expect(ctx.services.board.getBoardReels()).toEqual([
+      [C, A, A, A, A],
+      [A, B, B, B, B],
+      [B, C, C, C, C],
+      [C, A, A, A, A],
+      [C, B, B, B, B],
+    ])
+  })
 })
