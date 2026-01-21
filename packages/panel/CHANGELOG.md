@@ -1,5 +1,11 @@
 # @slot-engine/panel
 
+## 0.1.1
+
+### Patch Changes
+
+- Fix wrong dist-client path - Thanks @nordowl
+
 ## 0.1.0
 
 ### Minor Changes
