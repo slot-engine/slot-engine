@@ -1,5 +1,57 @@
 # @slot-engine/core
 
+## 0.2.0
+
+### Minor Changes
+
+- Omit generation of uncompressed book files. Generate compressed book chunks instead. ([#45](https://github.com/slot-engine/slot-engine/pull/45)) - Thanks @nordowl
+
+  This will add some minor memory overhead during simulation, but significantly reduces the disk space required for storing book files.
+  Compressed books can be inspected with `@slot-engine/panel`.
+
+- **[BREAKING]** Slot Engine now requires a flag to run! ([#45](https://github.com/slot-engine/slot-engine/pull/45)) - Thanks @nordowl
+
+  To enable compatibility with `@slot-engine/panel`, it is now required to use the `--slot-engine-run` flag
+  when running simulations for your game.
+
+  ```sh
+  pnpm tsx ./path-to/your-game.ts --slot-engine-run
+  ```
+
+  A Slot Engine game is typically run by having a `runTasks()` call at the top level of your game file.
+  Due to the nature of JavaScript modules, when exporting and importing your game
+  to connect it with `@slot-engine/panel`, `runTasks()` would be called immediately upon import
+  causing unintended simulations to run.
+
+  To prevent this, Slot Engine now requires the explicit flag to run simulations.
+
+  Multiple approaches to tackle this have been considered, but this approach was chosen
+  to minimize friction for existing users while ensuring compatibility with `@slot-engine/panel`.
+
+### Patch Changes
+
+- Enhance summary in stats_payouts.json ([#45](https://github.com/slot-engine/slot-engine/pull/45)) - Thanks @nordowl
+
+- Enable importing types directly from @slot-engine/core/types ([#45](https://github.com/slot-engine/slot-engine/pull/45)) - Thanks @nordowl
+
+- Implement interactive terminal UI ([#45](https://github.com/slot-engine/slot-engine/pull/45)) - Thanks @nordowl
+
+- Add `ctx.services.data.log()` method for logging messages to the TUI ([#45](https://github.com/slot-engine/slot-engine/pull/45)) - Thanks @nordowl
+
+  Developer note:
+  - Since `console.log` was not working reliably in worker threads, this service method was added
+
+- Internal restructure, enabling panel compatibility ([#45](https://github.com/slot-engine/slot-engine/pull/45)) - Thanks @nordowl
+
+- `force_keys_<mode>.json` is now generated ([#45](https://github.com/slot-engine/slot-engine/pull/45)) - Thanks @nordowl
+
+- Fix non-maxwin result sets being able to hit max wins. ([#45](https://github.com/slot-engine/slot-engine/pull/45)) - Thanks @nordowl
+
+  Developer note:
+  - A result set _without_ explicit `multiplier` (and `maxwin: false`), will _always_ accept results with payouts > 0 and < max win.
+
+- Improve simulation summary in console. This is also written to `__build__/simulation_summary.json`. ([#45](https://github.com/slot-engine/slot-engine/pull/45)) - Thanks @nordowl
+
 ## 0.1.14
 
 ### Patch Changes
