@@ -167,6 +167,9 @@ importers:
       '@mantine/hooks':
         specifier: 8.3.10
         version: 8.3.10(react@19.2.3)
+      '@slot-engine/core':
+        specifier: 0.1.14
+        version: link:../core
       '@tanstack/react-query':
         specifier: 5.90.12
         version: 5.90.12(react@19.2.3)
@@ -225,9 +228,6 @@ importers:
       '@fontsource-variable/archivo':
         specifier: 5.2.8
         version: 5.2.8
-      '@slot-engine/core':
-        specifier: 0.1.14
-        version: link:../core
       '@tabler/icons-react':
         specifier: 3.36.0
         version: 3.36.0(react@19.2.3)
