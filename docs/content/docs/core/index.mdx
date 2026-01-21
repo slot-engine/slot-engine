@@ -14,8 +14,11 @@ Slot Engine is a family of TypeScript libraries for building, simulating and tes
   <Card icon={<CircuitBoard className="text-fd-primary" />} title='Slot Engine Core'>
   Library for configuring and simulating slot games. Produces output compatible with Stake Engine / Stake RGS.
   </Card>
-  <Card icon={<Server className="text-fd-primary" />} title='Slot Engine LGS'>
-  Local gaming server. Test your game locally without uploading to Stake Engine and save time during development.
+  <Card icon={<LayoutDashboard className="text-fd-primary" />} title='Slot Engine Panel'>
+  Web GUI for interacting with Slot Engine. Run simulations, view statistics, explore game files.
+  </Card>
+  <Card icon={<Server className="text-fd-primary" />} title='Slot Engine LGS (WIP)'>
+  Local gaming server. Test your game locally without the need to upload to Stake Engine and save time during development.
   </Card>
 </Cards>
 
@@ -94,7 +97,7 @@ Get started creating your first game using the `@slot-engine/core` library.
     ```
   </Step>
   <Step>
-    ### Simulate your game
+    ### Configure simulation
 
     ```ts lineNumbers=30 title="index.ts"
     game.configureSimulation({
@@ -109,9 +112,21 @@ Get started creating your first game using the `@slot-engine/core` library.
       doSimulation: true,
     })
     ```
+  </Step>
+  <Step>
+    ### Run simulations
 
-    Upon running your code, this will generate JSONL and CSV files containing
-    the results of your simulated spins.
+    Running simulations will generate JSONL and CSV files containing the results of your simulated spins.
+    The easiest way to do this is by using the [`tsx` library](https://tsx.is/).
+
+    ```sh
+    cd ./path-to/your-game
+    pnpm tsx ./index.ts --slot-engine-run
+    ```
+
+    <Callout title="Important">
+      For technical reasons, the flag `--slot-engine-run` is required when running your game
+    </Callout>
 
     **Currently, the output format is designed for compatibility with Stake Engine.**
     Future versions may support additional platforms as they emerge.
@@ -125,3 +140,13 @@ Get started creating your first game using the `@slot-engine/core` library.
   Before configuring your game, familiarize yourself with the [concepts and ideas](/docs/core/core-concepts) of the Core library
   to understand important terminology and background information. If you've used the Stake Math SDK before, many concepts will be familiar.
 </Callout>
+
+## FAQ / Common Issues
+
+<Accordions>
+  <Accordion title="I'm getting 'Module not found' errors when running the game">
+    Ensure you `cd`'ed into the game directory where your game file is.
+
+    If you're running the game from a different directory, add `rootDir: __dirname` to your game configuration.
+  </Accordion>
+</Accordions>

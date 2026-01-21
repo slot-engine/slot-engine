@@ -17,6 +17,8 @@
     "---Run Tasks---",
     "game-tasks/simulation",
     "game-tasks/optimization",
-    "game-tasks/analysis"
+    "game-tasks/analysis",
+    "---Other---",
+    "other/migration-guides"
   ]
 }

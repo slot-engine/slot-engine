@@ -1,0 +1,55 @@
+---
+title: Migration Guides
+description: Learn how to upgrade your games to a newer version of Core.
+icon: "Rocket"
+---
+
+## Upgrade from 0.1.x to 0.2.x
+
+### Adjust npm scripts or commands [!toc]
+
+Due to technical changes and Panel compatibility, tasks (simulation, optimization, analysis) are only run
+when explicitly passing a command line argument. The required argument is `--slot-engine-run`.
+
+For example, when you're using `tsx` to run your games, this is how you must adjust your command:
+
+```bash tab="Before"
+  pnpm tsx ./index.ts
+```
+
+```bash tab="After"
+  pnpm tsx ./index.ts --slot-engine-run
+```
+
+### Note introduction of new generated files [!toc]
+
+The Core library now produces additional files which contain metadata or other information.
+When you're using the new Panel package these files are mandatory for flawless Panel functionality.
+Re-run simulations to generate those files.
+
+- `books_chunks/*` (new)
+- `books_<name>.index.meta.json` (new)
+- `force_keys_<mode>.json` (new)
+- `lookUpTable_<mode>.index` (new)
+- `lookUpTableSegmented_<mode>.index` (new)
+- `simulation_summary.json` (new)
+- `stats_payouts.json` (modified structure)
+
+### Note new book files generation [!toc]
+
+Uncompressed book files are no longer generated. This saves a lot of hard drive space.
+If you need to inspect your book files, you can use the new Panel package.
+
+### Recommendations [!toc]
+
+#### Replace your `console.log()` calls [!toc]
+
+Logging to the console from worker threads is not reliable. A more robust approach to logging
+during simulations was added. Access the `log()` method from the data service in your game implementation:
+`ctx.services.data.log()`
+
+#### Prefix static reels files with `reels_` [!toc]
+
+If you want to use the reel set editor included in Panel, you must rename your
+reels CSV files to something like `reels_your-reelset-name.csv`.
+Panel scans your game directory for CSV files starting with `reels_` - only those are editable in the reel set editor.

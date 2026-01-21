@@ -1,6 +1,8 @@
 import assert from "assert"
 import { AnyGameModes, AnySymbols, AnyUserData, GameHooks } from "../types"
 import { SPIN_TYPE } from "../constants"
+import { createPermanentFilePaths, PermanentFilePaths } from "../utils/file-paths"
+import path from "path"
 
 export interface GameConfigOptions<
   TGameModes extends AnyGameModes = AnyGameModes,
@@ -90,17 +92,27 @@ export function createGameConfig<
     )
   }
 
+  const rootDir = opts.rootDir || process.cwd()
+  const outputDir = "__build__"
+  const basePath = path.join(rootDir, outputDir)
+
   return {
-    padSymbols: opts.padSymbols || 1,
-    userState: opts.userState || ({} as TUserState),
-    ...opts,
-    symbols,
-    anticipationTriggers: {
-      [SPIN_TYPE.BASE_GAME]: getAnticipationTrigger(SPIN_TYPE.BASE_GAME),
-      [SPIN_TYPE.FREE_SPINS]: getAnticipationTrigger(SPIN_TYPE.FREE_SPINS),
+    config: {
+      padSymbols: opts.padSymbols || 1,
+      userState: opts.userState || ({} as TUserState),
+      ...opts,
+      symbols,
+      anticipationTriggers: {
+        [SPIN_TYPE.BASE_GAME]: getAnticipationTrigger(SPIN_TYPE.BASE_GAME),
+        [SPIN_TYPE.FREE_SPINS]: getAnticipationTrigger(SPIN_TYPE.FREE_SPINS),
+      },
     },
-    outputDir: "__build__",
-    rootDir: opts.rootDir || process.cwd(),
+    metadata: {
+      outputDir,
+      rootDir,
+      isCustomRoot: !!opts.rootDir,
+      paths: createPermanentFilePaths(basePath),
+    },
   }
 }
 
@@ -108,15 +120,22 @@ export type GameConfig<
   TGameModes extends AnyGameModes = AnyGameModes,
   TSymbols extends AnySymbols = AnySymbols,
   TUserState extends AnyUserData = AnyUserData,
-> = Required<Omit<GameConfigOptions<TGameModes, TSymbols, TUserState>, "symbols">> & {
+> = Required<
+  Omit<GameConfigOptions<TGameModes, TSymbols, TUserState>, "symbols" | "rootDir">
+> & {
   /**
    * A map of all symbols.
    */
   symbols: Map<keyof TSymbols & string, TSymbols[keyof TSymbols]>
-  outputDir: string
-  rootDir: string
   /**
    * A mapping of spin types to the number of scatter symbols required to trigger anticipation.
    */
   anticipationTriggers: Record<(typeof SPIN_TYPE)[keyof typeof SPIN_TYPE], number>
+}
+
+export type GameMetadata = {
+  outputDir: string
+  rootDir: string
+  isCustomRoot: boolean
+  paths: PermanentFilePaths
 }

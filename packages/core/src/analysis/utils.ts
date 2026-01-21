@@ -1,7 +1,11 @@
+import { round } from "../../utils"
+import { LookupTable, LookupTableSegmented } from "../types"
+
 export function parseLookupTable(content: string) {
   const lines = content.trim().split("\n")
   const lut: LookupTable = []
   for (const line of lines) {
+    if (!line.trim()) continue
     const [indexStr, weightStr, payoutStr] = line.split(",")
     const index = parseInt(indexStr!.trim())
     const weight = parseInt(weightStr!.trim())
@@ -15,17 +19,15 @@ export function parseLookupTableSegmented(content: string) {
   const lines = content.trim().split("\n")
   const lut: LookupTableSegmented = []
   for (const line of lines) {
-    const [indexStr, criteria, weightStr, payoutStr] = line.split(",")
+    if (!line.trim()) continue
+    const [indexStr, criteria, bsWinsStr, fsWinsStr] = line.split(",")
     const index = parseInt(indexStr!.trim())
-    const weight = parseInt(weightStr!.trim())
-    const payout = parseFloat(payoutStr!.trim())
-    lut.push([index, criteria!, weight, payout])
+    const bsWins = parseFloat(bsWinsStr!.trim())
+    const fsWins = parseFloat(fsWinsStr!.trim())
+    lut.push([index, criteria!, bsWins, fsWins])
   }
   return lut
 }
-
-export type LookupTable = [number, number, number][]
-export type LookupTableSegmented = [number, string, number, number][]
 
 export function getTotalLutWeight(lut: LookupTable) {
   return lut.reduce((sum, [, weight]) => sum + weight, 0)
@@ -71,21 +73,21 @@ export function getPayoutWeights(
 export function getNonZeroHitrate(payoutWeights: PayoutWeights) {
   const totalWeight = getTotalWeight(payoutWeights)
   if (Math.min(...Object.keys(payoutWeights).map(Number)) == 0) {
-    return totalWeight / (totalWeight - (payoutWeights[0] ?? 0) / totalWeight)
+    return round(totalWeight / (totalWeight - (payoutWeights[0] ?? 0) / totalWeight), 4)
   } else {
     return 1
   }
 }
 
 export function getNullHitrate(payoutWeights: PayoutWeights) {
-  return payoutWeights[0] ?? 0
+  return round(payoutWeights[0] ?? 0, 4)
 }
 
 export function getMaxwinHitrate(payoutWeights: PayoutWeights) {
   const totalWeight = getTotalWeight(payoutWeights)
   const maxWin = Math.max(...Object.keys(payoutWeights).map(Number))
   const hitRate = (payoutWeights[maxWin] || 0) / totalWeight
-  return 1 / hitRate
+  return round(1 / hitRate, 4)
 }
 
 export function getUniquePayouts(payoutWeights: PayoutWeights) {
@@ -108,17 +110,17 @@ export function getAvgWin(payoutWeights: PayoutWeights) {
     const payout = parseFloat(payoutStr)
     avgWin += payout * weight
   }
-  return avgWin
+  return round(avgWin, 4)
 }
 
 export function getRtp(payoutWeights: PayoutWeights, cost: number) {
   const avgWin = getAvgWin(payoutWeights)
-  return avgWin / cost
+  return round(avgWin / cost, 4)
 }
 
 export function getStandardDeviation(payoutWeights: PayoutWeights) {
   const variance = getVariance(payoutWeights)
-  return Math.sqrt(variance)
+  return round(Math.sqrt(variance), 4)
 }
 
 export function getVariance(payoutWeights: PayoutWeights) {
@@ -129,7 +131,7 @@ export function getVariance(payoutWeights: PayoutWeights) {
     const payout = parseFloat(payoutStr)
     variance += Math.pow(payout - avgWin, 2) * (weight / totalWeight)
   }
-  return variance
+  return round(variance, 4)
 }
 
 export function getLessBetHitrate(payoutWeights: PayoutWeights, cost: number) {
@@ -141,5 +143,5 @@ export function getLessBetHitrate(payoutWeights: PayoutWeights, cost: number) {
       lessBetWeight += weight
     }
   }
-  return lessBetWeight / totalWeight
+  return round(lessBetWeight / totalWeight, 4)
 }

@@ -1,5 +1,7 @@
+import fs from "fs"
 import assert from "assert"
-import { RandomNumberGenerator } from "../service/rng"
+import { RandomNumberGenerator } from "../rng"
+import chalk from "chalk"
 
 export function hashStringToInt(input: string) {
   let h = 2166136261
@@ -131,5 +133,51 @@ export function createCriteriaSampler(counts: Record<string, number>, seed: numb
     // Fallback
     remainingTotal--
     return keys.find((k) => (remaining[k] ?? 0) > 0) ?? "N/A"
+  }
+}
+
+export async function makeLutIndexFromPublishLut(
+  lutPublishPath: string,
+  lutIndexPath: string,
+) {
+  console.log(chalk.gray(`Regenerating LUT index file...`))
+
+  if (!fs.existsSync(lutPublishPath)) {
+    console.warn(
+      chalk.yellow(
+        `LUT publish file does not exist when regenerating index file: ${lutPublishPath}`,
+      ),
+    )
+    return
+  }
+
+  try {
+    const lutPublishStream = fs.createReadStream(lutPublishPath, {
+      highWaterMark: 500 * 1024 * 1024,
+    })
+    const rl = require("readline").createInterface({
+      input: lutPublishStream,
+      crlfDelay: Infinity,
+    })
+
+    const lutIndexStream = fs.createWriteStream(lutIndexPath, {
+      highWaterMark: 500 * 1024 * 1024,
+    })
+    let offset = 0n
+
+    for await (const line of rl) {
+      if (!line.trim()) continue
+      const indexBuffer = Buffer.alloc(8)
+      indexBuffer.writeBigUInt64LE(offset)
+      if (!lutIndexStream.write(indexBuffer)) {
+        await new Promise<void>((resolve) => lutIndexStream.once("drain", resolve))
+      }
+      offset += BigInt(Buffer.byteLength(line + "\n", "utf8"))
+    }
+
+    lutIndexStream.end()
+    await new Promise<void>((resolve) => lutIndexStream.on("finish", resolve))
+  } catch (error) {
+    throw new Error(`Error generating LUT index from publish LUT: ${error}`)
   }
 }

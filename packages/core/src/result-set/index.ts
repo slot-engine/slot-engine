@@ -2,9 +2,7 @@ import assert from "assert"
 import { AnyGameModes, AnySymbols, AnyUserData } from "../types"
 import { GameContext } from "../game-context"
 import { Simulation } from "../simulation"
-import { RandomNumberGenerator } from "../service/rng"
-import { copy } from "../../utils"
-import { Wallet } from "../wallet"
+import { RandomNumberGenerator } from "../rng"
 import { SPIN_TYPE } from "../constants"
 
 export class ResultSet<TUserState extends AnyUserData> {
@@ -99,16 +97,16 @@ export class ResultSet<TUserState extends AnyUserData> {
         ? wallet.getCurrentWin() === this.multiplier
         : wallet.getCurrentWin() > 0
 
-    const maxWinMet = this.forceMaxWin
+    const respectsMaxWin = this.forceMaxWin
       ? wallet.getCurrentWin() >= ctx.config.maxWinX
-      : true
+      : wallet.getCurrentWin() < ctx.config.maxWinX
 
-    const coreCriteriaMet = freespinsMet && multiplierMet && maxWinMet
+    const coreCriteriaMet = freespinsMet && multiplierMet && respectsMaxWin
 
     const finalResult =
       customEval !== undefined ? coreCriteriaMet && customEval === true : coreCriteriaMet
 
-    if (this.forceMaxWin && maxWinMet) {
+    if (this.forceMaxWin && respectsMaxWin) {
       ctx.services.data.record({
         maxwin: true,
       })

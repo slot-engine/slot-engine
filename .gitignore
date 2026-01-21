@@ -27,6 +27,7 @@ out/
 build
 dist
 dist-client
+dist-serverdist-client
 
 # Debug
 npm-debug.log*

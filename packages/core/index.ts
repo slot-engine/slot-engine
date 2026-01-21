@@ -6,6 +6,8 @@ export {
   type GameHooks,
   type SpinType,
   type Reels,
+  type LookupTable,
+  type LookupTableSegmented,
 } from "./src/types"
 
 export { SPIN_TYPE } from "./src/constants"
@@ -17,6 +19,10 @@ export {
   defineUserState,
 } from "./src/createSlotGame"
 
+export { type SlotGameType as SlotGame } from "./src/slot-game"
+
+export { type WrittenBook } from "./src/book"
+
 export { GameMode } from "./src/game-mode"
 export { GameSymbol } from "./src/game-symbol"
 export { ResultSet } from "./src/result-set"
@@ -26,6 +32,13 @@ export {
   OptimizationParameters,
   OptimizationScaling,
 } from "./src/optimizer"
+
+export { parseLookupTable, parseLookupTableSegmented } from "./src/analysis/utils"
+export { type PayoutStatistics, type Statistics } from "./src/analysis"
+
+export { type RecordItem } from "./src/recorder"
+
+export { type SimulationSummary } from "./src/simulation"
 
 export { type GameContext } from "./src/game-context"
 
@@ -38,3 +51,5 @@ export { GeneratedReelSet } from "./src/reel-set/GeneratedReelSet"
 export { StaticReelSet } from "./src/reel-set/StaticReelSet"
 
 export { StandaloneBoard } from "./src/board/StandaloneBoard"
+
+export { RandomNumberGenerator } from "./src/rng"

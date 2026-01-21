@@ -1,0 +1,16 @@
+{
+  "title": "Slot Engine Panel",
+  "root": true,
+  "pages": [
+    "---Introduction---",
+    "index",
+    "---Panel Configuration---",
+    "config/index",
+    "---Modules---",
+    "modules/information",
+    "modules/simulation",
+    "modules/bet-simulation",
+    "modules/reelset-designer",
+    "modules/explorer"
+  ]
+}

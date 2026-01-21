@@ -1,0 +1,131 @@
+@import "@fontsource-variable/archivo";
+@import "tailwindcss";
+
+@theme {
+  --color-*: initial;
+  --color-ui-50: #e8f1f6;
+  --color-ui-100: #ced7db;
+  --color-ui-500: #808d96;
+  --color-ui-700: #434c53;
+  --color-ui-800: #2f3236;
+  --color-ui-900: #1b1d20;
+  --color-ui-950: #131619;
+
+  --color-red-500: #f55d42;
+  --color-red-600: #bd4833;
+  --color-red-700: #8f3627;
+  --color-red-900: #361a15;
+  --color-red-950: #1f1311;
+
+  --color-orange-500: #f09c1f;
+  --color-orange-950: #211a10;
+
+  --color-cyan-500: #86e9ff;
+
+  --color-emerald-500: #1fe39e;
+  --color-emerald-950: #152b24;
+
+  --color-yellow-500: #ebde28;
+  --color-yellow-950: #2e2c19;
+
+  --spacing-page-width: 1400px;
+  --spacing-nav-height: 56px;
+  --spacing-content-height: calc(100vh - var(--spacing-nav-height));
+
+  --animate-wiggle: wiggle 0.5s ease-in-out infinite;
+}
+
+@layer base {
+  html,
+  body {
+    font-family: "Archivo Variable", sans-serif;
+    background-color: var(--color-ui-950);
+    color: var(--color-ui-50);
+  }
+
+  /* Required by base-ui */
+  .root {
+    isolation: isolate;
+    position: relative;
+  }
+
+  h1 {
+    font-size: var(--text-2xl);
+  }
+
+  h2 {
+    font-size: var(--text-2xl);
+  }
+
+  h3 {
+    font-size: var(--text-2xl);
+  }
+
+  h4 {
+    font-size: var(--text-2xl);
+  }
+
+  h5 {
+    font-size: var(--text-xl);
+  }
+
+  p + p {
+    margin-top: 1rem;
+  }
+
+  code {
+    padding: 0.1rem 0.25rem;
+    background-color: var(--color-ui-900);
+    border: 1px solid var(--color-ui-700);
+    border-radius: var(--radius-sm);
+    color: var(--color-ui-100);
+  }
+
+  ul.list {
+    list-style-type: disc;
+    padding-left: 1rem;
+
+    li::marker {
+      color: var(--color-ui-500);
+    }
+  }
+
+  a.link {
+    @apply flex items-center gap-1 mb-4 text-sm text-ui-500 hover:text-ui-100 underline;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ui-700) var(--color-ui-900);
+  }
+
+  @keyframes wiggle {
+    0%,
+    100% {
+      transform: rotate(-2deg);
+    }
+    50% {
+      transform: rotate(2deg);
+    }
+  }
+}
+
+@layer components {
+  .text-slot-letter {
+    transform: translateY(-3rem);
+    display: block;
+    animation: spin-slot 2s cubic-bezier(0.54, -0.27, 0.31, 1.27) infinite;
+  }
+
+  @keyframes spin-slot {
+    0% {
+      transform: translateY(-3rem);
+    }
+    50% {
+      transform: translateY(0rem);
+    }
+    100% {
+      transform: translateY(0rem);
+    }
+  }
+}

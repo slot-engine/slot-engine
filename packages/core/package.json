@@ -26,9 +26,18 @@
       "types": "./dist/index.d.ts",
       "module": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/index.d.ts"
     }
   },
   "dependencies": {
-    "esbuild": "0.25.9"
+    "chalk": "5.6.2",
+    "esbuild": "0.25.9",
+    "socket.io-client": "4.8.3",
+    "yargs": "18.0.0"
+  },
+  "devDependencies": {
+    "@types/yargs": "17.0.35"
   }
 }

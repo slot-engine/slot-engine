@@ -1,0 +1,105 @@
+---
+title: Quick Start
+description: Getting started with Slot Engine Panel
+icon: "Rocket"
+---
+
+## Introduction
+
+Slot Engine Panel is part of Slot Engine, a family of TypeScript libraries for building, simulating and testing slot games.
+
+Panel is a web GUI for interacting with, and inspecting Slot Engine games.
+It features various useful tools for Slot Engine game developers:
+
+- Game statistics overview
+- Payout statistics (payout occurrences, unique payout counts)
+- Game simulation (configuration, start, stop)
+- Simulation insights
+- Bet (crowd) simulation
+- Reel set designer
+- Books & events explorer
+
+## Installation & Setup
+
+Set up Panel using the `@slot-engine/panel` library.
+
+<Steps>
+  <Step>
+    ### Install package from npm
+
+    Set up your Node.js project and install `@slot-engine/panel`.<br/>
+    It's recommended to set up Panel in the same repository as your game(s), but that's not a requirement.
+
+    <Callout>
+    Slot Engine Panel requires your games to use `@slot-engine/core` >= 0.2.0.
+    </Callout>
+
+    ```bash tab="npm"
+    npm i @slot-engine/panel
+    ```
+
+    ```bash tab="pnpm"
+    pnpm i @slot-engine/panel
+    ```
+
+    ```bash tab="yarn"
+    yarn add @slot-engine/panel
+    ```
+
+    ```bash tab="bun"
+    bun install @slot-engine/panel
+    ```
+  </Step>
+  <Step>
+    ### Configure Panel
+
+    Set up Panel in a separate file.
+    For detailed configuration options, see the [configuration guide](/docs/panel/config).
+
+    ```ts lineNumbers title="index.ts"
+    import { createPanel } from "@slot-engine/panel"
+    import { game as MyGame } from "../../path-to/my-game"
+
+    const panel = createPanel({
+      games: [MyGame],
+    })
+
+    panel.start()
+    ```
+  </Step>
+  <Step>
+    ### Ensure Game Compatibility
+
+    For Panel to be able to resolve file paths correctly, your game needs to specify the configuration option `rootDir: __dirname`.
+    Also, your game must use `@slot-engine/core` >= 0.2.0.
+
+    ```ts lineNumbers title="game/index.ts"
+    export const game = createSlotGame<GameType>({
+      rootDir: __dirname, // required if connecting this game to @slot-engine/panel
+      // ...
+    })
+    ```
+    Furthermore, if you want to use the reel set designer, your reels CSV files must be prefixed with `reels_`.
+  </Step>
+  <Step>
+    ### Run Panel
+
+    You can run the file however you like. The easiest way to do this is by using the [`tsx` library](https://tsx.is/).
+
+    ```sh
+    cd ./path-to/your-panel
+    pnpm tsx watch ./index.ts
+    ```
+
+    Running Panel in watch mode is not required, but recommended.
+    This way Panel will recognize changes to your game and you don't need to restart Panel after every change.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+When you're coming from `@slot-engine/core` 0.1.x, some features of Panel may not work correctly the first time you launch it.
+Slot Engine Panel needs some files which are only generated during a simulation run.
+If you notice obvious 404 or 500 errors when using Panel for the first time,
+ensure your game is on a compatible Core version and re-run simulations.
+This should generate the necessary files Panel needs.

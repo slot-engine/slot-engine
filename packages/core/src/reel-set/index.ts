@@ -1,7 +1,7 @@
 import fs from "fs"
 import path from "path"
 import { GameConfig } from "../game-config"
-import { RandomNumberGenerator } from "../service/rng"
+import { RandomNumberGenerator } from "../rng"
 import { Reels } from "../types"
 
 export class ReelSet {
@@ -42,6 +42,7 @@ export class ReelSet {
 
     const csvData = fs.readFileSync(reelSetPath, "utf8")
     const rows = csvData.split("\n").filter((line) => line.trim() !== "")
+
     const reels: Reels = Array.from(
       { length: config.gameModes[this.associatedGameModeName]!.reelsAmount },
       () => [],
@@ -49,6 +50,7 @@ export class ReelSet {
 
     rows.forEach((row) => {
       const symsInRow = row.split(",").map((symbolId) => {
+        if (!symbolId.trim()) return null
         const symbol = config.symbols.get(symbolId.trim())
         if (!symbol) {
           throw new Error(`Symbol with id "${symbolId}" not found in game config.`)
@@ -61,19 +63,9 @@ export class ReelSet {
             `Row in reelset CSV has more symbols than expected reels amount (${reels.length})`,
           )
         }
-        reels[ridx]!.push(symbol)
+        if (symbol) reels[ridx]!.push(symbol)
       })
     })
-
-    const reelLengths = reels.map((r) => r.length)
-    const uniqueLengths = new Set(reelLengths)
-    if (uniqueLengths.size > 1) {
-      throw new Error(
-        `Inconsistent reel lengths in reelset CSV at ${reelSetPath}: ${[
-          ...uniqueLengths,
-        ].join(", ")}`,
-      )
-    }
 
     return reels
   }

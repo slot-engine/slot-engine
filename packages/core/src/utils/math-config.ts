@@ -7,6 +7,7 @@ export function makeMathConfig(
   opts: { writeToFile?: boolean } = {},
 ) {
   const game = optimizer.getGameConfig()
+  const meta = optimizer.getGameMeta()
   const gameModesCfg = optimizer.getOptimizerGameModes()
   const { writeToFile } = opts
 
@@ -55,7 +56,7 @@ export function makeMathConfig(
   }
 
   if (writeToFile) {
-    const outPath = path.join(game.rootDir, game.outputDir, "math_config.json")
+    const outPath = path.join(meta.rootDir, meta.outputDir, "math_config.json")
     writeJsonFile(outPath, config)
   }
 

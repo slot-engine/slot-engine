@@ -1,7 +1,7 @@
 import assert from "assert"
 import { AbstractService } from "."
 import { GameContext } from "../game-context"
-import { AnyGameModes, AnySymbols, AnyUserData, SpinType } from "../types"
+import { AnyGameModes, AnySymbols, AnyUserData } from "../types"
 import { Wallet } from "../wallet"
 
 export class WalletService<
@@ -16,15 +16,10 @@ export class WalletService<
     super(ctx)
   }
 
-  private ensureWallet() {
-    assert(this.wallet, "Wallet not set in WalletService. Call setWallet() first.")
-  }
-
   /**
    * Intended for internal use only.
    */
   _getWallet() {
-    this.ensureWallet()
     return this.wallet
   }
 
@@ -42,7 +37,6 @@ export class WalletService<
    * If your game has tumbling mechanics, you should call this method again after every new tumble and win calculation.
    */
   addSpinWin(amount: number) {
-    this.ensureWallet()
     this.wallet.addSpinWin(amount)
   }
 
@@ -52,7 +46,6 @@ export class WalletService<
    * This also calls `addSpinWin()` internally, to add the tumble win to the overall spin win.
    */
   addTumbleWin(amount: number) {
-    this.ensureWallet()
     this.wallet.addTumbleWin(amount)
   }
 
@@ -63,7 +56,6 @@ export class WalletService<
    * and after a (free) spin is played out to finalize the win.
    */
   confirmSpinWin() {
-    this.ensureWallet()
     this.wallet.confirmSpinWin(this.ctx().state.currentSpinType)
   }
 
@@ -71,7 +63,6 @@ export class WalletService<
    * Gets the total win amount of the current simulation.
    */
   getCurrentWin() {
-    this.ensureWallet()
     return this.wallet.getCurrentWin()
   }
 
@@ -79,7 +70,6 @@ export class WalletService<
    * Gets the current spin win amount of the ongoing spin.
    */
   getCurrentSpinWin() {
-    this.ensureWallet()
     return this.wallet.getCurrentSpinWin()
   }
 
@@ -87,7 +77,6 @@ export class WalletService<
    * Gets the current tumble win amount of the ongoing spin.
    */
   getCurrentTumbleWin() {
-    this.ensureWallet()
     return this.wallet.getCurrentTumbleWin()
   }
 }

@@ -61,3 +61,6 @@ export interface GameHooks<
 export type SpinType = (typeof SPIN_TYPE)[keyof typeof SPIN_TYPE]
 
 export type Reels = GameSymbol[][]
+
+export type LookupTable = [number, number, number][]
+export type LookupTableSegmented = [number, string, number, number][]
