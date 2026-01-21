@@ -1,0 +1,14 @@
+{
+  "name": "example-panel",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "tsx ./index.ts"
+  },
+  "dependencies": {
+    "@slot-engine/panel": "0.1.0"
+  },
+  "devDependencies": {
+    "tsx": "4.20.6"
+  }
+}

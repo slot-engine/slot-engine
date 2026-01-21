@@ -9,6 +9,7 @@ import { statusHandler } from "./api/status"
 import { syncData } from "./middleware/sync-data"
 import { startWsServer } from "../ws/server"
 import { Server } from "node:http"
+import path from "path"
 
 const DEFAULT_CONFIG: PanelConfig = {
   port: 7770,
@@ -18,6 +19,9 @@ const DEFAULT_CONFIG: PanelConfig = {
 export type Variables = {
   config: PanelConfig
 }
+
+const packageRoot = path.resolve(__dirname, "..")
+const distClientPath = path.join(packageRoot, "dist-client")
 
 export const app = new Hono<{ Variables: Variables }>()
 
@@ -39,7 +43,7 @@ export function createPanel(opts?: PanelOptions): Panel {
   app.use(
     "/assets/*",
     serveStatic({
-      root: "./dist-client/assets/",
+      root: path.join(distClientPath, "assets/"),
     }),
   )
 
@@ -47,12 +51,12 @@ export function createPanel(opts?: PanelOptions): Panel {
   app.use(
     "/*",
     serveStatic({
-      root: "./dist-client",
+      root: distClientPath,
     }),
   )
 
   app.get("*", async (c) => {
-    const html = await fs.readFile("./dist-client/index.html", "utf8")
+    const html = await fs.readFile(path.join(distClientPath, "index.html"), "utf8")
     return c.html(html)
   })
 

@@ -123,6 +123,16 @@ importers:
         specifier: 4.20.6
         version: 4.20.6
 
+  examples/panel:
+    dependencies:
+      '@slot-engine/panel':
+        specifier: 0.1.0
+        version: link:../../packages/panel
+    devDependencies:
+      tsx:
+        specifier: 4.20.6
+        version: 4.20.6
+
   packages/core:
     dependencies:
       chalk:
