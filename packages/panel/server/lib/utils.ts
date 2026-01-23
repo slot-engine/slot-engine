@@ -177,8 +177,7 @@ export async function exploreLookupTable(opts: {
   const lutPath = meta.paths.lookupTablePublish(mode)
   const lutSegmentedPath = meta.paths.lookupTableSegmented(mode)
 
-  if (!fs.existsSync(lutPath)) return
-  if (!fs.existsSync(lutSegmentedPath)) return
+  if (!fs.existsSync(lutPath) || !fs.existsSync(lutSegmentedPath)) return
 
   const indexPath = meta.paths.lookupTableIndex(mode)
   const indexSegmentedPath = meta.paths.lookupTableSegmentedIndex(mode)
@@ -338,8 +337,6 @@ export async function getBook(opts: { game: SlotGame; mode: string; bookId: numb
       break
     }
   }
-
-  if (!book) return
 
   return book
 }
