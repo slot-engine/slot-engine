@@ -1,5 +1,16 @@
 # @slot-engine/panel
 
+## 0.1.2
+
+### Patch Changes
+
+- Add better indicator in reel set editor if no reels found - Thanks @nordowl
+
+- Add checkbox to enable writing uncompressed book files - Thanks @nordowl
+
+- Updated dependencies [[`4661ce9`](https://github.com/slot-engine/slot-engine/commit/4661ce96123ab0f0ff7aa36814a6a6e89cbd0006), [`81cd177`](https://github.com/slot-engine/slot-engine/commit/81cd177e2b6358102c1895f14d5cff5681d17287)]:
+  - @slot-engine/core@0.2.1
+
 ## 0.1.1
 
 ### Patch Changes
