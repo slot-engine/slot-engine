@@ -8,6 +8,7 @@ export class TerminalUi {
   private logs: Array<{ i: number; m: string }> = []
   private logScrollOffset: number = 0
   private isScrolled: boolean = false
+  private maxLogs = 300
 
   private minWidth = 50
   private minHeight = 12
@@ -40,13 +41,14 @@ export class TerminalUi {
         this.scrollDown()
       } else if (key === "l") {
         this.scrollToBottom()
-      } else if (key === "\u0003") {
-        // ctrl + c
+      } else if (key === "q" || key === "\u0003") {
+        // q or ctrl + c
         this.stop()
         process.exit(0)
       }
     }
     process.stdout.on("resize", this.resizeHandler)
+    process.on("SIGINT", this.sigintHandler)
   }
 
   private get terminalWidth() {
@@ -74,7 +76,6 @@ export class TerminalUi {
 
     this.render()
     this.renderInterval = setInterval(() => this.render(), 100)
-    process.on("SIGINT", this.sigintHandler)
   }
 
   stop() {
