@@ -8,7 +8,8 @@ export class TerminalUi {
   private logs: Array<{ i: number; m: string }> = []
   private logScrollOffset: number = 0
   private isScrolled: boolean = false
-  private maxLogs = 300
+  private maxLogs = 500
+  private totalLogs = 0
 
   private minWidth = 50
   private minHeight = 12
@@ -109,7 +110,18 @@ export class TerminalUi {
   }
 
   log(message: string) {
-    this.logs.push({ i: this.logs.length, m: message })
+    this.logs.push({ i: this.totalLogs, m: message })
+    this.totalLogs++
+
+    if (this.logs.length > this.maxLogs) {
+      const excess = this.logs.length - this.maxLogs
+      this.logs.splice(0, excess)
+      this.logScrollOffset = Math.min(
+        this.logScrollOffset,
+        Math.max(0, this.logs.length - this.getLogAreaHeight()),
+      )
+    }
+
     if (!this.isScrolled) this.scrollToBottom()
   }
 
