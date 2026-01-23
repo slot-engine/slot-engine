@@ -39,6 +39,16 @@ function RouteComponent() {
     )
   }
 
+  if (data.reelSets.length === 0) {
+    return (
+      <PageContent>
+        <div className="p-8 text-center text-ui-400">
+          No reel sets found in this game. Ensure they are named starting with "reels_".
+        </div>
+      </PageContent>
+    )
+  }
+
   return (
     <ReelsetEditorProvider reelSets={data.reelSets}>
       <PageContent sidebar={<Sidebar />} classNames={{ content: "py-0 pl-0" }}>
