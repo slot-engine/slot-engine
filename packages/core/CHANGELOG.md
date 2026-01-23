@@ -1,5 +1,13 @@
 # @slot-engine/core
 
+## 0.2.1
+
+### Patch Changes
+
+- TUI can now be quit with "q"; Limit number of logs in memory - Thanks @nordowl
+
+- Add option to enable creation of uncompressed books - Thanks @nordowl
+
 ## 0.2.0
 
 ### Minor Changes
