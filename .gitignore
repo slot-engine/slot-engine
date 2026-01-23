@@ -39,3 +39,4 @@ yarn-error.log*
 *.pem
 **/__build__
 **/Cargo.lock
+**/.panel-config.json
