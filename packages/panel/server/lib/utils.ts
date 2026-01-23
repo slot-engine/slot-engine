@@ -87,6 +87,7 @@ export function loadOrCreatePanelGameConfig(game: SlotGame | undefined) {
       concurrency: 8,
       maxPendingSims: 25,
       maxDiskBuffer: 150,
+      makeUncompressedBooks: false,
     },
     betSimulations: [],
     reelSets: [],

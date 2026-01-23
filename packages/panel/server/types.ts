@@ -8,7 +8,6 @@ import type {
   Statistics,
   WrittenBook,
 } from "@slot-engine/core/types"
-import { SYMBOL_COLORS } from "./lib/constants"
 
 export interface APIMessageResponse {
   message: string
@@ -54,6 +53,7 @@ export interface PanelGameConfig {
     simRunsAmount: Record<string, number>
     maxPendingSims: number
     maxDiskBuffer: number
+    makeUncompressedBooks?: boolean
   }
   betSimulations: BetSimulationConfig[]
   reelSets: Array<{

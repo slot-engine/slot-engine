@@ -123,6 +123,7 @@ app.post(
       simRunsAmount: z.record(z.string(), z.number().int()),
       maxPendingSims: z.number().int(),
       maxDiskBuffer: z.number().int(),
+      makeUncompressedBooks: z.boolean().optional(),
     }),
   ),
   (c) => {

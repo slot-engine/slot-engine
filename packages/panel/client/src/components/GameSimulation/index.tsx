@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "../Select"
 import { socket } from "../../context/Websocket"
 import type { SimulationOptions } from "../../lib/types"
 import { Skeleton } from "../Skeleton"
+import { Checkbox } from "../Checkbox"
 
 type SimOptsWithoutGames = Omit<SimulationOptions, "simRunsAmount">
 
@@ -95,6 +96,7 @@ export const GameSimulation = () => {
       concurrency: data.simulation.concurrency,
       maxPendingSims: data.simulation.maxPendingSims,
       maxDiskBuffer: data.simulation.maxDiskBuffer,
+      makeUncompressedBooks: data.simulation.makeUncompressedBooks,
     })
     lastDataTimestamp.current = dataUpdatedAt
   }, [data, dataUpdatedAt, simulationMutation.isPending])
@@ -113,6 +115,7 @@ export const GameSimulation = () => {
       concurrency: simSettings?.concurrency as number,
       maxPendingSims: simSettings?.maxPendingSims as number,
       maxDiskBuffer: simSettings?.maxDiskBuffer as number,
+      makeUncompressedBooks: !!simSettings?.makeUncompressedBooks,
     }
 
     updateConfMutation.mutate(newData)
@@ -361,6 +364,19 @@ export const GameSimulation = () => {
             onValueChange={(v) => {
               isUserChange.current = true
               setSimSettings((prev) => ({ ...prev!, maxDiskBuffer: v ?? 0 }))
+            }}
+          />
+          <Checkbox
+            label="Make uncompressed Book Files"
+            className="mt-4"
+            description="This may use multiple GB of disk space!"
+            checked={!!simSettings?.makeUncompressedBooks}
+            onCheckedChange={(checked) => {
+              isUserChange.current = true
+              setSimSettings((prev) => ({
+                ...prev!,
+                makeUncompressedBooks: checked,
+              }))
             }}
           />
           <div className="mt-6">

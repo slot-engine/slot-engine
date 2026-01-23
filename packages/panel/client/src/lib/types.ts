@@ -15,6 +15,7 @@ export type SimulationOptions = {
   concurrency: number
   maxPendingSims: number
   maxDiskBuffer: number
+  makeUncompressedBooks?: boolean
 }
 
 export type SetState<T> = React.Dispatch<React.SetStateAction<T>>
