@@ -78,12 +78,13 @@ simulation count, thread concurrency, and your hardware.
 
 ### configureSimulation() options [#options]
 
-| Property         | Type                     | Description                                                                                                                                                                | Required |
-| ---------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `simRunsAmount`  | `Record<string, number>` | List of game modes and their simulation count.                                                                                                                             | yes      |
-| `concurrency`    | `number`                 | Number of threads (Node worker threads) to use. More threads = faster simulation, but higher CPU usage.<br/>Default: 6                                                     |          |
-| `maxPendingSims` | `number`                 | The maximum number of simulation results to keep pending in memory before writing to disk. Basically batch update size. Variable performance / RAM impact.<br/>Default: 25 |          |
-| `maxDiskBuffer`  | `number`                 | The maximum data buffer in MB for writing simulation results to disk. Variable performance / RAM impact.<br/>Default: 150                                                  |          |
+| Property                | Type                     | Description                                                                                                                                                                | Required |
+| ----------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `simRunsAmount`         | `Record<string, number>` | List of game modes and their simulation count.                                                                                                                             | yes      |
+| `concurrency`           | `number`                 | Number of threads (Node worker threads) to use. More threads = faster simulation, but higher CPU usage.<br/>Default: 6                                                     |          |
+| `maxPendingSims`        | `number`                 | The maximum number of simulation results to keep pending in memory before writing to disk. Basically batch update size. Variable performance / RAM impact.<br/>Default: 25 |          |
+| `maxDiskBuffer`         | `number`                 | The maximum data buffer in MB for writing simulation results to disk. Variable performance / RAM impact.<br/>Default: 150                                                  |          |
+| `makeUncompressedBooks` | `boolean`                | Whether uncompressed book files should be created. **Warning: This may use a lot of disk space depending on your game!**                                                   |          |
 
 ## Output Files / Publish Files
 

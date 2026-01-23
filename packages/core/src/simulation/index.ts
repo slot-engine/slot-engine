@@ -55,6 +55,7 @@ export class Simulation {
   readonly gameConfig: GameConfig & GameMetadata
   readonly simRunsAmount: Partial<Record<string, number>>
   readonly concurrency: number
+  readonly makeUncompressedBooks: boolean
   private debug = false
   private actualSims = 0
   private wallet: Wallet = new Wallet()
@@ -91,6 +92,7 @@ export class Simulation {
     const { config, metadata } = createGameConfig(gameConfigOpts)
     this.gameConfig = { ...config, ...metadata }
     this.gameConfigOpts = gameConfigOpts
+    this.makeUncompressedBooks = opts.makeUncompressedBooks || false
     this.simRunsAmount = opts.simRunsAmount || {}
     this.concurrency = (opts.concurrency || 6) >= 2 ? opts.concurrency || 6 : 2
     this.maxPendingSims = opts.maxPendingSims ?? 25
@@ -188,9 +190,7 @@ export class Simulation {
         const startTime = Date.now()
         statusMessage = `Simulating mode "${mode}" with ${this.simRunsAmount[mode]} runs.`
         this.tui?.log(statusMessage)
-        if (this.socket && this.panelActive) {
-          this.socket.emit("simulationStatus", statusMessage)
-        }
+        this.sendSimulationStatus(statusMessage)
 
         const runs = this.simRunsAmount[mode] || 0
         if (runs <= 0) continue
@@ -240,9 +240,7 @@ export class Simulation {
 
         statusMessage = `Writing final files for game mode "${mode}". This may take a while...`
         this.tui?.log(statusMessage)
-        if (this.socket && this.panelActive) {
-          this.socket.emit("simulationStatus", statusMessage)
-        }
+        this.sendSimulationStatus(statusMessage)
 
         writeFile(
           this.PATHS.booksIndexMeta(mode),
@@ -309,14 +307,51 @@ export class Simulation {
         await this.writeRecords(mode)
         this.writeIndexJson()
 
+        if (this.makeUncompressedBooks) {
+          statusMessage = `Creating decompressed book file for mode "${mode}". This may take a while...`
+          this.tui?.log(statusMessage)
+          this.sendSimulationStatus(statusMessage)
+
+          const uncompressedBooksPath = this.PATHS.booksUncompressed(mode)
+          const outputStream = fs.createWriteStream(uncompressedBooksPath, {
+            highWaterMark: this.streamHighWaterMark,
+          })
+
+          try {
+            // Decompress each chunk instead of final file. Node doesn't handle multiple zstd frames
+            for (const { worker, chunks } of this.bookIndexMetas) {
+              for (let chunk = 0; chunk < chunks; chunk++) {
+                const bookChunkPath = this.PATHS.booksChunk(mode, worker, chunk)
+                if (!fs.existsSync(bookChunkPath)) continue
+
+                const inputStream = fs.createReadStream(bookChunkPath)
+                const compress = zlib.createZstdDecompress()
+
+                for await (const decompChunk of inputStream.pipe(compress)) {
+                  if (!outputStream.write(decompChunk)) {
+                    await new Promise<void>((r) => outputStream.once("drain", () => r()))
+                  }
+                }
+              }
+            }
+
+            outputStream.end()
+            await new Promise<void>((r) => outputStream.on("finish", () => r()))
+          } catch (error) {
+            statusMessage = chalk.yellow(
+              `Error creating uncompressed book file: ${(error as Error).message}`,
+            )
+            this.tui?.log(statusMessage)
+            this.sendSimulationStatus(statusMessage)
+          }
+        }
+
         const endTime = Date.now()
         const prettyTime = new Date(endTime - startTime).toISOString().slice(11, -1)
 
         statusMessage = `Mode ${mode} done! Time taken: ${prettyTime}`
         this.tui?.log(statusMessage)
-        if (this.socket && this.panelActive) {
-          this.socket.emit("simulationStatus", statusMessage)
-        }
+        this.sendSimulationStatus(statusMessage)
       }
 
       this.tui?.stop()
@@ -590,7 +625,7 @@ export class Simulation {
                 ),
               ])
 
-              if (this.bookBufferSizes.get(index)! >= 12 * 1024 * 1024) {
+              if (this.bookBufferSizes.get(index)! >= 10 * 1024 * 1024) {
                 await flushBookChunk()
               }
 
@@ -1143,6 +1178,12 @@ export class Simulation {
       })
     }
   }
+
+  private sendSimulationStatus(message: string) {
+    if (this.socket && this.panelActive) {
+      this.socket.emit("simulationStatus", message)
+    }
+  }
 }
 
 export type SimulationOptions = {
@@ -1172,6 +1213,10 @@ export type SimulationOptions = {
    * Default: 50
    */
   maxDiskBuffer?: number
+  /**
+   * Whether to generate uncompressed book files alongside compressed ones.
+   */
+  makeUncompressedBooks?: boolean
 }
 
 export type SimulationConfigOptions = {
