@@ -1,5 +1,11 @@
 # @slot-engine/panel
 
+## 0.1.3
+
+### Patch Changes
+
+- Explorer: Add button to jump to book ID - Thanks @nordowl
+
 ## 0.1.2
 
 ### Patch Changes
