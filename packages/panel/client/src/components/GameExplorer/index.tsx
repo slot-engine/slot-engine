@@ -1,28 +1,37 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useGameContext } from "../../context/GameContext"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "../Select"
 import { useEffect, useRef, useState } from "react"
 import { FetchError, query } from "../../lib/queries"
 import { LookupTableRow } from "../LookupTableRow"
 import { Accordion } from "@base-ui/react/accordion"
-import { IconFilter, IconLoader2, IconMoodPuzzled, IconTrash } from "@tabler/icons-react"
+import {
+  IconArrowRight,
+  IconFilter,
+  IconLoader2,
+  IconMoodPuzzled,
+  IconTrash,
+} from "@tabler/icons-react"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { ErrorDisplay } from "../Error"
 import { Skeleton } from "../Skeleton"
 import { Button } from "../Button"
+import { NumberInput } from "../NumberInput"
 
 export const GameExplorer = () => {
   const { gameId, game } = useGameContext()
   const [mode, setMode] = useState(game.modes[0]?.name || "")
   const [filter, setFilter] = useState<Array<{ name: string; value: string }>>([])
+  const [cursor, setCursor] = useState(0)
 
+  const queryClient = useQueryClient()
   const { data, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useInfiniteQuery({
-      queryKey: ["game", "explore", gameId, mode, filter],
+      queryKey: ["game", "explore", gameId, mode, filter, cursor],
       queryFn: async ({ pageParam }) => {
         return await query.gameExplore({ gameId, mode, cursor: pageParam, filter })
       },
-      initialPageParam: 0,
+      initialPageParam: cursor,
       getNextPageParam: (lastPage) => lastPage.nextCursor,
     })
 
@@ -51,6 +60,14 @@ export const GameExplorer = () => {
     }
   }, [hasNextPage, fetchNextPage, luts.length, isFetchingNextPage, items])
 
+  function handleJumpToEntry(id: number) {
+    if (isNaN(id) || id < 0) return
+
+    setCursor(id)
+    // Reset the query to start from the new cursor
+    queryClient.resetQueries({ queryKey: ["game", "explore", gameId, mode, filter, id] })
+  }
+
   return (
     <div className="grid grid-cols-[1fr_3fr] gap-8">
       <div>
@@ -70,7 +87,17 @@ export const GameExplorer = () => {
           </SelectContent>
         </Select>
         <div className="mt-4">
-          <Filters filters={filter} onValueChange={setFilter} mode={mode} />
+          <Filters
+            filters={filter}
+            onValueChange={(v) => {
+              setCursor(0)
+              setFilter(v)
+            }}
+            mode={mode}
+          />
+        </div>
+        <div className="mt-4">
+          <Actions onJumpToEntry={handleJumpToEntry} />
         </div>
       </div>
       <div>
@@ -269,7 +296,11 @@ const Filters = ({ mode, filters, onValueChange }: FiltersProps) => {
               </SelectContent>
             </Select>
           </div>
-          <Button variant="ghost-destructive" isIconButton onClick={() => removeFilter(name)}>
+          <Button
+            variant="ghost-destructive"
+            isIconButton
+            onClick={() => removeFilter(name)}
+          >
             <IconTrash />
           </Button>
         </div>
@@ -281,6 +312,37 @@ const Filters = ({ mode, filters, onValueChange }: FiltersProps) => {
           Add Filter
         </Button>
       )}
+    </div>
+  )
+}
+
+interface ActionsProps {
+  onJumpToEntry: (id: number) => void
+}
+
+const Actions = ({ onJumpToEntry }: ActionsProps) => {
+  const [cursor, setCursor] = useState(0)
+
+  function handleJump() {
+    onJumpToEntry(Math.max(0, cursor - 1))
+  }
+
+  return (
+    <div>
+      <div className="pb-2 mb-2 border-b border-ui-700">Actions</div>
+      <div className="flex gap-2 items-end">
+        <NumberInput
+          label="Jump to Book ID"
+          className="w-full"
+          value={cursor}
+          onValueChange={(v) => setCursor(v || 0)}
+          min={0}
+        />
+        <Button variant="secondary" onClick={handleJump}>
+          Jump
+          <IconArrowRight />
+        </Button>
+      </div>
     </div>
   )
 }
