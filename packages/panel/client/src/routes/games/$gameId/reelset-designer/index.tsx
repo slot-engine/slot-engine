@@ -60,8 +60,14 @@ function RouteComponent() {
 
 const Sidebar = () => {
   const { gameId } = useGameContext()
-  const { reelSets, activeReelsetState, colorsState, reelsState, reelOrderState } =
-    useEditorContext()
+  const {
+    reelSets,
+    activeReelsetState,
+    colorsState,
+    reelsState,
+    reelOrderState,
+    options,
+  } = useEditorContext()
   const [activeReelset, setActiveReelset] = activeReelsetState
   const [reels] = reelsState
   const [colors] = colorsState
@@ -102,7 +108,7 @@ const Sidebar = () => {
           ))}
         </SelectContent>
       </Select>
-      <div className="mt-8 mb-2">Color Settings</div>
+      <div className="mt-4 mb-2">Color Settings</div>
       <div className="grid grid-cols-4 gap-2">
         {Object.entries(colors).map(([key, color]) => (
           <SymbolColor key={key} symbol={key} color={color} />
@@ -116,6 +122,31 @@ const Sidebar = () => {
         {isLoading ? <IconLoader2 className="animate-spin" /> : <IconDeviceFloppy />}
         Save Reels & Settings
       </Button>
+      <h3 className="mb-2 mt-8">Advanced Information</h3>
+      <div>
+        <div className="mb-2">Symbol Counts</div>
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+          {Object.entries(reels).map(([ridx, reel]) => {
+            const counts: Record<string, number> = {}
+            options.symbols.forEach((s) => (counts[s] = 0))
+            reel.forEach((s) => {
+              counts[s.symbol] = (counts[s.symbol] || 0) + 1
+            })
+            return (
+              <div key={ridx} className="text-xs min-w-12">
+                <div>Reel {Number(ridx) + 1}:</div>
+                <div>
+                  {Object.entries(counts).map(([symbol, count]) => (
+                    <div key={symbol} className="font-mono">
+                      <span style={{ color: colors[symbol] }}>{symbol}</span>: {count}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
