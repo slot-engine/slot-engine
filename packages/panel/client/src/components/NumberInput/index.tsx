@@ -5,6 +5,7 @@ import { useId } from "react"
 
 interface NumberInputProps extends Primitive.Root.Props {
   label?: string
+  placeholder?: string
 }
 
 export const NumberInput = (props: NumberInputProps) => {
@@ -26,7 +27,10 @@ export const NumberInput = (props: NumberInputProps) => {
             </Button>
           )}
         />
-        <Primitive.Input className="w-full px-4 border-y border-ui-700" />
+        <Primitive.Input
+          placeholder={props.placeholder}
+          className="w-full px-4 border-y border-ui-700"
+        />
         <Primitive.Increment
           className="cursor-pointer p-2 rounded-l-none"
           render={(props) => (

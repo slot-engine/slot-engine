@@ -24,7 +24,8 @@ export const ReelSetDesigner = () => {
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [symbolCounts, setSymbolCounts] = useState<Record<string, number>>({})
-  const lastInteractedReel = useRef<number | null>(null)
+  const [lastInteractedReel, setLastInteractedReel] = useState<number | null>(null)
+  const [symbolInsertIdx, setSymbolInsertIdx] = useState<number | null>(null)
 
   function updateSymbolCount(symbol: string, count: number) {
     setSymbolCounts((current) => {
@@ -33,12 +34,13 @@ export const ReelSetDesigner = () => {
   }
 
   function handleDialog(reelId: number) {
-    lastInteractedReel.current = reelId
+    setLastInteractedReel(reelId)
     setDialogOpen(true)
   }
 
   function confirmSymbols(mode: "prepend" | "append") {
-    const reelId = lastInteractedReel.current
+    const reelId = lastInteractedReel
+    const symbolIdx = symbolInsertIdx
     if (reelId === null) return
 
     const newSymbols: Array<{ id: string; symbol: string }> = []
@@ -49,16 +51,35 @@ export const ReelSetDesigner = () => {
     }
 
     let reel = []
-    if (mode === "prepend") {
-      reel = [...newSymbols, ...(reels[reelId] || [])]
+
+    if (symbolIdx !== null) {
+      if (mode === "prepend") {
+        reel = [
+          ...(reels[reelId] || []).slice(0, symbolIdx),
+          ...newSymbols,
+          ...(reels[reelId] || []).slice(symbolIdx),
+        ]
+      } else {
+        reel = [
+          ...(reels[reelId] || []).slice(0, symbolIdx + 1),
+          ...newSymbols,
+          ...(reels[reelId] || []).slice(symbolIdx + 1),
+        ]
+      }
     } else {
-      reel = [...(reels[reelId] || []), ...newSymbols]
+      if (mode === "prepend") {
+        reel = [...newSymbols, ...(reels[reelId] || [])]
+      } else {
+        reel = [...(reels[reelId] || []), ...newSymbols]
+      }
     }
+
     setReels((current) => {
       return { ...current, [reelId]: reel }
     })
 
-    lastInteractedReel.current = null
+    setLastInteractedReel(null)
+    setSymbolInsertIdx(null)
     setSymbolCounts({})
     setDialogOpen(false)
   }
@@ -143,7 +164,7 @@ export const ReelSetDesigner = () => {
         <DialogContent>
           <DialogTitle>Add Reel Symbols</DialogTitle>
           <DialogDescription>
-            The selected symbols will be added to the reel.
+            The selected symbols will be added to reel {(lastInteractedReel ?? 0) + 1}.
           </DialogDescription>
           <div className="mt-4 grid grid-cols-2 gap-x-8">
             {options.symbols.map((sym) => (
@@ -157,12 +178,14 @@ export const ReelSetDesigner = () => {
             ))}
           </div>
           <div className="mt-4 flex gap-2">
-            <Button onClick={() => confirmSymbols("prepend")}>
-              Prepend Symbols
-            </Button>
-            <Button onClick={() => confirmSymbols("append")}>
-              Append Symbols
-            </Button>
+            <Button onClick={() => confirmSymbols("prepend")}>Add Before</Button>
+            <NumberInput
+              placeholder="Symbol Index"
+              value={symbolInsertIdx}
+              onValueChange={(v) => setSymbolInsertIdx(v)}
+              className="max-w-64"
+            />
+            <Button onClick={() => confirmSymbols("append")}>Add After</Button>
           </div>
         </DialogContent>
       </Dialog>
