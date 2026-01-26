@@ -1,17 +1,17 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react"
-import { useGameContext } from "./GameContext"
+import { useGameContext } from "../../../context/GameContext"
 import { useQuery } from "@tanstack/react-query"
 import { query } from "@/lib/queries"
 import { ErrorDisplay } from "@/components/Error"
 import { Skeleton } from "@/components/Skeleton"
 import type { State } from "@/lib/types"
-import type { APIGameGetReelSetResponse } from "../../../server/types"
+import type { APIGameGetReelSetResponse } from "../../../../../server/types"
 
 export type ReelsetEditorReel = Array<{ id: string; symbol: string }>
 
-const EditorContext = createContext<EditorContext | null>(null)
+const RseDataContext = createContext<RseDataContext | null>(null)
 
-interface EditorContext {
+interface RseDataContext {
   reelSets: {
     path: string
     name: string
@@ -25,11 +25,11 @@ interface EditorContext {
   options: APIGameGetReelSetResponse["options"]
 }
 
-export function useEditorContext() {
-  const context = useContext(EditorContext)
+export function useRseData() {
+  const context = useContext(RseDataContext)
 
   if (!context) {
-    throw new Error("useEditorContext must be used within an EditorContext.Provider")
+    throw new Error("useRseDataContext must be used within an RseDataProvider")
   }
 
   return context
@@ -43,10 +43,7 @@ interface ReelsetEditorProviderProps {
   children: React.ReactNode
 }
 
-export function ReelsetEditorProvider({
-  reelSets,
-  children,
-}: ReelsetEditorProviderProps) {
+export function RseDataProvider({ reelSets, children }: ReelsetEditorProviderProps) {
   const { gameId } = useGameContext()
 
   const [activeRs, setActiveRs] = useState(reelSets[0]?.name || "")
@@ -99,7 +96,7 @@ export function ReelsetEditorProvider({
     }
   }
 
-  const context: EditorContext = {
+  const context: RseDataContext = {
     reelSets,
     activeReelsetState: [activeRs, setActiveRs],
     colorsState: [colors, setColors],
@@ -110,5 +107,5 @@ export function ReelsetEditorProvider({
     options: data.options,
   }
 
-  return <EditorContext.Provider value={context}>{children}</EditorContext.Provider>
+  return <RseDataContext.Provider value={context}>{children}</RseDataContext.Provider>
 }

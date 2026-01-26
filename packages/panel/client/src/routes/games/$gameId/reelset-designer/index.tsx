@@ -1,17 +1,21 @@
 import { Button } from "@/components/Button"
 import { ColorPicker } from "@/components/ColorPicker"
 import { ErrorDisplay } from "@/components/Error"
-import { ReelSetDesigner } from "@/components/GameReelSetDesigner"
+import { ReelSetDesigner } from "@/components/GameReelSetEditor"
 import { PageContent } from "@/components/Page"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/Popover"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/Select"
 import { Skeleton } from "@/components/Skeleton"
 import { useGameContext } from "@/context/GameContext"
-import { ReelsetEditorProvider, useEditorContext } from "@/context/ReelsetEditorContext"
+import {
+  RseDataProvider,
+  useRseData,
+} from "@/components/GameReelSetEditor/context/DataContext"
 import { mutation, query } from "@/lib/queries"
 import { IconDeviceFloppy, IconLoader2 } from "@tabler/icons-react"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
+import { RseUiProvider } from "@/components/GameReelSetEditor/context/UiContext"
 
 export const Route = createFileRoute("/games/$gameId/reelset-designer/")({
   component: RouteComponent,
@@ -50,16 +54,19 @@ function RouteComponent() {
   }
 
   return (
-    <ReelsetEditorProvider reelSets={data.reelSets}>
-      <PageContent sidebar={<Sidebar />} classNames={{ content: "py-0 pl-0" }}>
-        <ReelSetDesigner />
-      </PageContent>
-    </ReelsetEditorProvider>
+    <RseDataProvider reelSets={data.reelSets}>
+      <RseUiProvider>
+        <PageContent sidebar={<Sidebar />} classNames={{ content: "py-0 pl-0" }}>
+          <ReelSetDesigner />
+        </PageContent>
+      </RseUiProvider>
+    </RseDataProvider>
   )
 }
 
 const Sidebar = () => {
   const { gameId } = useGameContext()
+
   const {
     reelSets,
     activeReelsetState,
@@ -67,7 +74,7 @@ const Sidebar = () => {
     reelsState,
     reelOrderState,
     options,
-  } = useEditorContext()
+  } = useRseData()
   const [activeReelset, setActiveReelset] = activeReelsetState
   const [reels] = reelsState
   const [colors] = colorsState
@@ -152,12 +159,12 @@ const Sidebar = () => {
 }
 
 const SymbolColor = ({ symbol, color }: { symbol: string; color: string }) => {
-  const { colorsState } = useEditorContext()
+  const { colorsState } = useRseData()
   const [colors, setColors] = colorsState
 
   return (
     <Popover>
-      <PopoverTrigger className="cursor-pointer flex gap-2 items-center justify-between p-2 bg-ui-900 hover:bg-ui-800 border border-ui-700 rounded-lg">
+      <PopoverTrigger className="cursor-pointer flex gap-2 items-center justify-between p-1 pl-2 bg-ui-900 hover:bg-ui-800 border border-ui-700 rounded-lg">
         <div>{symbol}</div>
         <div className="size-6 rounded-sm" style={{ backgroundColor: color }}></div>
       </PopoverTrigger>
