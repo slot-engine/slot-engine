@@ -1,5 +1,18 @@
 # @slot-engine/panel
 
+## 0.1.4
+
+### Patch Changes
+
+- Reel Set Designer: Add overview of symbol counts per reel - Thanks @nordowl
+
+- Reel Set Designer: Add ability to insert symbols at specific position - Thanks @nordowl
+
+- Reel Set Editor: Refactor; Refine UI and add features - Thanks @nordowl
+
+- Updated dependencies [[`217cbec`](https://github.com/slot-engine/slot-engine/commit/217cbec6b624c69bcc289673ed58ec1d5466ab04)]:
+  - @slot-engine/core@0.2.2
+
 ## 0.1.3
 
 ### Patch Changes
