@@ -264,13 +264,11 @@ describe("Board", () => {
   })
 
   it("tumbles and forgets", () => {
-    ctx = ctx2
+    reels = ctx2.services.game.getReelsetById("base", "default")
 
-    reels = ctx.services.game.getReelsetById("base", "default")
+    ctx2.services.board.setSymbolsPerReel([2, 5, 3, 5, 2])
 
-    ctx.services.board.setSymbolsPerReel([2, 5, 3, 5, 2])
-
-    ctx.services.board.drawBoardWithForcedStops({
+    ctx2.services.board.drawBoardWithForcedStops({
       reels,
       forcedStops: {
         "0": 3,
@@ -282,7 +280,7 @@ describe("Board", () => {
       randomOffset: false,
     })
 
-    expect(ctx.services.board.getBoardReels()).toEqual([
+    expect(ctx2.services.board.getBoardReels()).toEqual([
       [A, B],
       [A, B, C, A, B],
       [A, B, C],
@@ -290,16 +288,16 @@ describe("Board", () => {
       [A, B],
     ])
 
-    ctx.services.board.setSymbolsPerReel([5, 5, 5, 5, 5])
+    ctx2.services.board.setSymbolsPerReel([5, 5, 5, 5, 5])
 
-    const blockers = ctx.services.game.getReelsetById("base", "blocker")
-    ctx.services.board.tumbleBoardAndForget({
+    const blockers = ctx2.services.game.getReelsetById("base", "blocker")
+    ctx2.services.board.tumbleBoardAndForget({
       symbolsToDelete: [],
       reels: blockers,
       forcedStops: [0, 0, 0, 0, 0],
     })
 
-    expect(ctx.services.board.getBoardReels()).toEqual([
+    expect(ctx2.services.board.getBoardReels()).toEqual([
       [X, X, X, A, B],
       [A, B, C, A, B],
       [X, X, A, B, C],
@@ -315,9 +313,9 @@ describe("Board", () => {
       { reelIdx: 4, rowIdx: 1 },
     ]
 
-    ctx.services.board.tumbleBoard(symbolsToDelete)
+    ctx2.services.board.tumbleBoard(symbolsToDelete)
 
-    expect(ctx.services.board.getBoardReels()).toEqual([
+    expect(ctx2.services.board.getBoardReels()).toEqual([
       [C, X, X, A, B],
       [C, A, C, A, B],
       [C, X, A, B, C],
@@ -325,9 +323,9 @@ describe("Board", () => {
       [C, X, X, A, B],
     ])
 
-    ctx.services.board.tumbleBoard(symbolsToDelete)
+    ctx2.services.board.tumbleBoard(symbolsToDelete)
 
-    expect(ctx.services.board.getBoardReels()).toEqual([
+    expect(ctx2.services.board.getBoardReels()).toEqual([
       [B, C, X, A, B],
       [B, C, C, A, B],
       [B, C, A, B, C],
@@ -364,5 +362,71 @@ describe("Board", () => {
       [C, A, A, A, A],
       [C, B, B, B, B],
     ])
+  })
+
+  it("handles locked reels on draw", () => {
+    const reels = ctx.services.game.getReelsetById("base", "default")
+
+    const { stopPositions } = ctx.services.board.drawBoardWithForcedStops({
+      reels,
+      forcedStops: {
+        "0": 5,
+        "1": 5,
+        "2": 5,
+        "3": 5,
+        "4": 5,
+      },
+      randomOffset: false,
+    })
+
+    expect(stopPositions).toEqual([5, 5, 5, 5, 5])
+    expect(ctx.services.board.getBoardReels()).toEqual([
+      [C, A, B, C, A],
+      [B, C, A, B, C],
+      [A, B, C, A, B],
+      [C, C, C, A, B],
+      [C, A, B, C, A],
+    ])
+
+    ctx.services.board.setReelLocked(1, true)
+    ctx.services.board.setReelLocked(3, true)
+
+    const { stopPositions: stop2 } = ctx.services.board.drawBoardWithForcedStops({
+      reels,
+      forcedStops: {
+        "0": 1,
+        "1": 1,
+        "2": 1,
+        "3": 1,
+        "4": 1,
+      },
+      randomOffset: false,
+    })
+
+    expect(stop2).toEqual([1, 5, 1, 5, 1])
+    expect(ctx.services.board.getBoardReels()).toEqual([
+      [C, B, A, A, C],
+      [B, C, A, B, C],
+      [A, A, C, B, A],
+      [C, C, C, A, B],
+      [B, C, A, C, C],
+    ])
+
+    ctx.services.board.setReelLocked(1, false)
+    ctx.services.board.setReelLocked(3, false)
+
+    const { stopPositions: stop3 } = ctx.services.board.drawBoardWithForcedStops({
+      reels,
+      forcedStops: {
+        "0": 3,
+        "1": 3,
+        "2": 4,
+        "3": 3,
+        "4": 3,
+      },
+      randomOffset: false,
+    })
+
+    expect(stop3).toEqual([3, 3, 4, 3, 3])
   })
 })

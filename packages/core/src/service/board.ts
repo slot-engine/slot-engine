@@ -47,6 +47,10 @@ export class BoardService<
     return this.board.anticipation
   }
 
+  getLockedReels() {
+    return this.board.reelsLocked
+  }
+
   /**
    * Gets the symbol at the specified reel and row index.
    */
@@ -79,6 +83,13 @@ export class BoardService<
    */
   setAnticipationForReel(reelIndex: number, value: boolean) {
     this.board.anticipation[reelIndex] = value
+  }
+
+  /**
+   * Sets the locked state for a specific reel.
+   */
+  setReelLocked(reelIndex: number, value: boolean) {
+    this.board.reelsLocked[reelIndex] = value
   }
 
   /**

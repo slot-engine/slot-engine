@@ -142,6 +142,30 @@ to apply anticipation effects to reels 4 and 5.
 
 Sets anticipation state for a board reel.
 
+### getLockedReels()
+
+| Method                                 | Type              |
+| -------------------------------------- | ----------------- |
+| `ctx.services.board.getLockedReels()` | `() => boolean[]` |
+
+Array of booleans representing lock state for reels. If a reel is locked, its symbols
+will not change when the board is drawn.
+
+### setReelLocked()
+
+| Method                                        | Type                         |
+| --------------------------------------------- | ---------------------------- |
+| `ctx.services.board.setReelLocked()` | `(reelIndex, value) => void` |
+
+#### Parameters [!toc]
+
+| Parameter   | Type      |
+| ----------- | --------- |
+| `reelIndex` | `number`  |
+| `value`     | `boolean` |
+
+Sets locked state for a board reel.
+
 ### countSymbolsOnReel()
 
 | Method                                    | Type                                        |

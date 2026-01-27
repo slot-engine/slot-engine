@@ -28,8 +28,18 @@ export class Board {
    * Used for triggering anticipation effects.
    */
   anticipation: boolean[]
+  /**
+   * The most recent stop positions for the reels.
+   */
   lastDrawnReelStops: number[]
+  /**
+   * The reel set used in the most recent draw.
+   */
   lastUsedReels: Reels
+  /**
+   * Indicates whether each reel is locked or not.
+   */
+  reelsLocked: boolean[]
 
   constructor() {
     this.reels = []
@@ -38,6 +48,7 @@ export class Board {
     this.anticipation = []
     this.lastDrawnReelStops = []
     this.lastUsedReels = []
+    this.reelsLocked = []
   }
 
   getSymbol(reelIndex: number, rowIndex: number) {
@@ -233,12 +244,14 @@ export class Board {
     return reelSet
   }
 
-  resetReels(opts: { ctx: GameContext; reelsAmount?: number }) {
-    const length =
-      opts.reelsAmount ?? opts.ctx.services.game.getCurrentGameMode().reelsAmount
+  resetReels(opts: { ctx: GameContext; reelsAmount?: number; reelsLocked?: boolean[] }) {
+    const { ctx, reelsAmount, reelsLocked } = opts
+
+    const length = reelsAmount ?? ctx.services.game.getCurrentGameMode().reelsAmount
 
     this.reels = this.makeEmptyReels(opts)
     this.anticipation = Array.from({ length }, () => false)
+    this.reelsLocked = reelsLocked ?? Array.from({ length }, () => false)
     this.paddingTop = this.makeEmptyReels(opts)
     this.paddingBottom = this.makeEmptyReels(opts)
   }
@@ -252,7 +265,10 @@ export class Board {
     symbolsPerReel?: number[]
     padSymbols?: number
   }) {
-    this.resetReels(opts)
+    this.resetReels({
+      ...opts,
+      ...(this.reelsLocked.length && { reelsLocked: this.reelsLocked }),
+    })
 
     const reelsAmount =
       opts.reelsAmount ?? opts.ctx.services.game.getCurrentGameMode().reelsAmount
@@ -291,6 +307,23 @@ export class Board {
         finalReelStops[i] = Math.floor(
           opts.ctx.services.rng.randomFloat(0, opts.reels[i]!.length - 1),
         )
+      }
+    }
+
+    if (
+      this.reelsLocked.some((locked) => locked) &&
+      this.lastDrawnReelStops.length == 0
+    ) {
+      throw new Error(
+        "Cannot draw board with locked reels before drawing it at least once.",
+      )
+    }
+
+    if (this.reelsLocked.some((locked) => locked)) {
+      for (let ridx = 0; ridx < reelsAmount; ridx++) {
+        if (this.reelsLocked[ridx]) {
+          finalReelStops[ridx] = this.lastDrawnReelStops[ridx]!
+        }
       }
     }
 
