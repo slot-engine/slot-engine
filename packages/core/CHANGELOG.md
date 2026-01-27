@@ -1,5 +1,11 @@
 # @slot-engine/core
 
+## 0.2.2
+
+### Patch Changes
+
+- Add ability to lock reels via `ctx.services.board.setReelLocked()` - Thanks @nordowl
+
 ## 0.2.1
 
 ### Patch Changes
