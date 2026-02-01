@@ -134,4 +134,43 @@ describe("ManywaysWinType", () => {
     expect(winCombinations[3]?.ways).toBe(4)
     expect(payout).toBe(42)
   })
+
+  it("can jump gaps when configured", () => {
+    reels = [
+      [A, B, B],
+      [C, C, C],
+      [B, W, A],
+      [B, A, A],
+      [B, B, C],
+    ]
+
+    const ways = new ManywaysWinType({ ctx, wildSymbol: W })
+
+    const { payout, winCombinations } = ways
+      .evaluateWins(reels, { jumpGaps: true })
+      .getWins()
+
+    expect(winCombinations.length).toBe(3)
+    expect(winCombinations[0]?.ways).toBe(4)
+    expect(winCombinations[1]?.ways).toBe(8)
+    expect(winCombinations[2]?.ways).toBe(3)
+    expect(payout).toBe(11.5)
+
+    reels = [
+      [C, C, W],
+      [B, B, B],
+      [A, A, A],
+      [C, C, C],
+      [B, C, B],
+    ]
+
+    const { payout: payout2, winCombinations: wc2 } = ways
+      .evaluateWins(reels, { jumpGaps: true })
+      .getWins()
+
+    expect(wc2.length).toBe(2)
+    expect(wc2[0]?.ways).toBe(9)
+    expect(wc2[1]?.ways).toBe(6)
+    expect(payout2).toBe(7.5)
+  })
 })

@@ -19,9 +19,15 @@ export class ManywaysWinType extends WinType {
    * Calculates wins based on the defined paylines and provided board state.\
    * Retrieve the results using `getWins()` after.
    */
-  evaluateWins(board: Reels) {
+  evaluateWins(
+    board: Reels,
+    opts: {
+      jumpGaps?: boolean
+    } = {},
+  ) {
     this.validateConfig()
 
+    const { jumpGaps = false } = opts
     const waysWins: ManywaysWinCombination[] = []
 
     const reels = board
@@ -36,26 +42,35 @@ export class ManywaysWinType extends WinType {
     // We collect all non-wild symbols we encounter as potential win candidates.
     // We also collect the Wild symbol itself as a candidate for pure wild wins.
     const candidateSymbols = new Map<string, GameSymbol>()
-    let searchReelIdx = 0
-    let searchActive = true
 
-    while (searchActive && searchReelIdx < reels.length) {
-      const reel = reels[searchReelIdx]!
-      let hasWild = false
-
-      for (const symbol of reel) {
-        candidateSymbols.set(symbol.id, symbol)
-        if (this.isWild(symbol)) {
-          hasWild = true
+    if (jumpGaps) {
+      for (const reel of reels) {
+        for (const symbol of reel) {
+          candidateSymbols.set(symbol.id, symbol)
         }
       }
+    } else {
+      let searchReelIdx = 0
+      let searchActive = true
 
-      // If this reel has no wilds, we can't extend the search for *new* starting symbols
-      // beyond this reel (because a win must be continuous from the start).
-      if (!hasWild) {
-        searchActive = false
+      while (searchActive && searchReelIdx < reels.length) {
+        const reel = reels[searchReelIdx]!
+        let hasWild = false
+
+        for (const symbol of reel) {
+          candidateSymbols.set(symbol.id, symbol)
+          if (this.isWild(symbol)) {
+            hasWild = true
+          }
+        }
+
+        // If this reel has no wilds, we can't extend the search for *new* starting symbols
+        // beyond this reel (because a win must be continuous from the start).
+        if (!hasWild) {
+          searchActive = false
+        }
+        searchReelIdx++
       }
-      searchReelIdx++
     }
 
     for (const baseSymbol of candidateSymbols.values()) {
@@ -76,7 +91,7 @@ export class ManywaysWinType extends WinType {
           }
         }
 
-        if (!symbolList[ridx]) {
+        if (!symbolList[ridx] && !jumpGaps) {
           isInterrupted = true
           break
         }
@@ -99,7 +114,7 @@ export class ManywaysWinType extends WinType {
         .flatMap((l) => l.map((s) => s))
         .find((s) => !this.isWild(s.symbol))?.symbol
 
-      if (!baseSymbol) baseSymbol = symbolList[0]![0]!.symbol
+      if (!baseSymbol) baseSymbol = symbolList[Object.keys(symbolList)[0]!]![0]!.symbol
 
       const singleWayPayout = this.getSymbolPayout(baseSymbol, wayLength)
       const totalWays = Object.values(symbolList).reduce(
@@ -139,7 +154,7 @@ export class ManywaysWinType extends WinType {
   }
 
   private getWayLength(symbolList: Record<string, SymbolList>) {
-    return Math.max(...Object.keys(symbolList).map((k) => parseInt(k, 10))) + 1
+    return Object.keys(symbolList).length
   }
 }
 

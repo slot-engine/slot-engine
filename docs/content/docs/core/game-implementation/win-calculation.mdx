@@ -143,3 +143,24 @@ export function onHandleGameFlow(ctx: Context) {
     .getWins()
 }
 ```
+
+### Jumping gaps [!toc]
+
+This win type has a unique option, in that it's able to jump gaps when calculating wins.
+That means it's possible for wins to start at any reel from left to right, and gap reels
+(a reel without the winning symbol) will not interrupt the win ways.
+
+```ts lineNumbers
+const boardReels = ctx.services.board.getBoardReels()
+
+const { payout, winCombinations } = ways
+  .evaluateWins(boardReels, { jumpGaps: true })
+  .getWins()
+
+// |A|A|C|C|A|
+// |B|A|C|A|C|
+// |B|A|B|A|C|
+// A: 6-way win, 4 of a kind
+// B: no win
+// C: 4-way win, 3 of a kind
+```
