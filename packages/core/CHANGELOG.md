@@ -1,5 +1,13 @@
 # @slot-engine/core
 
+## 0.2.3
+
+### Patch Changes
+
+- Add option `jumpGaps` to `ManywaysWinType.evaluateWins()` - Thanks @nordowl
+
+- Add `ctx.services.board.updateSymbol()` method to update symbol properties on the board - Thanks @nordowl
+
 ## 0.2.2
 
 ### Patch Changes
