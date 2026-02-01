@@ -77,6 +77,22 @@ Sets the symbol at the specified position.
 
 Removes the symbol from the board at the specified position. Returns a boolean, whether the symbol was removed.
 
+### updateSymbol()
+
+| Method                              | Type                                        |
+| ----------------------------------- | ------------------------------------------- |
+| `ctx.services.board.updateSymbol()` | `(reelIndex, rowIndex, properties) => void` |
+
+#### Parameters [!toc]
+
+| Parameter    | Type                  |
+| ------------ | --------------------- |
+| `reelIndex`  | `number`              |
+| `rowIndex`   | `number`              |
+| `properties` | `Record<string, any>` |
+
+Updates properties of the symbol at the specified reel and row index.
+
 ### setSymbolsPerReel()
 
 | Method                                   | Type                       |
@@ -144,8 +160,8 @@ Sets anticipation state for a board reel.
 
 ### getLockedReels()
 
-| Method                                 | Type              |
-| -------------------------------------- | ----------------- |
+| Method                                | Type              |
+| ------------------------------------- | ----------------- |
 | `ctx.services.board.getLockedReels()` | `() => boolean[]` |
 
 Array of booleans representing lock state for reels. If a reel is locked, its symbols
@@ -153,8 +169,8 @@ will not change when the board is drawn.
 
 ### setReelLocked()
 
-| Method                                        | Type                         |
-| --------------------------------------------- | ---------------------------- |
+| Method                               | Type                         |
+| ------------------------------------ | ---------------------------- |
 | `ctx.services.board.setReelLocked()` | `(reelIndex, value) => void` |
 
 #### Parameters [!toc]
@@ -374,9 +390,9 @@ and the values are the added symbols for that reel.
 ### tumbleBoardAndForget() - EXPERIMENTAL
 
 <Callout type="warn">
-This method is experimental and may be changed or replaced in the future.
-If you plan to use this method, ensure `padSymbols` is set to `0` in the game config
-or you will most likely experience bugs or unexpected behavior.
+  This method is experimental and may be changed or replaced in the future. If you plan to
+  use this method, ensure `padSymbols` is set to `0` in the game config or you will most
+  likely experience bugs or unexpected behavior.
 </Callout>
 
 | Method                                      | Type                                                  |
@@ -411,6 +427,6 @@ This can be particularly useful if you need to fill a part of the board with som
 (think of the game Templar Tumble, or Temple Tumble).
 
 <Callout type="warn">
-If you plan to use this method, ensure `padSymbols` is set to `0` in the game config
-or you will most likely experience bugs or unexpected behavior.
+  If you plan to use this method, ensure `padSymbols` is set to `0` in the game config or
+  you will most likely experience bugs or unexpected behavior.
 </Callout>

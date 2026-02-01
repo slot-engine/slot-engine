@@ -30,7 +30,7 @@ const C = new GameSymbol({
   pays,
 })
 
-let ctx = createTestContext({
+const ctx = createTestContext({
   symbols: {
     A,
     B,
@@ -428,5 +428,17 @@ describe("Board", () => {
     })
 
     expect(stop3).toEqual([3, 3, 4, 3, 3])
+  })
+
+  it("updates symbol properties correctly", () => {
+    reels = ctx.services.game.getReelsetById("base", "default")
+    ctx.services.board.drawBoardWithRandomStops(reels)
+
+    expect(ctx.services.board.getSymbol(0, 0)?.properties.get("test")).toBeUndefined()
+
+    ctx.services.board.updateSymbol(0, 0, { test: 123, another: "abc" })
+
+    expect(ctx.services.board.getSymbol(0, 0)?.properties.get("test")).toBe(123)
+    expect(ctx.services.board.getSymbol(0, 0)?.properties.get("another")).toBe("abc")
   })
 })

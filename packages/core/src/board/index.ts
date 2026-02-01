@@ -66,6 +66,15 @@ export class Board {
     }
   }
 
+  updateSymbol(reelIndex: number, rowIndex: number, properties: Record<string, any>) {
+    const symbol = this.getSymbol(reelIndex, rowIndex)
+    if (symbol) {
+      for (const [key, value] of Object.entries(properties)) {
+        symbol.properties.set(key, value)
+      }
+    }
+  }
+
   makeEmptyReels(opts: { ctx: GameContext; reelsAmount?: number }) {
     const length =
       opts.reelsAmount ?? opts.ctx.services.game.getCurrentGameMode().reelsAmount

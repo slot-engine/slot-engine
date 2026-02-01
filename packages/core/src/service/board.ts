@@ -72,6 +72,13 @@ export class BoardService<
     this.board.removeSymbol(reelIndex, rowIndex)
   }
 
+  /**
+   * Updates properties of the symbol at the specified reel and row index.
+   */
+  updateSymbol(reelIndex: number, rowIndex: number, properties: Record<string, any>) {
+    this.board.updateSymbol(reelIndex, rowIndex, properties)
+  }
+
   private resetReels() {
     this.board.resetReels({
       ctx: this.ctx(),
