@@ -22,11 +22,74 @@ game.runTasks({
   doAnalysis: true,
   analysisOpts: {
     gameModes: ["base"],
+    // Optionally analyze hit rates of tagged simulations
+    recordStats: [
+      { groupBy: ["symbolId", "kind", "spinType"] }, // Hit rates of win combinations
+      { groupBy: ["criteria"] }, // Hit rates of criteria
+    ],
   },
 })
 ```
+
 </Step>
 </Steps>
+
+## Analyze Hit Rates
+
+Using the option `recordStats`, you can generate the `stats_records.json` file to get
+a breakdown of hit rates for simulations with arbitrary tags.
+Hit rates are calculated considering the weights in the lookup table.
+
+`recordStats` is an array of configurations, where a config item is built like this:
+
+```ts
+interface RecordStatsConfig {
+  /**
+   * Properties to group by from the recorded search entries.
+   * E.g. `["symbolId", "kind", "spinType"]` for symbol hit rates.
+   */
+  groupBy: string[]
+  /**
+   * Optional filter to only include records matching these values.
+   */
+  filter?: Record<string, string>
+  /**
+   * Optional custom name for this stats group in the output.
+   */
+  name?: string
+}
+```
+
+The resulting file will look like this:
+
+```json title="stats_records.json"
+[
+  {
+    "gameMode": "base",
+    "groups": [
+      {
+        "name": "symbolId_kind_spinType",
+        "groupBy": ["symbolId", "kind", "spinType"],
+        "items": [
+          {
+            "key": "L3|5|basegame",
+            "properties": {
+              "symbolId": "L3",
+              "kind": "5",
+              "spinType": "basegame"
+            },
+            "count": 39979,
+            "hitRateString": "1 in 12",
+            "hitRate": 11.739591272077966
+          }
+          // ...
+        ]
+      }
+      // ...
+    ]
+  }
+]
+```
 
 ## Output Files / Publish Files
 
@@ -39,3 +102,7 @@ Contains a list of win ranges and how many simulations (from the final lookup ta
 ### stats_summary.json [!toc]
 
 Contains various statistics about volatility, hit rates, etc.
+
+### stats_records.json [!toc]
+
+Arbitrary hit rate analysis.

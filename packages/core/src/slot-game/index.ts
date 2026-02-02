@@ -74,7 +74,7 @@ export class SlotGame<
    */
   private runAnalysis(opts: AnalysisOpts) {
     this.analyzer = new Analysis(this)
-    this.analyzer.runAnalysis(opts.gameModes)
+    this.analyzer.runAnalysis(opts)
   }
 
   /**

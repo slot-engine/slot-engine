@@ -17,9 +17,11 @@ import {
   parseLookupTable,
   parseLookupTableSegmented,
 } from "./utils"
-import { writeJsonFile } from "../../utils"
+import { round, writeJsonFile } from "../../utils"
 import { isMainThread } from "worker_threads"
 import { SlotGame } from "../slot-game"
+import { RecordItem } from "../recorder"
+import chalk from "chalk"
 
 export class Analysis {
   protected readonly game: SlotGame
@@ -28,11 +30,18 @@ export class Analysis {
     this.game = game
   }
 
-  async runAnalysis(gameModes: string[]) {
+  async runAnalysis(opts: AnalysisOpts) {
+    const { gameModes, recordStats = [] } = opts
+
     if (!isMainThread) return // IMPORTANT: Prevent workers from kicking off (multiple) analysis runs
+    console.log(chalk.gray("Starting analysis..."))
+
     this.getNumberStats(gameModes)
     this.getWinRanges(gameModes)
-    // TODO: this.getSymbolStats(gameModes)
+    if (recordStats.length > 0) {
+      this.getRecordStats(gameModes, recordStats)
+    }
+
     console.log("Analysis complete. Files written to build directory.")
   }
 
@@ -174,8 +183,7 @@ export class Analysis {
           range.uniquePayouts.criteria[criteria] = {}
         }
         rangeMap.forEach((payoutSet, rangeKey) => {
-          range.uniquePayouts.criteria[criteria]![rangeKey] =
-            payoutSet.size
+          range.uniquePayouts.criteria[criteria]![rangeKey] = payoutSet.size
         })
       })
 
@@ -249,6 +257,110 @@ export class Analysis {
     writeJsonFile(meta.paths.statsPayouts, payoutRanges)
   }
 
+  private getRecordStats(gameModes: string[], recordStatsConfig: RecordStatsConfig[]) {
+    const meta = this.game.getMetadata()
+    const allStats: RecordStatistics[] = []
+
+    for (const modeStr of gameModes) {
+      const lutOptimized = parseLookupTable(
+        fs.readFileSync(meta.paths.lookupTablePublish(modeStr), "utf-8"),
+      )
+      const totalWeight = getTotalLutWeight(lutOptimized)
+      const weightMap = new Map<number, number>()
+      lutOptimized.forEach(([bookId, weight]) => {
+        weightMap.set(bookId, weight)
+      })
+
+      const forceRecordsPath = meta.paths.forceRecords(modeStr)
+      if (!fs.existsSync(forceRecordsPath)) continue
+
+      const forceRecords: RecordItem[] = JSON.parse(
+        fs.readFileSync(forceRecordsPath, "utf-8"),
+      )
+
+      const modeStats: RecordStatistics = {
+        gameMode: modeStr,
+        groups: [],
+      }
+
+      for (const config of recordStatsConfig) {
+        const groupName = config.name || config.groupBy.join("_")
+        const aggregated = new Map<
+          string,
+          {
+            properties: Record<string, string>
+            count: number
+            totalWeight: number
+          }
+        >()
+
+        for (const record of forceRecords) {
+          const searchMap = new Map(record.search.map((s) => [s.name, s.value]))
+
+          if (config.filter) {
+            let matches = true
+            for (const [key, value] of Object.entries(config.filter)) {
+              if (searchMap.get(key) !== value) {
+                matches = false
+                break
+              }
+            }
+            if (!matches) continue
+          }
+
+          const hasAllProps = config.groupBy.every((prop) => searchMap.has(prop))
+          if (!hasAllProps) continue
+
+          const key = config.groupBy.map((prop) => searchMap.get(prop)!).join("|")
+          const properties = Object.fromEntries(
+            config.groupBy.map((prop) => [prop, searchMap.get(prop)!]),
+          )
+
+          let totalWeight = 0
+          for (const bookId of record.bookIds) {
+            totalWeight += weightMap.get(bookId) ?? 0
+          }
+
+          const existing = aggregated.get(key)
+          if (existing) {
+            existing.count += record.timesTriggered
+            existing.totalWeight += totalWeight
+          } else {
+            aggregated.set(key, {
+              properties,
+              count: record.timesTriggered,
+              totalWeight,
+            })
+          }
+        }
+
+        const items = Array.from(aggregated.entries())
+          .map(([key, data]) => {
+            const hitRate = round(totalWeight / data.totalWeight, 4)
+            return {
+              key,
+              properties: data.properties,
+              count: data.count,
+              hitRateString: `1 in ${Math.round(hitRate).toLocaleString()}`,
+              hitRate,
+            } satisfies RecordStatisticsItem
+          })
+          .sort((a, b) => a.hitRate - b.hitRate)
+
+        modeStats.groups.push({
+          name: groupName,
+          groupBy: config.groupBy,
+          filter: config.filter,
+          items,
+        })
+      }
+
+      allStats.push(modeStats)
+    }
+
+    writeJsonFile(meta.paths.statsRecords, allStats)
+  }
+
   private getGameModeConfig(mode: string) {
     const config = this.game.getConfig().gameModes[mode]
     assert(config, `Game mode "${mode}" not found in game config`)
@@ -269,7 +381,59 @@ export interface PayoutStatistics {
 }
 
 export interface AnalysisOpts {
+  /**
+   * Which game modes to analyze.
+   */
   gameModes: string[]
+  /**
+   * Configure which recorded properties to analyze.
+   * This will provide you with hit rates for the specified groupings.
+   * Each entry defines a grouping strategy for statistics.
+   *
+   * @example
+   * ```ts
+   * recordStats: [
+   *   { groupBy: ["symbolId", "kind", "spinType"] }, // All win combinations
+   *   { groupBy: ["symbolId", "kind"], filter: { spinType: "basegame" } }, // Base game win combinations only
+   *   { groupBy: ["criteria"] }, // Hit rate by result set criteria
+   * ]
+   * ```
+   */
+  recordStats?: RecordStatsConfig[]
+}
+
+export interface RecordStatsConfig {
+  /**
+   * Properties to group by from the recorded search entries.\
+   * E.g. `["symbolId", "kind", "spinType"]` for symbol hit rates.
+   */
+  groupBy: string[]
+  /**
+   * Optional filter to only include records matching these values.
+   */
+  filter?: Record<string, string>
+  /**
+   * Optional custom name for this stats group in the output.
+   */
+  name?: string
+}
+
+export interface RecordStatistics {
+  gameMode: string
+  groups: Array<{
+    name: string
+    groupBy: string[]
+    filter?: Record<string, string>
+    items: RecordStatisticsItem[]
+  }>
+}
+
+type RecordStatisticsItem = {
+  key: string
+  properties: Record<string, string>
+  count: number
+  hitRateString: string
+  hitRate: number
 }
 
 export interface Statistics {
