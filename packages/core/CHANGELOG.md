@@ -1,5 +1,13 @@
 # @slot-engine/core
 
+## 0.2.4
+
+### Patch Changes
+
+- Setting `spinType` manually when calling `recordSymbolOccurrence` is no longer required - Thanks @nordowl
+
+- Introduce `stats_records.json` file to analyze hit rates of tagged simulations - Thanks @nordowl
+
 ## 0.2.3
 
 ### Patch Changes
