@@ -70,13 +70,11 @@ export class DataService<
    *
    * Calls `ctx.services.data.record()` with the provided data.
    */
-  recordSymbolOccurrence(data: {
-    kind: number
-    symbolId: string
-    spinType: SpinType
-    [key: string]: any
-  }) {
-    this.record(data)
+  recordSymbolOccurrence(data: { kind: number; symbolId: string; [key: string]: any }) {
+    this.record({
+      ...data,
+      spinType: this.ctx().state.currentSpinType,
+    })
   }
 
   /**

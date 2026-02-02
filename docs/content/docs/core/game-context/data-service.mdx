@@ -76,8 +76,8 @@ Records are also used to enable filtering books when browsing them with [Panel](
 
 ### log()
 
-| Method                             | Type              |
-| ---------------------------------- | ----------------- |
+| Method                    | Type                        |
+| ------------------------- | --------------------------- |
 | `ctx.services.data.log()` | `(message: string) => void` |
 
 Write a log to the terminal UI. **This is more reliable than `console.log`.**
@@ -118,8 +118,9 @@ Record data for statistical analysis.
 
 #### Parameters [!toc]
 
-| Parameter | Type                                                                          |
-| --------- | ----------------------------------------------------------------------------- |
-| `data`    | `{ kind: number; symbolId: string; spinType: SpinType; [key: string]: any; }` |
+| Parameter | Type                                                      |
+| --------- | --------------------------------------------------------- |
+| `data`    | `{ kind: number; symbolId: string; [key: string]: any; }` |
 
 A wrapper around `ctx.services.data.record()` to record symbol occurrences.
+Win types already call this under the hood to document symbol hits.
