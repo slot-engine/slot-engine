@@ -177,6 +177,10 @@ app.post("/:id/sim-run", async (c) => {
     doAnalysis: true,
     analysisOpts: {
       gameModes: Object.keys(config.simulation.simRunsAmount),
+      recordStats: [
+        { groupBy: ["symbolId", "kind", "spinType"] },
+        { groupBy: ["criteria"] },
+      ],
     },
   })
 
