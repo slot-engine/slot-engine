@@ -1,5 +1,14 @@
 # @slot-engine/panel
 
+## 0.1.6
+
+### Patch Changes
+
+- Set default `analysisOpts.recordStats` when running tasks - Thanks @nordowl
+
+- Updated dependencies [[`b1c3d56`](https://github.com/slot-engine/slot-engine/commit/b1c3d56dc7c1c8c31545723baac4e63a4702059b), [`e4641e6`](https://github.com/slot-engine/slot-engine/commit/e4641e607b0798e3ebf13a198ac04491c9158bbc)]:
+  - @slot-engine/core@0.2.4
+
 ## 0.1.5
 
 ### Patch Changes
