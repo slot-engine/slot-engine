@@ -15,6 +15,9 @@ description: Service managing the game board and reels.
 
 Returns the active board reels.
 
+The reels will be arrays of `GameSymbol`. Each symbol has been auto-assigned the property `position`.
+This is useful if you need to filter reel symbols to retrieve the positions of specific symbols (`symbol.properties.get("position")`).
+
 ### getPaddingTop()
 
 | Method                               | Type          |

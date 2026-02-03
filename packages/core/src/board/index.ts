@@ -58,6 +58,9 @@ export class Board {
   setSymbol(reelIndex: number, rowIndex: number, symbol: GameSymbol) {
     this.reels[reelIndex] = this.reels[reelIndex] || []
     this.reels[reelIndex]![rowIndex] = symbol
+    this.updateSymbol(reelIndex, rowIndex, {
+      position: [reelIndex, rowIndex],
+    })
   }
 
   removeSymbol(reelIndex: number, rowIndex: number) {
@@ -345,9 +348,9 @@ export class Board {
 
       for (let p = padSymbols - 1; p >= 0; p--) {
         const topPos = (((reelPos - (p + 1)) % reelLength) + reelLength) % reelLength
-        this.paddingTop[ridx]!.push(opts.reels[ridx]![topPos]!)
+        this.paddingTop[ridx]!.push(opts.reels[ridx]![topPos]!.clone())
         const bottomPos = (reelPos + symbolsPerReel[ridx]! + p) % reelLength
-        this.paddingBottom[ridx]!.unshift(opts.reels[ridx]![bottomPos]!)
+        this.paddingBottom[ridx]!.unshift(opts.reels[ridx]![bottomPos]!.clone())
       }
 
       for (let row = 0; row < symbolsPerReel[ridx]!; row++) {
@@ -357,7 +360,11 @@ export class Board {
           throw new Error(`Failed to get symbol at pos ${reelPos + row} on reel ${ridx}`)
         }
 
-        this.reels[ridx]![row] = symbol
+        this.reels[ridx]![row] = symbol.clone()
+
+        this.updateSymbol(ridx, row, {
+          position: [ridx, row],
+        })
       }
     }
 
@@ -470,6 +477,7 @@ export class Board {
 
         assert(newSymbol, "Failed to get new symbol for tumbling.")
 
+        newSymbol = newSymbol.clone()
         this.reels[ridx]!.unshift(newSymbol)
         newFirstSymbolPositions[ridx] = symbolPos
 
@@ -489,7 +497,7 @@ export class Board {
 
       for (let p = 1; p <= padSymbols; p++) {
         const topPos = (firstSymbolPos - p + reels[ridx]!.length) % reels[ridx]!.length
-        const padSymbol = reels[ridx]![topPos]
+        const padSymbol = reels[ridx]![topPos]?.clone()
 
         assert(padSymbol, "Failed to get new padding symbol for tumbling.")
 
@@ -509,6 +517,16 @@ export class Board {
       this.lastDrawnReelStops = this.lastDrawnReelStops.map((stop, ridx) => {
         return newFirstSymbolPositions[ridx] ?? stop
       })
+    }
+
+    // Update all symbol positions
+    for (let ridx = 0; ridx < reelsAmount; ridx++) {
+      const reel = this.reels[ridx]!
+      for (let rowIdx = 0; rowIdx < reel.length; rowIdx++) {
+        this.updateSymbol(ridx, rowIdx, {
+          position: [ridx, rowIdx],
+        })
+      }
     }
 
     return {

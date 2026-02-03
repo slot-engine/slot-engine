@@ -107,11 +107,25 @@ const ctx2 = createTestContext({
 describe("Board", () => {
   let reels: Reels
 
+  const getIdsFromBoard = (board: Reels) => board.map((reel) => reel.map((s) => s.id))
+  const getIdsFromSymbolDict = (dict: Record<string, GameSymbol[]>) =>
+    Object.fromEntries(Object.entries(dict).map(([k, v]) => [k, v.map((s) => s.id)]))
+
   beforeEach(() => {
     ctx.state.currentGameMode = "base"
     ctx.services.game._generateReels()
     ctx2.state.currentGameMode = "base"
     ctx2.services.game._generateReels()
+  })
+
+  it("assigns position to symbols", () => {
+    reels = ctx.services.game.getReelsetById("base", "default")
+    ctx.services.board.drawBoardWithRandomStops(reels)
+
+    const boardReels = ctx.services.board.getBoardReels()
+
+    expect(boardReels[0]?.[0]?.properties.get("position")).toEqual([0, 0])
+    expect(boardReels[3]?.[4]?.properties.get("position")).toEqual([3, 4])
   })
 
   it("tumbles board correctly", () => {
@@ -177,16 +191,16 @@ describe("Board", () => {
 
     expect(paddingTopIds).toEqual(["A", "C", "A", "A", "C"])
 
-    expect(newBoardSymbols).toEqual({
-      "1": [B, A],
-      "2": [C, B],
-      "3": [A, B],
+    expect(getIdsFromSymbolDict(newBoardSymbols)).toEqual({
+      "1": ["B", "A"],
+      "2": ["C", "B"],
+      "3": ["A", "B"],
     })
 
-    expect(newPaddingTopSymbols).toEqual({
-      "1": [C],
-      "2": [A],
-      "3": [A],
+    expect(getIdsFromSymbolDict(newPaddingTopSymbols)).toEqual({
+      "1": ["C"],
+      "2": ["A"],
+      "3": ["A"],
     })
   })
 
@@ -208,15 +222,21 @@ describe("Board", () => {
     const boardBeforeTumble = ctx.services.board.getBoardReels()
     const paddingTopBeforeTumble = ctx.services.board.getPaddingTop()
 
-    expect(boardBeforeTumble).toEqual([
-      [C, A, B, C, A],
-      [B, C, A, B, C],
-      [A, B, C, A, B],
-      [C, C, C, A, B],
-      [C, A, B, C, A],
+    expect(getIdsFromBoard(boardBeforeTumble)).toEqual([
+      ["C", "A", "B", "C", "A"],
+      ["B", "C", "A", "B", "C"],
+      ["A", "B", "C", "A", "B"],
+      ["C", "C", "C", "A", "B"],
+      ["C", "A", "B", "C", "A"],
     ])
 
-    expect(paddingTopBeforeTumble).toEqual([[A], [A], [B], [B], [C]])
+    expect(getIdsFromBoard(paddingTopBeforeTumble)).toEqual([
+      ["A"],
+      ["A"],
+      ["B"],
+      ["B"],
+      ["C"],
+    ])
 
     const symbolsToDelete = [
       { reelIdx: 0, rowIdx: 1 },
@@ -237,30 +257,42 @@ describe("Board", () => {
     let boardAfterTumble = ctx.services.board.getBoardReels()
     let paddingTopAfterTumble = ctx.services.board.getPaddingTop()
 
-    expect(boardAfterTumble).toEqual([
-      [C, B, A, C, A],
-      [A, C, B, B, C],
-      [A, A, C, A, B],
-      [C, A, A, A, B],
-      [B, C, A, C, A],
+    expect(getIdsFromBoard(boardAfterTumble)).toEqual([
+      ["C", "B", "A", "C", "A"],
+      ["A", "C", "B", "B", "C"],
+      ["A", "A", "C", "A", "B"],
+      ["C", "A", "A", "A", "B"],
+      ["B", "C", "A", "C", "A"],
     ])
 
-    expect(paddingTopAfterTumble).toEqual([[A], [A], [B], [B], [B]])
+    expect(getIdsFromBoard(paddingTopAfterTumble)).toEqual([
+      ["A"],
+      ["A"],
+      ["B"],
+      ["B"],
+      ["B"],
+    ])
 
     ctx.services.board.tumbleBoard(symbolsToDelete)
 
     boardAfterTumble = ctx.services.board.getBoardReels()
     paddingTopAfterTumble = ctx.services.board.getPaddingTop()
 
-    expect(boardAfterTumble).toEqual([
-      [A, A, C, C, A],
-      [C, A, A, B, C],
-      [B, B, A, A, B],
-      [B, B, C, A, B],
-      [A, B, B, C, A],
+    expect(getIdsFromBoard(boardAfterTumble)).toEqual([
+      ["A", "A", "C", "C", "A"],
+      ["C", "A", "A", "B", "C"],
+      ["B", "B", "A", "A", "B"],
+      ["B", "B", "C", "A", "B"],
+      ["A", "B", "B", "C", "A"],
     ])
 
-    expect(paddingTopAfterTumble).toEqual([[C], [B], [A], [A], [C]])
+    expect(getIdsFromBoard(paddingTopAfterTumble)).toEqual([
+      ["C"],
+      ["B"],
+      ["A"],
+      ["A"],
+      ["C"],
+    ])
   })
 
   it("tumbles and forgets", () => {
@@ -280,12 +312,12 @@ describe("Board", () => {
       randomOffset: false,
     })
 
-    expect(ctx2.services.board.getBoardReels()).toEqual([
-      [A, B],
-      [A, B, C, A, B],
-      [A, B, C],
-      [A, B, C, A, B],
-      [A, B],
+    expect(getIdsFromBoard(ctx2.services.board.getBoardReels())).toEqual([
+      ["A", "B"],
+      ["A", "B", "C", "A", "B"],
+      ["A", "B", "C"],
+      ["A", "B", "C", "A", "B"],
+      ["A", "B"],
     ])
 
     ctx2.services.board.setSymbolsPerReel([5, 5, 5, 5, 5])
@@ -297,12 +329,12 @@ describe("Board", () => {
       forcedStops: [0, 0, 0, 0, 0],
     })
 
-    expect(ctx2.services.board.getBoardReels()).toEqual([
-      [X, X, X, A, B],
-      [A, B, C, A, B],
-      [X, X, A, B, C],
-      [A, B, C, A, B],
-      [X, X, X, A, B],
+    expect(getIdsFromBoard(ctx2.services.board.getBoardReels())).toEqual([
+      ["X", "X", "X", "A", "B"],
+      ["A", "B", "C", "A", "B"],
+      ["X", "X", "A", "B", "C"],
+      ["A", "B", "C", "A", "B"],
+      ["X", "X", "X", "A", "B"],
     ])
 
     const symbolsToDelete = [
@@ -315,22 +347,22 @@ describe("Board", () => {
 
     ctx2.services.board.tumbleBoard(symbolsToDelete)
 
-    expect(ctx2.services.board.getBoardReels()).toEqual([
-      [C, X, X, A, B],
-      [C, A, C, A, B],
-      [C, X, A, B, C],
-      [C, A, C, A, B],
-      [C, X, X, A, B],
+    expect(getIdsFromBoard(ctx2.services.board.getBoardReels())).toEqual([
+      ["C", "X", "X", "A", "B"],
+      ["C", "A", "C", "A", "B"],
+      ["C", "X", "A", "B", "C"],
+      ["C", "A", "C", "A", "B"],
+      ["C", "X", "X", "A", "B"],
     ])
 
     ctx2.services.board.tumbleBoard(symbolsToDelete)
 
-    expect(ctx2.services.board.getBoardReels()).toEqual([
-      [B, C, X, A, B],
-      [B, C, C, A, B],
-      [B, C, A, B, C],
-      [B, C, C, A, B],
-      [B, C, X, A, B],
+    expect(getIdsFromBoard(ctx2.services.board.getBoardReels())).toEqual([
+      ["B", "C", "X", "A", "B"],
+      ["B", "C", "C", "A", "B"],
+      ["B", "C", "A", "B", "C"],
+      ["B", "C", "C", "A", "B"],
+      ["B", "C", "X", "A", "B"],
     ])
   })
 
@@ -355,12 +387,12 @@ describe("Board", () => {
       randomOffset: false,
     })
 
-    expect(ctx.services.board.getBoardReels()).toEqual([
-      [C, A, A, A, A],
-      [A, B, B, B, B],
-      [B, C, C, C, C],
-      [C, A, A, A, A],
-      [C, B, B, B, B],
+    expect(getIdsFromBoard(ctx.services.board.getBoardReels())).toEqual([
+      ["C", "A", "A", "A", "A"],
+      ["A", "B", "B", "B", "B"],
+      ["B", "C", "C", "C", "C"],
+      ["C", "A", "A", "A", "A"],
+      ["C", "B", "B", "B", "B"],
     ])
   })
 
@@ -380,12 +412,12 @@ describe("Board", () => {
     })
 
     expect(stopPositions).toEqual([5, 5, 5, 5, 5])
-    expect(ctx.services.board.getBoardReels()).toEqual([
-      [C, A, B, C, A],
-      [B, C, A, B, C],
-      [A, B, C, A, B],
-      [C, C, C, A, B],
-      [C, A, B, C, A],
+    expect(getIdsFromBoard(ctx.services.board.getBoardReels())).toEqual([
+      ["C", "A", "B", "C", "A"],
+      ["B", "C", "A", "B", "C"],
+      ["A", "B", "C", "A", "B"],
+      ["C", "C", "C", "A", "B"],
+      ["C", "A", "B", "C", "A"],
     ])
 
     ctx.services.board.setReelLocked(1, true)
@@ -404,12 +436,12 @@ describe("Board", () => {
     })
 
     expect(stop2).toEqual([1, 5, 1, 5, 1])
-    expect(ctx.services.board.getBoardReels()).toEqual([
-      [C, B, A, A, C],
-      [B, C, A, B, C],
-      [A, A, C, B, A],
-      [C, C, C, A, B],
-      [B, C, A, C, C],
+    expect(getIdsFromBoard(ctx.services.board.getBoardReels())).toEqual([
+      ["C", "B", "A", "A", "C"],
+      ["B", "C", "A", "B", "C"],
+      ["A", "A", "C", "B", "A"],
+      ["C", "C", "C", "A", "B"],
+      ["B", "C", "A", "C", "C"],
     ])
 
     ctx.services.board.setReelLocked(1, false)

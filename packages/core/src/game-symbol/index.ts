@@ -36,12 +36,12 @@ export class GameSymbol {
   /**
    * Creates a clone of this GameSymbol.
    */
-  clone() {
-    return new GameSymbol({
-      id: this.id,
-      pays: this.pays ? { ...this.pays } : undefined,
-      properties: Object.fromEntries(this.properties),
-    })
+  clone(): GameSymbol {
+    const cloned = Object.create(GameSymbol.prototype)
+    cloned.id = this.id
+    cloned.pays = this.pays
+    cloned.properties = this.properties.size > 0 ? new Map(this.properties) : new Map()
+    return cloned
   }
 }
 
@@ -58,10 +58,10 @@ export interface GameSymbolOpts {
    * Additional properties for the symbol, e.g. `multiplier` or `isWild`.
    *
    * Properties can help identify special symbols.
-   * 
+   *
    * @example
    * If your game has a "normal" scatter and a "super" scatter, you can define them like this:
-   * 
+   *
    * ```ts
    * properties: {
    *   isScatter: true,
