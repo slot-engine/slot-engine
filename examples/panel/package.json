@@ -6,7 +6,7 @@
     "start": "tsx ./index.ts"
   },
   "dependencies": {
-    "@slot-engine/panel": "0.1.6"
+    "@slot-engine/panel": "0.1.7"
   },
   "devDependencies": {
     "tsx": "4.20.6"
