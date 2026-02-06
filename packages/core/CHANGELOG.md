@@ -1,5 +1,15 @@
 # @slot-engine/core
 
+## 0.2.5
+
+### Patch Changes
+
+- Fix symbol instances being shared across boards - Thanks @nordowl
+
+- Symbols on the board are now auto-assigned the `position` property to retrieve reel index and row index - Thanks @nordowl
+
+  This is useful if you need to retrieve the position on the board directly from a `GameSymbol` instance.
+
 ## 0.2.4
 
 ### Patch Changes
