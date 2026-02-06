@@ -25,7 +25,7 @@ export class WinType {
   /**
    * Custom post-processing of wins, e.g. for handling multipliers.
    */
-  postProcess(func: PostProcessFn<typeof this.winCombinations>) {
+  postProcess(func: WinPostProcessFn<typeof this.winCombinations>) {
     const result = func(this.winCombinations, this.ctx)
     this.winCombinations = result.winCombinations
     this.payout = result.winCombinations.reduce((sum, w) => sum + w.payout, 0)
@@ -102,7 +102,7 @@ export type WinCombination = {
   }>
 }
 
-type PostProcessFn<TWinCombs extends WinCombination[]> = (
+export type WinPostProcessFn<TWinCombs extends WinCombination[]> = (
   wins: TWinCombs,
   ctx: GameContext,
 ) => {

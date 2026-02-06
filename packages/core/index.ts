@@ -45,7 +45,12 @@ export { type GameContext } from "./src/game-context"
 export { LinesWinType } from "./src/win-types/LinesWinType"
 export { ClusterWinType } from "./src/win-types/ClusterWinType"
 export { ManywaysWinType } from "./src/win-types/ManywaysWinType"
-export { type WinCombination } from "./src/win-types"
+export {
+  WinType,
+  type WinCombination,
+  type WinPostProcessFn,
+  type WinTypeOpts,
+} from "./src/win-types"
 
 export { GeneratedReelSet } from "./src/reel-set/GeneratedReelSet"
 export { StaticReelSet } from "./src/reel-set/StaticReelSet"
