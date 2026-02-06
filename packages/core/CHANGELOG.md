@@ -1,5 +1,11 @@
 # @slot-engine/core
 
+## 0.2.6
+
+### Patch Changes
+
+- Export `WinType` class, `WinPostProcessFn` type, `WinTypeOpts` type - Thanks @nordowl
+
 ## 0.2.5
 
 ### Patch Changes

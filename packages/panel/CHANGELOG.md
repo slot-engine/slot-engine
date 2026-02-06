@@ -1,5 +1,12 @@
 # @slot-engine/panel
 
+## 0.1.8
+
+### Patch Changes
+
+- Updated dependencies [[`46ff673`](https://github.com/slot-engine/slot-engine/commit/46ff67331571b5edc8cd195b744e6a4bde2f5837)]:
+  - @slot-engine/core@0.2.6
+
 ## 0.1.7
 
 ### Patch Changes
