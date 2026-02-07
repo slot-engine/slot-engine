@@ -520,6 +520,26 @@ export class Simulation {
         highWaterMark: this.maxHighWaterMark,
       })
 
+      const WRITE_BATCH_SIZE = 200
+      let booksIndexBatch: string[] = []
+      let lookupBatch: string[] = []
+      let lookupSegBatch: string[] = []
+
+      const flushWriteBatches = async () => {
+        if (booksIndexBatch.length === 0) return
+        const booksIndexData = booksIndexBatch.join("")
+        const lookupData = lookupBatch.join("")
+        const lookupSegData = lookupSegBatch.join("")
+        booksIndexBatch = []
+        lookupBatch = []
+        lookupSegBatch = []
+        await Promise.all([
+          write(booksIndexStream, booksIndexData),
+          write(lookupStream, lookupData),
+          write(lookupSegmentedStream, lookupSegData),
+        ])
+      }
+
       let writeChain: Promise<void> = Promise.resolve()
 
       worker.on("message", (msg) => {
@@ -613,17 +633,17 @@ export class Simulation {
                 this.tempBookIndexPaths.push(booksIndexPath)
               }
 
-              await Promise.all([
-                write(
-                  booksIndexStream,
-                  `${book.id},${index},${this.bookChunkIndexes.get(index) || 0}\n`,
-                ),
-                write(lookupStream, `${book.id},1,${Math.round(book.payout)}\n`),
-                write(
-                  lookupSegmentedStream,
-                  `${book.id},${book.criteria},${book.basegameWins},${book.freespinsWins}\n`,
-                ),
-              ])
+              booksIndexBatch.push(
+                `${book.id},${index},${this.bookChunkIndexes.get(index) || 0}\n`,
+              )
+              lookupBatch.push(`${book.id},1,${Math.round(book.payout)}\n`)
+              lookupSegBatch.push(
+                `${book.id},${book.criteria},${book.basegameWins},${book.freespinsWins}\n`,
+              )
+
+              if (booksIndexBatch.length >= WRITE_BATCH_SIZE) {
+                await flushWriteBatches()
+              }
 
               if (this.bookBufferSizes.get(index)! >= 10 * 1024 * 1024) {
                 await flushBookChunk()
@@ -638,7 +658,7 @@ export class Simulation {
                   )
                   this.hasWrittenRecord = true
                 }
-              }
+              } 
 
               this.wallet.mergeSerialized(msg.wallet)
 
@@ -652,6 +672,7 @@ export class Simulation {
         if (msg.type === "done") {
           writeChain
             .then(async () => {
+              await flushWriteBatches()
               await flushBookChunk()
               lookupStream.end()
               lookupSegmentedStream.end()
