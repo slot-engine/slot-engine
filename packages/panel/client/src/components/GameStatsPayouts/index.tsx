@@ -40,7 +40,7 @@ export const StatisticsPayouts = () => {
     )
   }
 
-  const frmt = new Intl.NumberFormat("en-DE").format
+  const frmt = new Intl.NumberFormat().format
 
   return (
     <div>
@@ -184,7 +184,7 @@ const renderBarLabel = ({ x, y, width, height, value }: LabelProps) => {
 
   const isSmallBar = (width as number) > 100
 
-  const frmt = new Intl.NumberFormat("en-DE").format
+  const frmt = new Intl.NumberFormat().format
 
   if (isSmallBar) {
     // inside the bar

@@ -266,7 +266,7 @@ const BetSimulation = ({
     },
   })
 
-  const frmt = new Intl.NumberFormat("en-DE").format
+  const frmt = new Intl.NumberFormat().format
 
   const canNotSimulate =
     config.betGroups.length === 0 || isSaving || simulationMutation.isPending

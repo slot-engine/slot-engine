@@ -28,7 +28,7 @@ export const StatisticsSummary = () => {
     )
   }
 
-  const frmt = new Intl.NumberFormat("en-DE").format
+  const frmt = new Intl.NumberFormat().format
 
   return (
     <div>

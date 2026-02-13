@@ -39,7 +39,7 @@ export const GameSimulationSummary = () => {
   if (!data || isLoading) return <Skeleton className="h-64 mt-8" /> 
 
   const modes = Object.entries(data.summary)
-  const frmt = new Intl.NumberFormat("de-EN").format
+  const frmt = new Intl.NumberFormat().format
 
   return (
     <div>
