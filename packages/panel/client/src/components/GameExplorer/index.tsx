@@ -17,19 +17,27 @@ import { ErrorDisplay } from "../Error"
 import { Skeleton } from "../Skeleton"
 import { Button } from "../Button"
 import { NumberInput } from "../NumberInput"
+import { useDebouncedState } from "@mantine/hooks"
 
 export const GameExplorer = () => {
   const { gameId, game } = useGameContext()
   const [mode, setMode] = useState(game.modes[0]?.name || "")
   const [filter, setFilter] = useState<Array<{ name: string; value: string }>>([])
+  const [payoutRange, setPayoutRange] = useDebouncedState({ min: 0, max: 100_000 }, 400)
   const [cursor, setCursor] = useState(0)
 
   const queryClient = useQueryClient()
   const { data, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useInfiniteQuery({
-      queryKey: ["game", "explore", gameId, mode, filter, cursor],
+      queryKey: ["game", "explore", gameId, mode, filter, cursor, payoutRange],
       queryFn: async ({ pageParam }) => {
-        return await query.gameExplore({ gameId, mode, cursor: pageParam, filter })
+        return await query.gameExplore({
+          gameId,
+          mode,
+          cursor: pageParam,
+          filter,
+          payoutRange,
+        })
       },
       initialPageParam: cursor,
       getNextPageParam: (lastPage) => lastPage.nextCursor,
@@ -71,6 +79,7 @@ export const GameExplorer = () => {
   return (
     <div className="grid grid-cols-[1fr_3fr] gap-8">
       <div>
+        <h5 className="pb-2 mb-2 border-b border-ui-700">Filter</h5>
         <Select
           label="Mode"
           value={mode}
@@ -86,6 +95,26 @@ export const GameExplorer = () => {
             ))}
           </SelectContent>
         </Select>
+        <div className="flex gap-2 mt-2">
+          <NumberInput
+            label="Min. Payout Multiplier"
+            defaultValue={payoutRange.min}
+            value={payoutRange.min}
+            onValueChange={(v) => {
+              setPayoutRange((c) => ({ ...c, min: v || 0 }))
+              setCursor(0)
+            }}
+          />
+          <NumberInput
+            label="Max. Payout Multiplier"
+            defaultValue={payoutRange.max}
+            value={payoutRange.max}
+            onValueChange={(v) => {
+              setPayoutRange((c) => ({ ...c, max: v || 0 }))
+              setCursor(0)
+            }}
+          />
+        </div>
         <div className="mt-4">
           <Filters
             filters={filter}
@@ -261,7 +290,6 @@ const Filters = ({ mode, filters, onValueChange }: FiltersProps) => {
 
   return (
     <div>
-      <div className="pb-2 mb-2 border-b border-ui-700">Filters</div>
       {filters.map(({ name, value }) => (
         <div className="flex gap-2 items-end mb-2" key={name}>
           <div className="grid grid-cols-2 gap-2 grow">
@@ -329,7 +357,7 @@ const Actions = ({ onJumpToEntry }: ActionsProps) => {
 
   return (
     <div>
-      <div className="pb-2 mb-2 border-b border-ui-700">Actions</div>
+      <h5 className="pb-2 mb-2 border-b border-ui-700">Actions</h5>
       <div className="flex gap-2 items-end">
         <NumberInput
           label="Jump to Book ID"

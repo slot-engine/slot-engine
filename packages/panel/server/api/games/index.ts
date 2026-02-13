@@ -252,6 +252,10 @@ app.get("/:id/explore/:mode", async (c) => {
   const filter = qs.parse(url.search, { ignoreQueryPrefix: true }).filter
 
   const mode = c.req.param("mode")
+  const payoutRange = {
+    min: parseFloat(url.searchParams.get("pMin") || "0"),
+    max: parseFloat(url.searchParams.get("pMax") || "100000"),
+  }
   const cursor = c.req.query("cursor") || undefined
   const take = 100
 
@@ -261,6 +265,7 @@ app.get("/:id/explore/:mode", async (c) => {
     cursor,
     take,
     filter,
+    payoutRange,
   })
 
   if (!lut) {

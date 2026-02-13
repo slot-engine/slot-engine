@@ -58,12 +58,18 @@ export const query = {
     mode: string
     cursor: number | null
     filter?: Array<{ name: string; value: string }>
+    payoutRange?: { min: number; max: number }
   }) => {
-    const { gameId, cursor, mode, filter } = opts
+    const { gameId, cursor, mode, filter, payoutRange } = opts
     const params = new URLSearchParams()
 
     if (cursor) {
       params.append("cursor", cursor.toString())
+    }
+
+    if (payoutRange) {
+      params.append("pMin", payoutRange.min.toString())
+      params.append("pMax", payoutRange.max.toString())
     }
 
     if (filter) {

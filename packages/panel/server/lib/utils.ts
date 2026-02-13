@@ -169,8 +169,9 @@ export async function exploreLookupTable(opts: {
   cursor?: string
   take: number
   filter?: string | qs.ParsedQs | (string | qs.ParsedQs)[]
+  payoutRange: { min: number; max: number }
 }) {
-  const { game, mode, cursor, take, filter } = opts
+  const { game, mode, cursor, take, filter, payoutRange } = opts
   const offset = parseInt(cursor || "0", 10)
   const meta = game.getMetadata()
 
@@ -194,6 +195,7 @@ export async function exploreLookupTable(opts: {
     offset,
     take,
     bookIds,
+    payoutRange,
   })
   const segmented = await readLutRows({
     path: lutSegmentedPath,
@@ -201,6 +203,7 @@ export async function exploreLookupTable(opts: {
     offset,
     take,
     bookIds,
+    payoutRange,
   })
 
   return {
@@ -227,10 +230,13 @@ export async function readLutRows(opts: {
   offset: number
   take: number
   bookIds?: number[]
+  payoutRange: { min: number; max: number }
 }) {
-  const { path: filePath, indexPath, offset, take, bookIds } = opts
+  const { path: filePath, indexPath, offset, take, bookIds, payoutRange } = opts
 
   const hasBookIds = opts.bookIds && opts.bookIds.length > 0
+  const isSegmented = filePath.includes("segmented") || filePath.includes("Segmented")
+  const hasFilters = hasBookIds || payoutRange
 
   const byteOffset = await getByteOffsetFromIndex(indexPath, offset)
   const stream = fs.createReadStream(filePath, { start: byteOffset })
@@ -244,12 +250,21 @@ export async function readLutRows(opts: {
   let nextCursor: number | null = null
 
   for await (const line of rl) {
-    if (hasBookIds) {
+    if (hasFilters) {
       rowsScanned++
-      const id = line.split(",")[0]
-      if (bookIds!.includes(Number(id))) {
-        rows.push(line)
+      const cols = line.split(",")
+
+      if (hasBookIds) {
+        const id = Number(cols[0])
+        if (!bookIds!.includes(id)) continue
       }
+
+      const payout = isSegmented
+        ? Number(cols[2]) + Number(cols[3]) // LUT segmented values are stored as decimals
+        : Number(cols[2]) / 100 // LUT values are stored as integers (payout * 100)
+      if (payout < payoutRange!.min || payout > payoutRange!.max) continue
+
+      rows.push(line)
       if (rows.length >= take) {
         nextCursor = offset + rowsScanned
         break
