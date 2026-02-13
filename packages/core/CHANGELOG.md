@@ -1,5 +1,11 @@
 # @slot-engine/core
 
+## 0.2.7
+
+### Patch Changes
+
+- Internal: batch write to files - Thanks @nordowl
+
 ## 0.2.6
 
 ### Patch Changes

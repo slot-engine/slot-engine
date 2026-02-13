@@ -1,5 +1,16 @@
 # @slot-engine/panel
 
+## 0.1.9
+
+### Patch Changes
+
+- Remove preference for number formatting (Intl.NumberFormat undefined) - Thanks @nordowl
+
+- Explorer: Add payout range filters - Thanks @nordowl
+
+- Updated dependencies [[`577c708`](https://github.com/slot-engine/slot-engine/commit/577c708773a05b900b571d132b3ea76242e2a644)]:
+  - @slot-engine/core@0.2.7
+
 ## 0.1.8
 
 ### Patch Changes
