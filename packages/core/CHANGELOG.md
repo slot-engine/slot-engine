@@ -1,5 +1,11 @@
 # @slot-engine/core
 
+## 0.2.8
+
+### Patch Changes
+
+- Add `hitRatePercentage` to items in `stats_records.json` - Thanks @nordowl
+
 ## 0.2.7
 
 ### Patch Changes
