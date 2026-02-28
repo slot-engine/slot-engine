@@ -342,6 +342,7 @@ export class Analysis {
               properties: data.properties,
               count: data.count,
               hitRateString: `1 in ${Math.round(hitRate).toLocaleString()}`,
+              hitRatePercentage: round((1 / hitRate) * 100, 4),
               hitRate,
             } satisfies RecordStatisticsItem
           })
@@ -433,6 +434,7 @@ type RecordStatisticsItem = {
   properties: Record<string, string>
   count: number
   hitRateString: string
+  hitRatePercentage: number
   hitRate: number
 }
 
