@@ -1,4 +1,3 @@
-
 export class RandomNumberGenerator {
   mIdum: number
   mIy: number
@@ -107,16 +106,16 @@ export class RandomNumberGenerator {
   }
 
   weightedRandom<T extends Record<string, number>>(weights: T) {
-    const totalWeight = Object.values(weights).reduce(
-      (sum: number, weight) => sum + (weight as number),
-      0,
-    )
-    const randomValue = this.randomFloat(0, 1) * totalWeight
+    let totalWeight = 0
+    for (const key in weights) {
+      totalWeight += weights[key]!
+    }
 
-    let cumulativeWeight = 0
-    for (const [key, weight] of Object.entries(weights)) {
-      cumulativeWeight += weight as number
-      if (randomValue < cumulativeWeight) {
+    let remaining = this.randomFloat(0, 1) * totalWeight
+
+    for (const key in weights) {
+      remaining -= weights[key]!
+      if (remaining < 0) {
         return key
       }
     }

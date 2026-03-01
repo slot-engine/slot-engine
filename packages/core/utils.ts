@@ -1,5 +1,4 @@
 import fs from "fs"
-import readline from "readline"
 import { BoardService } from "./src/service/board"
 
 export function createDirIfNotExists(dirPath: string): void {
