@@ -119,29 +119,25 @@ export class Board {
     let total = 0
     const onReel: Record<number, number> = {}
 
+    const isGameSymbol = symbolOrProperties instanceof GameSymbol
+
     for (const [ridx, reel] of this.reels.entries()) {
       for (const symbol of reel) {
-        let matches = true
-
-        if (symbolOrProperties instanceof GameSymbol) {
-          if (symbol.id !== symbolOrProperties.id) matches = false
+        if (isGameSymbol) {
+          if (symbol.id !== symbolOrProperties.id) continue
         } else {
+          let matches = true
           for (const [key, value] of Object.entries(symbolOrProperties)) {
             if (!symbol.properties.has(key) || symbol.properties.get(key) !== value) {
               matches = false
               break
             }
           }
+          if (!matches) continue
         }
 
-        if (matches) {
-          total++
-          if (onReel[ridx] === undefined) {
-            onReel[ridx] = 1
-          } else {
-            onReel[ridx]++
-          }
-        }
+        total++
+        onReel[ridx] = (onReel[ridx] || 0) + 1
       }
     }
 
@@ -282,10 +278,9 @@ export class Board {
       ...(this.reelsLocked.length && { reelsLocked: this.reelsLocked }),
     })
 
-    const reelsAmount =
-      opts.reelsAmount ?? opts.ctx.services.game.getCurrentGameMode().reelsAmount
-    const symbolsPerReel =
-      opts.symbolsPerReel ?? opts.ctx.services.game.getCurrentGameMode().symbolsPerReel
+    const gameMode = opts.ctx.services.game.getCurrentGameMode()
+    const reelsAmount = opts.reelsAmount ?? gameMode.reelsAmount
+    const symbolsPerReel = opts.symbolsPerReel ?? gameMode.symbolsPerReel
     const padSymbols = opts.padSymbols ?? opts.ctx.config.padSymbols
 
     const finalReelStops: (number | null)[] = Array.from(
@@ -344,17 +339,18 @@ export class Board {
 
     for (let ridx = 0; ridx < reelsAmount; ridx++) {
       const reelPos = finalReelStops[ridx]!
-      const reelLength = opts.reels[ridx]!.length
+      const reel = opts.reels[ridx]!
+      const reelLength = reel.length
 
       for (let p = padSymbols - 1; p >= 0; p--) {
         const topPos = (((reelPos - (p + 1)) % reelLength) + reelLength) % reelLength
-        this.paddingTop[ridx]!.push(opts.reels[ridx]![topPos]!.clone())
+        this.paddingTop[ridx]!.push(reel[topPos]!.clone())
         const bottomPos = (reelPos + symbolsPerReel[ridx]! + p) % reelLength
-        this.paddingBottom[ridx]!.unshift(opts.reels[ridx]![bottomPos]!.clone())
+        this.paddingBottom[ridx]!.unshift(reel[bottomPos]!.clone())
       }
 
       for (let row = 0; row < symbolsPerReel[ridx]!; row++) {
-        const symbol = opts.reels[ridx]![(reelPos + row) % reelLength]
+        const symbol = reel[(reelPos + row) % reelLength]
 
         if (!symbol) {
           throw new Error(`Failed to get symbol at pos ${reelPos + row} on reel ${ridx}`)
@@ -384,10 +380,9 @@ export class Board {
   }) {
     assert(this.lastDrawnReelStops.length > 0, "Cannot tumble board before drawing it.")
 
-    const reelsAmount =
-      opts.reelsAmount ?? opts.ctx.services.game.getCurrentGameMode().reelsAmount
-    const symbolsPerReel =
-      opts.symbolsPerReel ?? opts.ctx.services.game.getCurrentGameMode().symbolsPerReel
+    const gameMode = opts.ctx.services.game.getCurrentGameMode()
+    const reelsAmount = opts.reelsAmount ?? gameMode.reelsAmount
+    const symbolsPerReel = opts.symbolsPerReel ?? gameMode.symbolsPerReel
     const padSymbols = opts.padSymbols ?? opts.ctx.config.padSymbols
 
     // Some context:
@@ -461,13 +456,14 @@ export class Board {
       const symbolsNeeded = symbolsPerReel[ridx]! - this.reels[ridx]!.length
       // Drop rest of symbols
       for (let s = 0; s < symbolsNeeded; s++) {
-        const symbolPos = (stopBeforePad - s + reels[ridx]!.length) % reels[ridx]!.length
-        let newSymbol = reels[ridx]![symbolPos]
+        const reel = reels[ridx]!
+        const symbolPos = (stopBeforePad - s + reel.length) % reel.length
+        let newSymbol = reel[symbolPos]
 
         // If we have starting stops, try to get the symbol from there
         const startStops = opts.startingStops
         if (startStops) {
-          const forcedSym = reels[ridx]![startStops?.[ridx]!]
+          const forcedSym = reel[startStops?.[ridx]!]
           assert(
             forcedSym,
             `Failed to get forced symbol for tumbling. Tried to get symbol for position ${startStops?.[ridx]!} on reel ${ridx}.`,
@@ -496,8 +492,9 @@ export class Board {
       if (firstSymbolPos === undefined) continue
 
       for (let p = 1; p <= padSymbols; p++) {
-        const topPos = (firstSymbolPos - p + reels[ridx]!.length) % reels[ridx]!.length
-        const padSymbol = reels[ridx]![topPos]?.clone()
+        const reel = reels[ridx]!
+        const topPos = (firstSymbolPos - p + reel.length) % reel.length
+        const padSymbol = reel[topPos]?.clone()
 
         assert(padSymbol, "Failed to get new padding symbol for tumbling.")
 

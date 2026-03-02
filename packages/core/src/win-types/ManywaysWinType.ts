@@ -107,7 +107,7 @@ export class ManywaysWinType extends WinType {
       }
     }
 
-    for (const [baseSymbolId, symbolList] of possibleWaysWins.entries()) {
+    for (const [, symbolList] of possibleWaysWins.entries()) {
       const wayLength = this.getWayLength(symbolList)
 
       let baseSymbol = Object.values(symbolList)
