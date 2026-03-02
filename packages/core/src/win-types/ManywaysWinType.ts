@@ -29,13 +29,8 @@ export class ManywaysWinType extends WinType {
 
     const { jumpGaps = false } = opts
     const waysWins: ManywaysWinCombination[] = []
-
     const reels = board
-
-    // A wild on the first reel can start a win for any symbol on second reel.
-    // Store the possible wins in a map with the base symbol id as key.
-    // The value is an array of "reels" containing all matching symbols for that base symbol.
-    const possibleWaysWins = new Map<string, Record<string, SymbolList>>()
+    const numReels = reels.length
 
     // Identify all candidate symbols that can form a win starting from Reel 1.
     // We scan from left to right. If a reel contains a Wild, it can "bridge" to the next reel.
@@ -53,7 +48,7 @@ export class ManywaysWinType extends WinType {
       let searchReelIdx = 0
       let searchActive = true
 
-      while (searchActive && searchReelIdx < reels.length) {
+      while (searchActive && searchReelIdx < numReels) {
         const reel = reels[searchReelIdx]!
         let hasWild = false
 
@@ -74,87 +69,90 @@ export class ManywaysWinType extends WinType {
     }
 
     for (const baseSymbol of candidateSymbols.values()) {
-      let symbolList: Record<string, SymbolList> = {}
-      let isInterrupted = false
+      const symbolList: SymbolList[] = []
+      let wayLength = 0
+      let firstNonWildSymbol: GameSymbol | undefined
+      let totalWays = 1
 
-      for (const [ridx, reel] of reels.entries()) {
-        if (isInterrupted) break
+      for (let ridx = 0; ridx < numReels; ridx++) {
+        const reel = reels[ridx]!
+        let reelMatches: SymbolList | undefined
 
-        for (const [sidx, symbol] of reel.entries()) {
+        for (let sidx = 0; sidx < reel.length; sidx++) {
+          const symbol = reel[sidx]!
           const isMatch = baseSymbol.compare(symbol) || this.isWild(symbol)
 
           if (isMatch) {
-            if (!symbolList[ridx]) {
-              symbolList[ridx] = []
+            if (!reelMatches) {
+              reelMatches = []
             }
-            symbolList[ridx].push({ reel: ridx, row: sidx, symbol })
+            reelMatches.push({ reel: ridx, row: sidx, symbol })
+
+            if (!firstNonWildSymbol && !this.isWild(symbol)) {
+              firstNonWildSymbol = symbol
+            }
           }
         }
 
-        if (!symbolList[ridx] && !jumpGaps) {
-          isInterrupted = true
+        if (reelMatches) {
+          symbolList[wayLength++] = reelMatches
+          totalWays *= reelMatches.length
+        } else if (!jumpGaps) {
           break
         }
       }
 
-      const minSymLine = Math.min(
-        ...Object.keys(baseSymbol!.pays || {}).map((k) => parseInt(k, 10)),
-      )
-      const wayLength = this.getWayLength(symbolList)
+      const pays = baseSymbol.pays || {}
+      let minSymLine = Infinity
+      for (const key in pays) {
+        const num = parseInt(key, 10)
+        if (num < minSymLine) minSymLine = num
+      }
 
       if (wayLength >= minSymLine) {
-        possibleWaysWins.set(baseSymbol.id, symbolList)
+        const winBaseSymbol = firstNonWildSymbol || symbolList[0]![0]!.symbol
+        const singleWayPayout = this.getSymbolPayout(winBaseSymbol, wayLength)
+        const totalPayout = singleWayPayout * totalWays
+
+        const symbols: ManywaysWinCombination["symbols"] = []
+        for (let i = 0; i < wayLength; i++) {
+          const reelSyms = symbolList[i]!
+          for (let j = 0; j < reelSyms.length; j++) {
+            const s = reelSyms[j]!
+            symbols.push({
+              symbol: s.symbol,
+              isWild: this.isWild(s.symbol),
+              reelIndex: s.reel,
+              posIndex: s.row,
+            })
+          }
+        }
+
+        waysWins.push({
+          kind: wayLength,
+          baseSymbol: winBaseSymbol,
+          symbols,
+          ways: totalWays,
+          payout: totalPayout,
+        })
+
+        this.ctx.services.data.recordSymbolOccurrence({
+          kind: wayLength,
+          symbolId: winBaseSymbol.id,
+          spinType: this.ctx.state.currentSpinType,
+        })
       }
     }
 
-    for (const [, symbolList] of possibleWaysWins.entries()) {
-      const wayLength = this.getWayLength(symbolList)
-
-      let baseSymbol = Object.values(symbolList)
-        .flatMap((l) => l.map((s) => s))
-        .find((s) => !this.isWild(s.symbol))?.symbol
-
-      if (!baseSymbol) baseSymbol = symbolList[Object.keys(symbolList)[0]!]![0]!.symbol
-
-      const singleWayPayout = this.getSymbolPayout(baseSymbol, wayLength)
-      const totalWays = Object.values(symbolList).reduce(
-        (ways, syms) => ways * syms.length,
-        1,
-      )
-      const totalPayout = singleWayPayout * totalWays
-
-      waysWins.push({
-        kind: wayLength,
-        baseSymbol,
-        symbols: Object.values(symbolList).flatMap((reel) =>
-          reel.map((s) => ({
-            symbol: s.symbol,
-            isWild: this.isWild(s.symbol),
-            reelIndex: s.reel,
-            posIndex: s.row,
-          })),
-        ),
-        ways: totalWays,
-        payout: totalPayout,
-      })
+    let totalPayout = 0
+    for (let i = 0; i < waysWins.length; i++) {
+      totalPayout += waysWins[i]!.payout
     }
 
-    for (const win of waysWins) {
-      this.ctx.services.data.recordSymbolOccurrence({
-        kind: win.kind,
-        symbolId: win.baseSymbol.id,
-        spinType: this.ctx.state.currentSpinType,
-      })
-    }
-
-    this.payout = waysWins.reduce((sum, l) => sum + l.payout, 0)
+    this.payout = totalPayout
     this.winCombinations = waysWins
 
     return this
-  }
-
-  private getWayLength(symbolList: Record<string, SymbolList>) {
-    return Object.keys(symbolList).length
   }
 }
 
