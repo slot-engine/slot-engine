@@ -9,8 +9,8 @@ export class ClusterWinType extends WinType {
     winCombinations: ClusterWinCombination[]
   }
 
-  private _checked: SymbolList = []
-  private _checkedWilds: SymbolList = []
+  private _checked: Set<number> = new Set()
+  private _checkedWilds: Set<number> = new Set()
   private _currentBoard: Reels = []
 
   constructor(opts: ClusterWinTypeOpts) {
@@ -25,94 +25,142 @@ export class ClusterWinType extends WinType {
    */
   evaluateWins(board: Reels) {
     this.validateConfig()
-    this._checked = []
+    this._checked.clear()
     this._currentBoard = board
 
     const clusterWins: ClusterWinCombination[] = []
     const potentialClusters: SymbolList[] = []
+    const boardLength = board.length
 
     // Get normal symbol clusters
-    for (const [ridx, reel] of board.entries()) {
-      for (const [sidx, symbol] of reel.entries()) {
-        this._checkedWilds = [] // each cluster can check wilds anew
+    for (let ridx = 0; ridx < boardLength; ridx++) {
+      const reel = board[ridx]!
+      const reelLength = reel.length
+
+      for (let sidx = 0; sidx < reelLength; sidx++) {
+        const symbol = reel[sidx]!
+        this._checkedWilds.clear() // each cluster can check wilds anew
 
         if (this.isWild(symbol)) continue
 
-        if (this.isChecked(ridx, sidx)) {
+        const posKey = ridx * 10000 + sidx
+        if (this._checked.has(posKey)) {
           continue
         }
 
         const thisSymbol = { reel: ridx, row: sidx, symbol }
-        this._checked.push(thisSymbol)
+        this._checked.add(posKey)
 
         const neighbors = this.getNeighbors(ridx, sidx)
         const matchingSymbols = this.evaluateCluster(symbol, neighbors)
 
         // Record clusters from 2 symbols and up
-        if (matchingSymbols.size >= 1) {
-          potentialClusters.push([thisSymbol, ...matchingSymbols.values()])
+        const matchingSize = matchingSymbols.size
+        if (matchingSize >= 1) {
+          const cluster: SymbolList = [thisSymbol]
+          for (const sym of matchingSymbols.values()) {
+            cluster.push(sym)
+          }
+          potentialClusters.push(cluster)
         }
       }
     }
 
     // Get wild only clusters
-    for (const [ridx, reel] of board.entries()) {
-      for (const [sidx, symbol] of reel.entries()) {
-        this._checkedWilds = []
+    for (let ridx = 0; ridx < boardLength; ridx++) {
+      const reel = board[ridx]!
+      const reelLength = reel.length
+
+      for (let sidx = 0; sidx < reelLength; sidx++) {
+        const symbol = reel[sidx]!
+        this._checkedWilds.clear()
 
         if (!this.isWild(symbol)) continue
 
-        if (this.isChecked(ridx, sidx)) {
+        const posKey = ridx * 10000 + sidx
+        if (this._checked.has(posKey)) {
           continue
         }
 
         const thisSymbol = { reel: ridx, row: sidx, symbol }
-        this._checked.push(thisSymbol)
+        this._checked.add(posKey)
 
         const neighbors = this.getNeighbors(ridx, sidx)
         const matchingSymbols = this.evaluateCluster(symbol, neighbors)
 
         // Record clusters from 2 symbols and up
-        if (matchingSymbols.size >= 1) {
-          potentialClusters.push([thisSymbol, ...matchingSymbols.values()])
+        const matchingSize = matchingSymbols.size
+        if (matchingSize >= 1) {
+          const cluster: SymbolList = [thisSymbol]
+          for (const sym of matchingSymbols.values()) {
+            cluster.push(sym)
+          }
+          potentialClusters.push(cluster)
         }
       }
     }
 
-    for (const cluster of potentialClusters) {
+    const numClusters = potentialClusters.length
+    for (let i = 0; i < numClusters; i++) {
+      const cluster = potentialClusters[i]!
       const kind = cluster.length
-      let baseSymbol = cluster.find((s) => !this.isWild(s.symbol))?.symbol
+
+      // Find first non-wild symbol as base
+      let baseSymbol: GameSymbol | undefined
+      for (let j = 0; j < kind; j++) {
+        const sym = cluster[j]!.symbol
+        if (!this.isWild(sym)) {
+          baseSymbol = sym
+          break
+        }
+      }
       if (!baseSymbol) baseSymbol = cluster[0]!.symbol
 
       const payout = this.getSymbolPayout(baseSymbol, kind)
       if (payout === 0) continue
 
-      if (!baseSymbol.pays || Object.keys(baseSymbol.pays).length === 0) {
-        continue // don't add non-paying symbols to final clusters
+      // Check if symbol has pays
+      const pays = baseSymbol.pays
+      if (!pays) continue
+
+      let hasPays = false
+      for (const _ in pays) {
+        hasPays = true
+        break
+      }
+      if (!hasPays) continue // don't add non-paying symbols to final clusters
+
+      const symbols: ClusterWinCombination["symbols"] = []
+      for (let j = 0; j < kind; j++) {
+        const s = cluster[j]!
+        symbols.push({
+          symbol: s.symbol,
+          isWild: this.isWild(s.symbol),
+          reelIndex: s.reel,
+          posIndex: s.row,
+        })
       }
 
       clusterWins.push({
         payout,
         kind,
         baseSymbol,
-        symbols: cluster.map((s) => ({
-          symbol: s.symbol,
-          isWild: this.isWild(s.symbol),
-          reelIndex: s.reel,
-          posIndex: s.row,
-        })),
+        symbols,
       })
-    }
 
-    for (const win of clusterWins) {
       this.ctx.services.data.recordSymbolOccurrence({
-        kind: win.kind,
-        symbolId: win.baseSymbol.id,
+        kind,
+        symbolId: baseSymbol.id,
         spinType: this.ctx.state.currentSpinType,
       })
     }
 
-    this.payout = clusterWins.reduce((sum, c) => sum + c.payout, 0)
+    let totalPayout = 0
+    for (let i = 0; i < clusterWins.length; i++) {
+      totalPayout += clusterWins[i]!.payout
+    }
+
+    this.payout = totalPayout
     this.winCombinations = clusterWins
 
     return this
@@ -122,61 +170,74 @@ export class ClusterWinType extends WinType {
     const board = this._currentBoard
     const neighbors: SymbolList = []
 
-    const potentialNeighbors: Array<[number, number]> = [
-      [ridx - 1, sidx],
-      [ridx + 1, sidx],
-      [ridx, sidx - 1],
-      [ridx, sidx + 1],
-    ]
-
-    potentialNeighbors.forEach(([nridx, nsidx]) => {
-      if (board[nridx] && board[nridx][nsidx]) {
-        neighbors.push({ reel: nridx, row: nsidx, symbol: board[nridx][nsidx] })
+    // Check left neighbor
+    if (ridx > 0) {
+      const leftReel = board[ridx - 1]!
+      const leftSymbol = leftReel[sidx]
+      if (leftSymbol !== undefined) {
+        neighbors.push({ reel: ridx - 1, row: sidx, symbol: leftSymbol })
       }
-    })
+    }
+
+    // Check right neighbor
+    const rightReel = board[ridx + 1]
+    if (rightReel !== undefined) {
+      const rightSymbol = rightReel[sidx]
+      if (rightSymbol !== undefined) {
+        neighbors.push({ reel: ridx + 1, row: sidx, symbol: rightSymbol })
+      }
+    }
+
+    // Check top neighbor
+    const currentReel = board[ridx]!
+    const topSymbol = currentReel[sidx - 1]
+    if (topSymbol !== undefined) {
+      neighbors.push({ reel: ridx, row: sidx - 1, symbol: topSymbol })
+    }
+
+    // Check bottom neighbor
+    const bottomSymbol = currentReel[sidx + 1]
+    if (bottomSymbol !== undefined) {
+      neighbors.push({ reel: ridx, row: sidx + 1, symbol: bottomSymbol })
+    }
 
     return neighbors
   }
 
   private evaluateCluster(rootSymbol: GameSymbol, neighbors: SymbolList) {
     const matchingSymbols: SymbolMap = new Map()
+    const numNeighbors = neighbors.length
 
-    neighbors.forEach((neighbor) => {
+    for (let i = 0; i < numNeighbors; i++) {
+      const neighbor = neighbors[i]!
       const { reel, row, symbol } = neighbor
+      const posKey = reel * 10000 + row
 
-      if (this.isChecked(reel, row)) return
-      if (this.isCheckedWild(reel, row)) return
+      if (this._checked.has(posKey)) continue
+      if (this._checkedWilds.has(posKey)) continue
 
       if (this.isWild(symbol) || symbol.compare(rootSymbol)) {
-        const key = `${reel}-${row}`
+        const key = String(posKey)
         matchingSymbols.set(key, { reel, row, symbol })
 
         if (symbol.compare(rootSymbol)) {
-          this._checked.push(neighbor)
+          this._checked.add(posKey)
         }
 
         if (this.isWild(symbol)) {
-          this._checkedWilds.push(neighbor)
+          this._checkedWilds.add(posKey)
         }
 
-        const neighbors = this.getNeighbors(reel, row)
-        const nestedMatches = this.evaluateCluster(rootSymbol, neighbors)
-        nestedMatches.forEach((nsym) => {
-          const nkey = `${nsym.reel}-${nsym.row}`
+        const nestedNeighbors = this.getNeighbors(reel, row)
+        const nestedMatches = this.evaluateCluster(rootSymbol, nestedNeighbors)
+
+        for (const [nkey, nsym] of nestedMatches.entries()) {
           matchingSymbols.set(nkey, nsym)
-        })
+        }
       }
-    })
+    }
 
     return matchingSymbols
-  }
-
-  private isChecked(ridx: number, sidx: number) {
-    return !!this._checked.find((c) => c.reel === ridx && c.row === sidx)
-  }
-
-  private isCheckedWild(ridx: number, sidx: number) {
-    return !!this._checkedWilds.find((c) => c.reel === ridx && c.row === sidx)
   }
 }
 
