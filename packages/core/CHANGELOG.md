@@ -1,5 +1,13 @@
 # @slot-engine/core
 
+## 0.2.9
+
+### Patch Changes
+
+- Minor optimizations - Thanks @nordowl
+
+- Slightly improve RNG performance - Thanks @nordowl
+
 ## 0.2.8
 
 ### Patch Changes
