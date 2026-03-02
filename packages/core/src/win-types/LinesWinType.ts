@@ -57,17 +57,23 @@ export class LinesWinType extends WinType {
     this.validateConfig()
 
     const lineWins: LineWinCombination[] = []
-
     const reels = board
+    const reelsLength = reels.length
+    const lineNumbers = Object.keys(this.lines)
+    const numLines = lineNumbers.length
 
-    for (const [lineNumStr, line] of Object.entries(this.lines)) {
+    for (let lidx = 0; lidx < numLines; lidx++) {
+      const lineNumStr = lineNumbers[lidx]!
       const lineNum = Number(lineNumStr)
+      const line = this.lines[lineNum]!
+
       let baseSymbol: GameSymbol | undefined
       const potentialWinLine: SymbolList = []
       const potentialWildLine: SymbolList = []
       let isInterrupted = false
 
-      for (const [ridx, reel] of reels.entries()) {
+      for (let ridx = 0; ridx < reelsLength; ridx++) {
+        const reel = reels[ridx]!
         const sidx = line[ridx]!
         const thisSymbol = reel[sidx]
 
@@ -104,72 +110,101 @@ export class LinesWinType extends WinType {
         }
       }
 
-      const minSymLine = Math.min(
-        ...Object.keys(baseSymbol!.pays || {}).map((k) => parseInt(k, 10)),
-      )
+      // Get minimum required symbols for a win
+      const pays = baseSymbol!.pays || {}
+      let minSymLine = Infinity
+      for (const key in pays) {
+        const num = parseInt(key, 10)
+        if (num < minSymLine) minSymLine = num
+      }
 
       if (potentialWinLine.length < minSymLine) continue
 
       const linePayout = this.getLinePayout(potentialWinLine)
       const wildLinePayout = this.getLinePayout(potentialWildLine)
 
-      let finalLine: LineWinCombination = {
-        kind: potentialWinLine.length,
-        baseSymbol: baseSymbol!,
-        symbols: potentialWinLine.map((s) => ({
-          symbol: s.symbol,
-          isWild: this.isWild(s.symbol),
-          reelIndex: s.reel,
-          posIndex: s.row,
-        })),
-        lineNumber: lineNum,
-        payout: linePayout,
-      }
+      let finalLine: LineWinCombination
 
+      // Choose the highest paying line
       if (wildLinePayout > linePayout) {
         baseSymbol = potentialWildLine[0]?.symbol
 
-        finalLine = {
-          kind: potentialWildLine.length,
-          baseSymbol: baseSymbol!,
-          symbols: potentialWildLine.map((s) => ({
+        const wildSymbols: LineWinCombination["symbols"] = []
+        const wildLineLength = potentialWildLine.length
+        for (let i = 0; i < wildLineLength; i++) {
+          const s = potentialWildLine[i]!
+          wildSymbols.push({
             symbol: s.symbol,
             isWild: this.isWild(s.symbol),
             reelIndex: s.reel,
             posIndex: s.row,
-          })),
+          })
+        }
+
+        finalLine = {
+          kind: wildLineLength,
+          baseSymbol: baseSymbol!,
+          symbols: wildSymbols,
           lineNumber: lineNum,
           payout: wildLinePayout,
+        }
+      } else {
+        const symbols: LineWinCombination["symbols"] = []
+        const lineLength = potentialWinLine.length
+        for (let i = 0; i < lineLength; i++) {
+          const s = potentialWinLine[i]!
+          symbols.push({
+            symbol: s.symbol,
+            isWild: this.isWild(s.symbol),
+            reelIndex: s.reel,
+            posIndex: s.row,
+          })
+        }
+
+        finalLine = {
+          kind: lineLength,
+          baseSymbol: baseSymbol!,
+          symbols,
+          lineNumber: lineNum,
+          payout: linePayout,
         }
       }
 
       lineWins.push(finalLine)
-    }
 
-    for (const win of lineWins) {
       this.ctx.services.data.recordSymbolOccurrence({
-        kind: win.kind,
-        symbolId: win.baseSymbol.id,
+        kind: finalLine.kind,
+        symbolId: finalLine.baseSymbol.id,
         spinType: this.ctx.state.currentSpinType,
       })
     }
 
-    this.payout = lineWins.reduce((sum, l) => sum + l.payout, 0)
+    let totalPayout = 0
+    for (let i = 0; i < lineWins.length; i++) {
+      totalPayout += lineWins[i]!.payout
+    }
+
+    this.payout = totalPayout
     this.winCombinations = lineWins
 
     return this
   }
 
   private getLinePayout(line: SymbolList) {
-    if (line.length === 0) return 0
+    const lineLength = line.length
+    if (lineLength === 0) return 0
 
-    let baseSymbol = line.find((s) => !this.isWild(s.symbol))?.symbol
+    let baseSymbol: GameSymbol | undefined
+    for (let i = 0; i < lineLength; i++) {
+      const s = line[i]!
+      if (!this.isWild(s.symbol)) {
+        baseSymbol = s.symbol
+        break
+      }
+    }
     if (!baseSymbol) baseSymbol = line[0]!.symbol
 
-    const kind = line.length
-    const payout = this.getSymbolPayout(baseSymbol, kind)
-
-    return payout
+    return this.getSymbolPayout(baseSymbol, lineLength)
   }
 }
 
