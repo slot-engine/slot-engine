@@ -1,5 +1,12 @@
 # @slot-engine/panel
 
+## 0.1.12
+
+### Patch Changes
+
+- Updated dependencies [[`1e087b6`](https://github.com/slot-engine/slot-engine/commit/1e087b6f9cb90d6214ec29bc982ed4f48e99d809), [`bf1f6d9`](https://github.com/slot-engine/slot-engine/commit/bf1f6d9e00614a1cc8e42032434773e145f02680), [`584a06a`](https://github.com/slot-engine/slot-engine/commit/584a06ae1e0c8f99cb15d3c143eea5176297a67f), [`5e6251c`](https://github.com/slot-engine/slot-engine/commit/5e6251c18fbf0a77f0641e5b4c7b033b74c5d536)]:
+  - @slot-engine/core@0.2.10
+
 ## 0.1.11
 
 ### Patch Changes
