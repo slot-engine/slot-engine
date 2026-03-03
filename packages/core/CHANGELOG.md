@@ -1,5 +1,17 @@
 # @slot-engine/core
 
+## 0.2.10
+
+### Patch Changes
+
+- Improve performance of symbol comparisons - Thanks @nordowl
+
+- Improve performance of ManywaysWinType - Thanks @nordowl
+
+- Improve performance of ClusterWinType - Thanks @nordowl
+
+- Improve performance of LinesWinType - Thanks @nordowl
+
 ## 0.2.9
 
 ### Patch Changes
