@@ -1,5 +1,11 @@
 # @slot-engine/core
 
+## 0.2.11
+
+### Patch Changes
+
+- Notable performance improvements to internal book handling - Thanks @nordowl
+
 ## 0.2.10
 
 ### Patch Changes
