@@ -492,10 +492,10 @@ export class Simulation {
         const chunkIndex = this.bookChunkIndexes.get(index)!
 
         const bookChunkPath = this.PATHS.booksChunk(mode, index, chunkIndex)
-        const data = this.bookBuffers.get(index)!.join("\n") + "\n"
+        const bookLines = this.bookBuffers.get(index)!
 
         await pipeline(
-          Readable.from([Buffer.from(data, "utf8")]),
+          Readable.from(bookLines),
           zlib.createZstdCompress(),
           fs.createWriteStream(bookChunkPath),
         )
@@ -592,40 +592,40 @@ export class Simulation {
 
           writeChain = writeChain
             .then(async () => {
-              const book = msg.book as ReturnType<Book["_serialize"]>
-              const bookData = {
-                id: book.id,
-                payoutMultiplier: book.payout,
-                events: book.events,
-              }
+              const bookId = msg.bookId as number
+              const bookCriteria = msg.bookCriteria as string
+              const bookPayout = msg.bookPayout as number
+              const bookBasegameWins = msg.bookBasegameWins as number
+              const bookFreespinsWins = msg.bookFreespinsWins as number
+              const bookLine = msg.bookLine as string
+              const bookLineWithNewline = bookLine + "\n"
 
-              if (!this.summary[mode]?.criteria[book.criteria]) {
-                this.summary[mode]!.criteria[book.criteria] = {
+              if (!this.summary[mode]?.criteria[bookCriteria]) {
+                this.summary[mode]!.criteria[bookCriteria] = {
                   numSims: 0,
                   bsWins: 0,
                   fsWins: 0,
                   rtp: 0,
                 }
               }
-              const bsWins = round(book.basegameWins, 4)
-              const fsWins = round(book.freespinsWins, 4)
-              this.summary[mode]!.criteria[book.criteria]!.numSims += 1
+              const bsWins = round(bookBasegameWins, 4)
+              const fsWins = round(bookFreespinsWins, 4)
+              const criteria = this.summary[mode]!.criteria[bookCriteria]!
+              criteria.numSims += 1
               this.summary[mode]!.total.bsWins += bsWins
               this.summary[mode]!.total.fsWins += fsWins
-              this.summary[mode]!.criteria[book.criteria]!.bsWins! += bsWins
-              this.summary[mode]!.criteria[book.criteria]!.fsWins! += fsWins
-
-              const bookLine = JSON.stringify(bookData)
-              const lineSize = Buffer.byteLength(bookLine + "\n", "utf8")
+              criteria.bsWins! += bsWins
+              criteria.fsWins! += fsWins
+              const lineSize = Buffer.byteLength(bookLineWithNewline, "utf8")
 
               if (this.bookBuffers.has(index)) {
-                this.bookBuffers.get(index)!.push(bookLine)
+                this.bookBuffers.get(index)!.push(bookLineWithNewline)
                 this.bookBufferSizes.set(
                   index,
                   this.bookBufferSizes.get(index)! + lineSize,
                 )
               } else {
-                this.bookBuffers.set(index, [bookLine])
+                this.bookBuffers.set(index, [bookLineWithNewline])
                 this.bookBufferSizes.set(index, lineSize)
               }
 
@@ -634,11 +634,11 @@ export class Simulation {
               }
 
               booksIndexBatch.push(
-                `${book.id},${index},${this.bookChunkIndexes.get(index) || 0}\n`,
+                `${bookId},${index},${this.bookChunkIndexes.get(index) || 0}\n`,
               )
-              lookupBatch.push(`${book.id},1,${Math.round(book.payout)}\n`)
+              lookupBatch.push(`${bookId},1,${Math.round(bookPayout)}\n`)
               lookupSegBatch.push(
-                `${book.id},${book.criteria},${book.basegameWins},${book.freespinsWins}\n`,
+                `${bookId},${bookCriteria},${bookBasegameWins},${bookFreespinsWins}\n`,
               )
 
               if (booksIndexBatch.length >= WRITE_BATCH_SIZE) {
@@ -649,16 +649,15 @@ export class Simulation {
                 await flushBookChunk()
               }
 
-              if (this.recordsWriteStream) {
-                for (const record of msg.records) {
-                  const recordPrefix = this.hasWrittenRecord ? "\n" : ""
-                  await write(
-                    this.recordsWriteStream,
-                    recordPrefix + JSON.stringify(record),
-                  )
-                  this.hasWrittenRecord = true
-                }
-              } 
+              if (
+                this.recordsWriteStream &&
+                typeof msg.recordsLines === "string" &&
+                msg.recordsLines.length
+              ) {
+                const recordPrefix = this.hasWrittenRecord ? "\n" : ""
+                await write(this.recordsWriteStream, recordPrefix + msg.recordsLines)
+                this.hasWrittenRecord = true
+              }
 
               this.wallet.mergeSerialized(msg.wallet)
 
@@ -778,10 +777,12 @@ export class Simulation {
       }
     }
 
-    ctx.services.wallet._getWallet().writePayoutToBook(ctx)
-    ctx.services.wallet._getWallet().confirmWins(ctx)
+    const wallet = ctx.services.wallet._getWallet()
+    wallet.writePayoutToBook(ctx)
+    wallet.confirmWins(ctx)
 
-    if (ctx.services.data._getBook().payout >= ctx.config.maxWinX) {
+    const book = ctx.services.data._getBook()
+    if (book.payout >= ctx.config.maxWinX) {
       ctx.state.triggeredMaxWin = true
     }
 
@@ -793,12 +794,28 @@ export class Simulation {
 
     this.confirmRecords(ctx)
 
+    // Pre-serialize the book line in the worker to avoid overhead
+    const bookLine = JSON.stringify({
+      id: book.id,
+      payoutMultiplier: book.payout,
+      events: book.events,
+    })
+
+    const records = ctx.services.data._getRecords()
+    const recordsLines =
+      records.length > 0 ? records.map((r) => JSON.stringify(r)).join("\n") : ""
+
     parentPort?.postMessage({
       type: "complete",
       simId,
-      book: ctx.services.data._getBook()._serialize(),
-      wallet: ctx.services.wallet._getWallet().serialize(),
-      records: ctx.services.data._getRecords(),
+      bookLine,
+      bookId: book.id,
+      bookCriteria: book.criteria,
+      bookPayout: book.payout,
+      bookBasegameWins: book.basegameWins,
+      bookFreespinsWins: book.freespinsWins,
+      wallet: wallet.serialize(),
+      recordsLines,
     })
   }
 

@@ -42,20 +42,6 @@ export class Book {
       data: copy(event.data),
     })
   }
-
-  /**
-   * Intended for internal use only.
-   */
-  _serialize() {
-    return {
-      id: this.id,
-      criteria: this.criteria,
-      events: this.events,
-      payout: this.payout,
-      basegameWins: this.basegameWins,
-      freespinsWins: this.freespinsWins,
-    }
-  }
 }
 
 export interface BookEvent {

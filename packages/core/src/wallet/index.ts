@@ -182,7 +182,7 @@ export class Wallet {
     this.cumulativeWins += this.currentWin
     let spinTypeWins = 0
 
-    for (const spinType of Object.keys(this.currentWinPerSpinType)) {
+    for (const spinType in this.currentWinPerSpinType) {
       const st = spinType as SpinType
       const spinTypeWin = process(this.currentWinPerSpinType[st])
       this.cumulativeWinsPerSpinType[st]! += spinTypeWin
