@@ -57,11 +57,14 @@ export class DataService<
    * Record data for statistical analysis.
    */
   record(data: Record<string, string | number | boolean>) {
+    const properties: Record<string, string> = {}
+    for (const key in data) {
+      properties[key] = String(data[key])
+    }
+
     this.recorder.pendingRecords.push({
       bookId: this.ctx().state.currentSimulationId,
-      properties: Object.fromEntries(
-        Object.entries(data).map(([k, v]) => [k, String(v)]),
-      ),
+      properties,
     })
   }
 

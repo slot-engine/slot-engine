@@ -6,7 +6,11 @@ export class GameSymbol {
   constructor(opts: GameSymbolOpts) {
     this.id = opts.id
     this.pays = opts.pays
-    this.properties = new Map<string, any>(Object.entries(opts.properties || {}))
+    this.properties = new Map<string, any>()
+
+    for (const prop in opts.properties) {
+      this.properties.set(prop, opts.properties[prop])
+    }
 
     if (this.pays && Object.keys(this.pays).length === 0) {
       throw new Error(`GameSymbol "${this.id}" must have pays defined.`)
@@ -24,8 +28,8 @@ export class GameSymbol {
     if (symbolOrProperties instanceof GameSymbol) {
       return this.id === symbolOrProperties.id
     } else {
-      for (const [key, value] of Object.entries(symbolOrProperties)) {
-        if (!this.properties.has(key) || this.properties.get(key) !== value) {
+      for (const prop in symbolOrProperties) {
+        if (!this.properties.has(prop) || this.properties.get(prop) !== symbolOrProperties[prop]) {
           return false
         }
       }

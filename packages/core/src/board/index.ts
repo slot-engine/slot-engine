@@ -72,8 +72,8 @@ export class Board {
   updateSymbol(reelIndex: number, rowIndex: number, properties: Record<string, any>) {
     const symbol = this.getSymbol(reelIndex, rowIndex)
     if (symbol) {
-      for (const [key, value] of Object.entries(properties)) {
-        symbol.properties.set(key, value)
+      for (const prop in properties) {
+        symbol.properties.set(prop, properties[prop])
       }
     }
   }
@@ -98,8 +98,8 @@ export class Board {
       if (symbolOrProperties instanceof GameSymbol) {
         if (symbol.id !== symbolOrProperties.id) matches = false
       } else {
-        for (const [key, value] of Object.entries(symbolOrProperties)) {
-          if (!symbol.properties.has(key) || symbol.properties.get(key) !== value) {
+        for (const prop in symbolOrProperties) {
+          if (!symbol.properties.has(prop) || symbol.properties.get(prop) !== symbolOrProperties[prop]) {
             matches = false
             break
           }
@@ -127,8 +127,8 @@ export class Board {
           if (symbol.id !== symbolOrProperties.id) continue
         } else {
           let matches = true
-          for (const [key, value] of Object.entries(symbolOrProperties)) {
-            if (!symbol.properties.has(key) || symbol.properties.get(key) !== value) {
+          for (const prop in symbolOrProperties) {
+            if (!symbol.properties.has(prop) || symbol.properties.get(prop) !== symbolOrProperties[prop]) {
               matches = false
               break
             }
