@@ -22,6 +22,7 @@ export type PermanentFilePaths = {
   statsPayouts: string
   statsSummary: string
   statsRecords: string
+  frontendConfig: string
 }
 
 export type TemporaryFilePaths = {
@@ -67,6 +68,7 @@ export function createPermanentFilePaths(basePath: string): PermanentFilePaths {
     statsPayouts: path.join(basePath, "stats_payouts.json"),
     statsSummary: path.join(basePath, "stats_summary.json"),
     statsRecords: path.join(basePath, "stats_records.json"),
+    frontendConfig: path.join(basePath, "frontend_config.json"),
   }
 }
 

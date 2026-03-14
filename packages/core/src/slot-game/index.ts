@@ -5,6 +5,7 @@ import { Analysis, AnalysisOpts } from "../analysis"
 import { OptimizationOpts, Optimizer, OptimizerOpts } from "../optimizer"
 import { isMainThread, workerData } from "worker_threads"
 import { CLI_ARGS } from "../constants"
+import { createFrontendConfig } from "../utils/frontend-config"
 
 /**
  * SlotGame class that encapsulates the game configuration and state.\
@@ -129,7 +130,11 @@ export class SlotGame<
       }
     }
 
-    if (isMainThread) console.log("Done!")
+    if (isMainThread) {
+      // @ts-ignore TODO: Fix type errors with AnyTypes
+      createFrontendConfig(this.getConfig(), this.getMetadata())
+      console.log("Done!")
+    }
   }
 
   /**
