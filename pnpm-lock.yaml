@@ -100,7 +100,7 @@ importers:
   examples/cluster_example:
     dependencies:
       '@slot-engine/core':
-        specifier: 0.2.10
+        specifier: 0.2.11
         version: link:../../packages/core
     devDependencies:
       '@types/node':
@@ -113,7 +113,7 @@ importers:
   examples/lines_example_OUTDATED:
     dependencies:
       '@slot-engine/core':
-        specifier: 0.2.10
+        specifier: 0.2.11
         version: link:../../packages/core
     devDependencies:
       '@types/node':
@@ -126,7 +126,7 @@ importers:
   examples/panel:
     dependencies:
       '@slot-engine/panel':
-        specifier: 0.1.12
+        specifier: 0.1.13
         version: link:../../packages/panel
     devDependencies:
       tsx:
@@ -169,16 +169,16 @@ importers:
         specifier: 0.2.1
         version: 0.2.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@hono/node-server':
-        specifier: 1.19.9
-        version: 1.19.9(hono@4.12.3)
+        specifier: 1.19.11
+        version: 1.19.11(hono@4.12.8)
       '@hono/zod-validator':
         specifier: 0.7.6
-        version: 0.7.6(hono@4.12.3)(zod@4.2.1)
+        version: 0.7.6(hono@4.12.8)(zod@4.2.1)
       '@mantine/hooks':
         specifier: 8.3.10
         version: 8.3.10(react@19.2.3)
       '@slot-engine/core':
-        specifier: 0.2.10
+        specifier: 0.2.11
         version: link:../core
       '@tanstack/react-query':
         specifier: 5.90.12
@@ -205,8 +205,8 @@ importers:
         specifier: 1.0.0-beta.4
         version: 1.0.0-beta.4(typescript@5.9.3)
       hono:
-        specifier: 4.12.3
-        version: 4.12.3
+        specifier: 4.12.8
+        version: 4.12.8
       qs:
         specifier: 6.15.0
         version: 6.15.0
@@ -888,8 +888,8 @@ packages:
       tailwindcss:
         optional: true
 
-  '@hono/node-server@1.19.9':
-    resolution: {integrity: sha512-vHL6w3ecZsky+8P5MD+eFfaGTyCeOHUIFYMGpQGbrBTSmNNoxv0if69rEZ5giu36weC5saFuznL411gRX7bJDw==}
+  '@hono/node-server@1.19.11':
+    resolution: {integrity: sha512-dr8/3zEaB+p0D2n/IUrlPF1HZm586qgJNXK1a9fhg/PzdtkK7Ksd5l312tJX2yBuALqDYBlG20QEbayqPyxn+g==}
     engines: {node: '>=18.14.1'}
     peerDependencies:
       hono: ^4
@@ -2953,8 +2953,8 @@ packages:
   hast-util-whitespace@3.0.0:
     resolution: {integrity: sha512-88JUN06ipLwsnv+dVn+OIYOvAuvBMy/Qoi6O7mQHxdPXpjy+Cd6xRkWwux7DKO+4sYILtLBRIKgsdpS2gQc7qw==}
 
-  hono@4.12.3:
-    resolution: {integrity: sha512-SFsVSjp8sj5UumXOOFlkZOG6XS9SJDKw0TbwFeV+AJ8xlST8kxK5Z/5EYa111UY8732lK2S/xB653ceuaoGwpg==}
+  hono@4.12.8:
+    resolution: {integrity: sha512-VJCEvtrezO1IAR+kqEYnxUOoStaQPGrCmX3j4wDTNOcD1uRPFpGlwQUIW8niPuvHXaTUxeOUl5MMDGrl+tmO9A==}
     engines: {node: '>=16.9.0'}
 
   html-void-elements@3.0.0:
@@ -5110,13 +5110,13 @@ snapshots:
       next: 16.1.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       tailwindcss: 4.1.18
 
-  '@hono/node-server@1.19.9(hono@4.12.3)':
+  '@hono/node-server@1.19.11(hono@4.12.8)':
     dependencies:
-      hono: 4.12.3
+      hono: 4.12.8
 
-  '@hono/zod-validator@0.7.6(hono@4.12.3)(zod@4.2.1)':
+  '@hono/zod-validator@0.7.6(hono@4.12.8)(zod@4.2.1)':
     dependencies:
-      hono: 4.12.3
+      hono: 4.12.8
       zod: 4.2.1
 
   '@img/colour@1.0.0':
@@ -7258,7 +7258,7 @@ snapshots:
     dependencies:
       '@types/hast': 3.0.4
 
-  hono@4.12.3: {}
+  hono@4.12.8: {}
 
   html-void-elements@3.0.0: {}
 
