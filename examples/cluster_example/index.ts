@@ -12,7 +12,7 @@ import {
   defineUserState,
   SPIN_TYPE,
 } from "@slot-engine/core"
-import { GENERATORS } from "./src/reels"
+import { REELS } from "./src/reels"
 import { onHandleGameFlow } from "./src/onHandleGameFlow"
 import { maxwinReelsEvaluation } from "./src/evaluations"
 
@@ -170,7 +170,7 @@ export const gameModes = defineGameModes({
     reelsAmount: 7,
     symbolsPerReel: [7, 7, 7, 7, 7, 7, 7],
     isBonusBuy: false,
-    reelSets: [...Object.values(GENERATORS)],
+    reelSets: [...Object.values(REELS)],
     resultSets: [
       new ResultSet({
         criteria: "0",
@@ -218,7 +218,7 @@ export const gameModes = defineGameModes({
     reelsAmount: 7,
     symbolsPerReel: [7, 7, 7, 7, 7, 7, 7],
     isBonusBuy: true,
-    reelSets: [...Object.values(GENERATORS)],
+    reelSets: [...Object.values(REELS)],
     resultSets: [
       new ResultSet({
         criteria: "freespins",
