@@ -99,7 +99,10 @@ export class Board {
         if (symbol.id !== symbolOrProperties.id) matches = false
       } else {
         for (const prop in symbolOrProperties) {
-          if (!symbol.properties.has(prop) || symbol.properties.get(prop) !== symbolOrProperties[prop]) {
+          if (
+            !symbol.properties.has(prop) ||
+            symbol.properties.get(prop) !== symbolOrProperties[prop]
+          ) {
             matches = false
             break
           }
@@ -128,7 +131,10 @@ export class Board {
         } else {
           let matches = true
           for (const prop in symbolOrProperties) {
-            if (!symbol.properties.has(prop) || symbol.properties.get(prop) !== symbolOrProperties[prop]) {
+            if (
+              !symbol.properties.has(prop) ||
+              symbol.properties.get(prop) !== symbolOrProperties[prop]
+            ) {
               matches = false
               break
             }
@@ -356,11 +362,9 @@ export class Board {
           throw new Error(`Failed to get symbol at pos ${reelPos + row} on reel ${ridx}`)
         }
 
-        this.reels[ridx]![row] = symbol.clone()
-
-        this.updateSymbol(ridx, row, {
-          position: [ridx, row],
-        })
+        const cloned = symbol.clone()
+        cloned.properties.set("position", [ridx, row])
+        this.reels[ridx]![row] = cloned
       }
     }
 
@@ -520,9 +524,7 @@ export class Board {
     for (let ridx = 0; ridx < reelsAmount; ridx++) {
       const reel = this.reels[ridx]!
       for (let rowIdx = 0; rowIdx < reel.length; rowIdx++) {
-        this.updateSymbol(ridx, rowIdx, {
-          position: [ridx, rowIdx],
-        })
+        reel[rowIdx]!.properties.set("position", [ridx, rowIdx])
       }
     }
 
