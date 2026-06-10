@@ -346,6 +346,19 @@ export class Simulation {
           }
         }
 
+        if (this.gameConfig.hooks.onGameModeComplete) {
+          statusMessage = `Running onGameModeComplete hook for mode "${mode}"...`
+          this.tui?.log(statusMessage)
+          this.sendSimulationStatus(statusMessage)
+
+          const { outputDir, rootDir, isCustomRoot, paths } = this.gameConfig
+          await this.gameConfig.hooks.onGameModeComplete({
+            mode,
+            paths,
+            metadata: { outputDir, rootDir, isCustomRoot, paths },
+          })
+        }
+
         const endTime = Date.now()
         const prettyTime = new Date(endTime - startTime).toISOString().slice(11, -1)
 

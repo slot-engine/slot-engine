@@ -1,0 +1,30 @@
+{
+  "name": "@slot-engine/optimizer",
+  "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/slot-engine/slot-engine"
+  },
+  "homepage": "https://slot-engine.dev/docs/core/game-tasks/optimization",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prebuild": "pnpm typecheck",
+    "build": "tsup ./index.ts --dts --format cjs,esm --sourcemap",
+    "dev": "tsup ./index.ts --dts --format cjs,esm --sourcemap --watch"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "module": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  }
+}

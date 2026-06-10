@@ -165,9 +165,7 @@ app.post("/:id/sim-run", async (c) => {
   const game = origGame.clone()
 
   game.configureSimulation(config.simulation)
-  game.configureOptimization({
-    gameModes: {},
-  })
+  game.configureOptimization({})
   await game.runTasks({
     _internal_ignore_args: true,
     doSimulation: true,

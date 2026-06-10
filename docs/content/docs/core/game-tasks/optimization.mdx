@@ -10,14 +10,16 @@ icon: "Rocket"
 
 After simulating and analyzing the outcomes of your game, you may notice that
 your RTP may be too high or too low and that the game may generally be unbalanced.
-To achieve a desired target RTP between 94% and 98%, the optimization program can be used.
+To achieve a desired target RTP between 94% and 98%, the optimizer can be used.
 
-**A big thanks to Stake** for providing the entire game optimizer code.
-[(Original source code)](https://github.com/StakeEngine/math-sdk/tree/main/optimization_program)
+The optimizer is a **first-party, pure TypeScript** package: `@slot-engine/optimizer`.
+It assigns new weights to your lookup tables so the game pays out **exactly** the configured RTP,
+with the configured hit rates and payout distribution per criteria.
 
-The optimization program (from 13.08.25) has been integrated into Slot Engine,
-enabling you to precisely adjust your games to achieve the desired RTP.
-Additionally, you can further tweak the weights of certain payout groups using custom configs.
+Under the hood, it solves a convex optimization problem: it finds the weight distribution
+**closest to your simulated results** (minimum KL-divergence) that satisfies all hit rate
+and RTP constraints exactly. The solution is deterministic and runs in seconds, even for
+millions of simulations.
 
 After optimization is done, you can observe that the weights in your lookup tables have been redistributed.
 
@@ -39,29 +41,9 @@ After:
 ...
 ```
 
-<Callout title="To other developers:">
-The optimizer works, but **it would be nice to not depend on Stake** updating their original optimizer code.
-Since their optimizer is designed to work with their math SDK, integrating new optimizer changes into
-Slot Engine might not always work.
-
-Also their optimizer is not well documented. All info on this page is gathered from the **Stake Engine Discord**.
-**Go there if you have specific questions about the optimizer not documented here.**
-
-I don't know Rust and have no mathematical background, and the optimization algorithm seems complex.
-If anyone would like to try to **implement such an algorithm in TypeScript**, feel free to open an issue and let's talk about it.
-
-Having a **first-party** optimization algorithm would be **good in the long run**.
-
-</Callout>
-
 ## Configuration
 
 <Steps>
-<Step>
-Install [Rust and cargo](https://rust-lang.org/tools/install/) if you haven't already.
-This is necessary because the optimization program is written in Rust.
-</Step>
-
 <Step>
   Ensure your simulations cover a wide range of outcomes. Otherwise the optimizer might
   struggle to work properly. You can configure [analysis](/docs/core/game-tasks/analysis)
@@ -70,7 +52,9 @@ This is necessary because the optimization program is written in Rust.
 </Step>
 
 <Step>
-Call `configureOptimization()` on your game
+Call `configureOptimization()` on your game.
+The keys of the config object are your game mode names,
+each defining an optimization target per `ResultSet` criteria.
 
 ```ts lineNumbers
 const game = createSlotGame({
@@ -78,49 +62,24 @@ const game = createSlotGame({
 })
 
 game.configureOptimization({
-  gameModes: {
-    base: {
-      conditions: {
-        maxwin: new OptimizationConditions({
-          rtp: 0.01,
-          avgWin: 2000,
-          searchConditions: {
-            criteria: "maxwin",
-          },
-          priority: 8,
-        }),
-        "0": new OptimizationConditions({
-          rtp: 0,
-          avgWin: 0,
-          searchConditions: 0,
-          priority: 6,
-        }),
-        superFreespins: new OptimizationConditions({
-          rtp: 0.05,
-          hitRate: 500,
-          searchConditions: {
-            criteria: "superFreespins",
-          },
-          priority: 3,
-        }),
-        freespins: new OptimizationConditions({
-          rtp: 0.35,
-          hitRate: 150,
-          searchConditions: {
-            criteria: "freespins",
-          },
-          priority: 2,
-        }),
-        basegame: new OptimizationConditions({
-          rtp: 0.55,
-          hitRate: 4,
-          priority: 1,
-        }),
-      },
-      scaling: new OptimizationScaling([]),
-      parameters: new OptimizationParameters(),
+  base: {
+    targets: {
+      // Losing books: no hitRate, so they absorb the remaining probability
+      "0": {},
+      // No rtp / avgWin, so this criteria gets the remaining RTP of the mode
+      basegame: { hitRate: 4 },
+      freespins: { hitRate: 150, rtp: 0.38 },
+      // All maxwin books pay exactly 5000x, so the RTP
+      // contribution is fixed at 5000 / 500000 = 0.01
+      maxwin: { hitRate: 500_000 },
     },
-    // ...
+  },
+  bonus: {
+    targets: {
+      // Absorbs the remaining probability and gets the remaining RTP
+      freespins: {},
+      maxwin: { hitRate: 5000 },
+    },
   },
 })
 ```
@@ -130,162 +89,119 @@ game.configureOptimization({
 <Step>
 Finally call `runTasks()` on your game
 
-```ts lineNumbers=11
+```ts lineNumbers
 game.runTasks({
   doSimulation: true,
   doOptimization: true,
-  optimizationOpts: {
-    gameModes: ["base"],
-  },
 })
 ```
 
 </Step>
 </Steps>
 
-- `configureOptimization` has a `gameModes` property specifying optimization configurations for different game modes.
-- The keys of `gameModes` must match the modes in your game configuration.
-- Each game mode has 3 configuration objects: `conditions`, `scaling` and `parameters`.
+The target RTP of each game mode is taken from the `rtp` of your game mode configuration,
+so you don't need to define it again.
 
-### Optimization Conditions
+### Optimization Targets
 
-Each `conditions` key for a game mode can have multiple sub-properties (conditions).
-A condition is used to **select specific simulations which the optimization is applied to**.
-Each `ResultSet` of a game mode must have a corresponding optimization condition, named after its criteria.
+Each `ResultSet` of a game mode must have a corresponding optimization target, named after its criteria.
+A target defines **how often** the criteria occurs, and **how much** it pays out:
 
-Since you probably want to optimize every single simulation, you should define as many
-conditions for a game mode as you need, to enable optimization for all simulations.
+| Property  | Type          | Description                                                                                                              |
+| --------- | ------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `hitRate` | `number`      | The target hit rate as "1 in N spins", e.g. `150` to hit once every 150 spins.                                           |
+| `rtp`     | `number`      | The target RTP contribution as a fraction of the bet cost, e.g. `0.38`. All contributions must sum to the game mode RTP. |
+| `avgWin`  | `number`      | The target average payout multiplier per hit, e.g. `5000`. Alternative to `rtp` (don't define both).                     |
+| `scale`   | `ScaleRule[]` | Optional rules to reshape the payout distribution within this criteria. See [scaling](#scaling).                         |
 
-For an optimization condition, specify the property `searchConditions` and set key/value pairs
-which the optimizer will search for in the [force records file](/docs/core/game-context/data-service#recorder).
+**All properties are optional**, with the following rules:
 
-The optimizer requires knowing what RTP to optimize a subset of outcomes to / how much RTP to contribute to the total RTP.
-This is especially useful for defining the hit frequency of free spins, for example.
-**2 of 3 variables need to be defined**, so the program can determine the target RTP for a set of results.
-These being: `rtp`, `avgWin`, and/or `hitRate`.
+- `hitRate` may be omitted for **at most one** target per game mode.
+  That target then **absorbs the remaining probability**. This is typically used for
+  the losing criteria (`"0"`) or the most frequent criteria of a bonus mode.
+- Targets without `rtp` / `avgWin` automatically **share the remaining RTP** of the game mode.
+  At least one multi-payout target should leave its RTP open, so the optimizer has room
+  to hit the game mode RTP exactly.
+- If all results of a criteria pay the same amount (e.g. max wins), its RTP contribution
+  is already fixed by `hitRate` alone — don't define `rtp` / `avgWin` for it.
 
-Each condition is given a `priority`. This determines the **order** in which simulations are picked
-out of the pool of all simulations. Setting priorities correctly is **very important**, because once a simulation
-is optimized, it can't be optimized again. Let's break it down with an example:
+If your targets are contradictory or mathematically impossible to satisfy with the simulated
+results, the optimizer throws a **descriptive error** telling you which target is infeasible
+and what range would be achievable.
 
-1. You have two simulations: ID 1 - free spins, and ID 2 - free spins max win.
-2. Both simulations are tagged in the records as "triggeredFreeSpins".
-3. You have two optimizer conditions: Priority 5 - selects free spins, and priority 1 - selects max wins.
-4. The free spins subset with 5 priority should get a target hit rate of 1/200,
-   and the max win subset with 1 priority should get a target hit rate of 1/500.000.
-5. The optimizer first works on simulations that match the conditions with the highest priority.
-   In this case it would get all simulations tagged as "triggeredFreeSpins" and optimize them.
-6. The "normal free spins" will get optimized and receive their target hit rate.
-   But since the max win simulations are also tagged as being free spins, those will get optimized too
-   and result in a hit rate which is way too high.
-7. All optimized simulations are removed from the pool.
-8. When it's time to optimize the max wins (with priority 1), there are actually no simulations
-   left in the pool that match the criteria, since all max wins have already been (wrongly) optimized.
-   This will not only result in an error, but also your game will be unbalanced.
+### Scaling
 
-**The highest priority should always be given to the most specific simulation subsets.**
-
-Fortunately, **Slot Engine automatically tags** every simulation **by their result set criteria**,
-creating groups of simulations that **don't overlap** one another.
-
-When creating your optimization conditions, you can **simply specify the result set criteria**
-as the only key in `searchConditions`. This way the priority won't matter at all
-(given you did not add additional records which may cause overlap).
+With scaling you can artificially increase (or decrease) the chances of certain win ranges being hit,
+reshaping the payout distribution of a criteria. The configured hit rates and RTP still hold exactly —
+scaling only changes the **shape** of the distribution.
 
 ```ts lineNumbers
-freespinsUpgradeToSuper: new OptimizationConditions({
-  rtp: 0.03,
-  hitRate: 500,
-  searchConditions: {
-    criteria: "freespinsUpgradeToSuper",
+game.configureOptimization({
+  base: {
+    targets: {
+      "0": {},
+      basegame: { hitRate: 4 },
+      freespins: {
+        hitRate: 150,
+        rtp: 0.38,
+        // Make 50x-150x freespin wins 1.2x more likely
+        scale: [{ winRange: [50, 150], factor: 1.2 }],
+      },
+      maxwin: { hitRate: 500_000 },
+    },
   },
-  priority: 4,
-}),
+})
 ```
 
-<Callout title="Developer Comment">
-  Since the optimizer is created by Stake and not the Slot Engine team, [consult their
-  docs](https://stake-engine.com/docs/math/optimization-algorithm) for any more
-  information you may need, or ask in the Stake Engine Discord server.
-</Callout>
+| Property   | Type               | Description                                                           |
+| ---------- | ------------------ | --------------------------------------------------------------------- |
+| `winRange` | `[number, number]` | The inclusive payout multiplier range the rule applies to.            |
+| `factor`   | `number`           | The factor the weights in the range are multiplied by. Must be `> 0`. |
 
-#### Properties
+## Using the optimizer manually
 
-| Property           | Type                                                   | Description                                                                                                                                            | Required |
-| ------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
-| `rtp`              | `number \| "x"`                                        | The desired RTP contribution.<br/>Total RTP of all optimization conditions should equal RTP in your game configuration.                                |          |
-| `avgWin`           | `number`                                               | The desired average win per spin.                                                                                                                      |          |
-| `hitRate`          | `number \| "x"`                                        | The desired hit rate (e.g. `200` to hit 1 in 200 spins).                                                                                               |
-| `searchConditions` | `number \| Record<string, string> \| [number, number]` | - A number (payout multiplier), e.g. `5000`<br/>- Force record values, e.g. `{ "symbolId": "scatter" }`<br/>- Payout multiplier range, e.g. `[0, 100]` |
-| `priority`         | `number`                                               | As explained in the paragraphs above.                                                                                                                  | yes      |
-
-At most one optimization condition of a game mode can have either `rtp: "x"` or `hitRate: "x"`.
-The optimizer can determine one missing value automatically.
-
-### Optimization Scaling
-
-With scaling you can artifically increase the chances of a certain win range being hit.
-**This should be used carefully!**
-
-A `new OptimizationScaling([])` **must** be provided, even if you don't intend to utilize it.
-You can just pass an empty array to the constructor.
+The optimizer is a standalone package. If you need full control — for example optimizing
+each game mode right after it finishes simulating — you can call `optimize()` yourself
+from the [`onGameModeComplete` hook](/docs/core/config/hooks#ongamemodecomplete), which exposes all file paths:
 
 ```ts lineNumbers
-scaling: new OptimizationScaling([
-  {
-    criteria: "freespins",
-    scaleFactor: 1.2,
-    winRange: [50, 150],
-    probability: 1,
-  },
+import { optimize } from "@slot-engine/optimizer"
+
+const game = createSlotGame({
   // ...
-])
+  hooks: {
+    onHandleGameFlow,
+    onGameModeComplete: async ({ mode, paths }) => {
+      await optimize({
+        input: {
+          lookupTable: paths.lookupTable(mode),
+          lookupTableSegmented: paths.lookupTableSegmented(mode),
+        },
+        output: { lookupTable: paths.lookupTablePublish(mode) },
+        cost: gameModes[mode].cost,
+        rtp: gameModes[mode].rtp,
+        targets: {
+          /* ... */
+        },
+      })
+    },
+  },
+})
 ```
 
-#### Properties
+`optimize()` reads the unoptimized lookup table, solves the optimization problem, and writes
+the optimized lookup table. Book ids, order and payouts stay identical — only the weights change.
+It returns a result object with the achieved RTP, hit rates and average wins per criteria.
 
-All properties are required.
+<Callout title="Migrating from the Rust optimizer?">
+Earlier versions of Slot Engine used Stake's Rust-based optimization program.
+The new TypeScript optimizer replaces it entirely:
 
-| Property      | Type               | Description                                                                 |
-| ------------- | ------------------ | --------------------------------------------------------------------------- |
-| `criteria`    | `string`           | The criteria name of a result set or optimization conditions, respectively. |
-| `scaleFactor` | `number`           | The factor which the odds of hitting the win range is multiplied by.        |
-| `winRange`    | `[number, number]` | The target win range, e.g. `[50, 150]`.                                     |
-| `probability` | `number`           | The probability (0-1) of the scaling being actually applied. Typically 1.   |
+- `OptimizationConditions` → plain `targets` objects (see above). `searchConditions` and
+  `priority` are no longer needed, since targets are matched by result set criteria and
+  solved simultaneously instead of greedily.
+- `OptimizationParameters` → removed. The solver is exact and needs no tuning knobs.
+- `OptimizationScaling` → the optional `scale` array on each target.
+- Rust and cargo are no longer required.
 
-<Callout title="Developer Comment">
-  Since the optimizer is created by Stake and not the Slot Engine team, [consult their
-  docs](https://stake-engine.com/docs/math/optimization-algorithm) for any more
-  information you may need, or ask in the Stake Engine Discord server.
-</Callout>
-
-### Optimization Parameters
-
-Configure special parameters to control the optimization algorithm.
-You can just pass `new OptimizationParameters()` to apply the default settings.
-
-#### Properties
-
-All properties are optional.
-
-| Property                   | Type       |
-| -------------------------- | ---------- |
-| `numShowPigs`              | `number`   |
-| `numPigsPerFence`          | `number`   |
-| `threadsFenceConstruction` | `number`   |
-| `threadsShowConstruction`  | `number`   |
-| `testSpins`                | `number[]` |
-| `testSpinsWeights`         | `number[]` |
-| `simulationTrials`         | `number`   |
-| `graphIndexes`             | `number[]` |
-| `run1000Batch`             | `false`    |
-| `minMeanToMedian`          | `number`   |
-| `maxMeanToMedian`          | `number`   |
-| `pmbRtp`                   | `number`   |
-| `scoreType`                | `"rtp"`    |
-
-<Callout title="Developer Comment">
-  Since the optimizer is created by Stake and not the Slot Engine team, [consult their
-  docs](https://stake-engine.com/docs/math/optimization-algorithm) for any more
-  information you may need, or ask in the Stake Engine Discord server.
 </Callout>

@@ -2,9 +2,6 @@ import {
   GameMode,
   GameSymbol,
   InferGameType,
-  OptimizationConditions,
-  OptimizationParameters,
-  OptimizationScaling,
   ResultSet,
   createSlotGame,
   defineGameModes,
@@ -280,73 +277,38 @@ export const game = createSlotGame<GameType>({
 
 game.configureSimulation({
   simRunsAmount: {
-    base: 20000,
-    bonus: 20000,
+    base: 200000,
+    bonus: 200000,
   },
   concurrency: 8,
 })
 
 game.configureOptimization({
-  gameModes: {
-    base: {
-      conditions: {
-        maxwin: new OptimizationConditions({
-          rtp: 0.01,
-          avgWin: 5000,
-          searchConditions: {
-            criteria: "maxwin",
-          },
-          priority: 8,
-        }),
-        "0": new OptimizationConditions({
-          rtp: 0,
-          avgWin: 0,
-          searchConditions: 0,
-          priority: 6,
-        }),
-        freespins: new OptimizationConditions({
-          rtp: 0.38,
-          hitRate: 150,
-          searchConditions: {
-            criteria: "freespins",
-          },
-          priority: 2,
-        }),
-        basegame: new OptimizationConditions({
-          rtp: 0.57,
-          hitRate: 4,
-          priority: 1,
-        }),
-      },
-      scaling: new OptimizationScaling([]),
-      parameters: new OptimizationParameters(),
+  base: {
+    targets: {
+      // Losing books: no hitRate, so they absorb the remaining probability
+      "0": {},
+      // No rtp / avgWin, so this criteria gets the remaining RTP of the mode (0.57)
+      basegame: { hitRate: 4 },
+      freespins: { hitRate: 150, rtp: 0.38 },
+      // All maxwin books pay exactly 5000x, so the RTP contribution
+      // is fixed at 5000 / 500000 = 0.01
+      maxwin: { hitRate: 500_000 },
     },
-    bonus: {
-      conditions: {
-        maxwin: new OptimizationConditions({
-          rtp: 0.01,
-          avgWin: 5000,
-          searchConditions: 5000,
-          priority: 2,
-        }),
-        freespins: new OptimizationConditions({
-          rtp: 0.95,
-          hitRate: "x",
-          priority: 1,
-        }),
-      },
-      scaling: new OptimizationScaling([]),
-      parameters: new OptimizationParameters(),
+  },
+  bonus: {
+    targets: {
+      // Absorbs the remaining probability and gets the remaining RTP (0.95)
+      freespins: {},
+      // 5000x / (5000 * cost 100) = 0.01 RTP
+      maxwin: { hitRate: 5000 },
     },
   },
 })
 
 game.runTasks({
   doSimulation: true,
-  doOptimization: false,
-  optimizationOpts: {
-    gameModes: ["base", "bonus"],
-  },
+  doOptimization: true,
   doAnalysis: true,
   analysisOpts: {
     gameModes: ["base", "bonus"],

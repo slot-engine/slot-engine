@@ -4,6 +4,7 @@ export {
   type AnyGameModes,
   type AnySymbols,
   type GameHooks,
+  type GameModeCompleteInfo,
   type SpinType,
   type Reels,
   type LookupTable,
@@ -27,11 +28,12 @@ export { GameMode } from "./src/game-mode"
 export { GameSymbol } from "./src/game-symbol"
 export { ResultSet } from "./src/result-set"
 
+export { type OptimizationConfig } from "./src/optimizer"
 export {
-  OptimizationConditions,
-  OptimizationParameters,
-  OptimizationScaling,
-} from "./src/optimizer"
+  type GameModeOptimization,
+  type OptimizationTarget,
+  type ScaleRule,
+} from "@slot-engine/optimizer"
 
 export { parseLookupTable, parseLookupTableSegmented } from "./src/analysis/utils"
 export { type PayoutStatistics, type Statistics } from "./src/analysis"
