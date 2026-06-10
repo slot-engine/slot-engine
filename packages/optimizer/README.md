@@ -1,6 +1,9 @@
-# @slot-engine/optimizer
+# Slot Engine Optimizer
 
-Pure TypeScript lookup table optimizer for Stake Engine compatible games.
+Optimize lookup tables to reach a target RTP.
+
+[📖 Documentation](https://slot-engine.dev)
+
 
 ## Usage
 

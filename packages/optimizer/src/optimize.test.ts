@@ -302,14 +302,14 @@ describe("optimize", () => {
         "0": {},
         basegame: { hitRate: 4 },
         // claims all books paying >= 500x, regardless of criteria
-        bigwins: { match: { winRange: [500, 5000] }, hitRate: 5000, rtp: 0.1 },
+        bigwins: { match: { winRange: [500, 5000] }, hitRate: 5000, rtp: 0.2 },
         freespins: { hitRate: 150 },
       },
     })
 
     expect(result.rtp).toBeCloseTo(0.96, 6)
     expect(result.criteria.bigwins!.hitRate).toBeCloseTo(5000, 0)
-    expect(result.criteria.bigwins!.rtp).toBeCloseTo(0.1, 6)
+    expect(result.criteria.bigwins!.rtp).toBeCloseTo(0.2, 6)
     expect(result.criteria.bigwins!.minWin).toBeGreaterThanOrEqual(500)
     expect(result.criteria.bigwins!.maxWin).toBe(5000)
     // freespins target only keeps its books below 500x

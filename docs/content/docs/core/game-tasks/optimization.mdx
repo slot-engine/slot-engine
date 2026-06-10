@@ -104,11 +104,14 @@ so you don't need to define it again.
 
 ### Optimization Targets
 
-Each `ResultSet` of a game mode must have a corresponding optimization target, named after its criteria.
-A target defines **how often** the criteria occurs, and **how much** it pays out:
+By default, each `ResultSet` of a game mode must have a corresponding optimization target, named after its criteria.
+Define `match` to target books by tags, payout ranges and/or criteria instead — see [matching books](#matching-books).
+
+A target defines **which books** it applies to, **how often** it occurs, and **how much** it pays out:
 
 | Property  | Type          | Description                                                                                                              |
 | --------- | ------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `match`   | `TargetMatch` | Optionally restrict this target to books matching the given tags, payout range and/or criteria. See [matching books](#matching-books). |
 | `hitRate` | `number`      | The target hit rate as "1 in N spins", e.g. `150` to hit once every 150 spins.                                           |
 | `rtp`     | `number`      | The target RTP contribution as a fraction of the bet cost, e.g. `0.38`. All contributions must sum to the game mode RTP. |
 | `avgWin`  | `number`      | The target average payout multiplier per hit, e.g. `5000`. Alternative to `rtp` (don't define both).                     |
@@ -128,6 +131,76 @@ A target defines **how often** the criteria occurs, and **how much** it pays out
 If your targets are contradictory or mathematically impossible to satisfy with the simulated
 results, the optimizer throws a **descriptive error** telling you which target is infeasible
 and what range would be achievable.
+
+### Matching Books
+
+By default, a target's key must equal a `ResultSet` criteria name and the target applies to
+**all books of that criteria**. Define `match` to instead select books by **payout range**,
+**tags** and/or **criteria** — the target's key then becomes just a label.
+
+```ts lineNumbers
+game.configureOptimization({
+  base: {
+    targets: {
+      "0": {},
+      basegame: { hitRate: 4 },
+      // claims all books paying 500x or more, regardless of criteria
+      bigwins: { match: { winRange: [500, 5000] }, hitRate: 5000, rtp: 0.1 },
+      freespins: { hitRate: 150 },
+    },
+  },
+})
+```
+
+| Property   | Type                                           | Description                                                                                                       |
+| ---------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `criteria` | `string \| string[]`                            | Match books belonging to one or more `ResultSet` criteria.                                                       |
+| `tags`     | `Record<string, string \| number \| boolean>`   | Match books tagged with **all** of the given properties via [`tag()`](/docs/core/game-context/data-service#tag). |
+| `winRange` | `[number, number]`                              | Match books whose payout multiplier falls within the inclusive range `[min, max]`.                               |
+
+If multiple `match` properties are defined, **all of them must match**. E.g. combining
+`criteria` and `winRange` matches only books of that criteria that also fall within the payout range.
+
+#### Matching by tags
+
+Tag books during simulation with [`ctx.services.data.tag()`](/docs/core/game-context/data-service#tag),
+then match them by that tag:
+
+```ts lineNumbers
+// in your game logic, e.g. when a retrigger occurs
+ctx.services.data.tag({ retrigger: true })
+```
+
+```ts lineNumbers
+game.configureOptimization({
+  base: {
+    targets: {
+      "0": {},
+      basegame: { hitRate: 4 },
+      retriggers: { match: { tags: { retrigger: true } }, hitRate: 400, rtp: 0.15 },
+      freespins: { hitRate: 150, rtp: 0.3 },
+      maxwin: { hitRate: 500_000 },
+    },
+  },
+})
+```
+
+#### Matching order
+
+- Targets with `match` claim their books **before** plain criteria targets, **in the order they
+  are defined** — the first matching target wins.
+- Books not claimed by any `match` target fall back to the target whose key equals their
+  `ResultSet` criteria.
+- Every book must end up covered by **exactly one** target. The optimizer throws if any books
+  remain unmatched, or if a target (matcher or criteria) doesn't match any books.
+
+<Callout type="warn" title="Order matters">
+Because matchers claim books before criteria fallbacks, a `match` target can "steal" books from a
+criteria target declared elsewhere. In the example above, books from `basegame` paying 500x or
+more are assigned to `bigwins`, not `basegame` — even though `basegame` is also a target. This
+shrinks `basegame`'s payout range, which can change how aggressively its remaining books need to
+be tilted to hit its configured hit rate / RTP.
+</Callout>
 
 ### Scaling
 
