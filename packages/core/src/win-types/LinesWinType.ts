@@ -172,7 +172,7 @@ export class LinesWinType extends WinType {
 
       lineWins.push(finalLine)
 
-      this.ctx.services.data.recordSymbolOccurrence({
+      this.ctx.services.data.tagSymbolOccurrence({
         kind: finalLine.kind,
         symbolId: finalLine.baseSymbol.id,
         spinType: this.ctx.state.currentSpinType,

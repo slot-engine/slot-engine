@@ -228,9 +228,9 @@ const Filters = ({ mode, filters, onValueChange }: FiltersProps) => {
   const { gameId } = useGameContext()
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["game", "force-keys", gameId, mode],
+    queryKey: ["game", "tag-keys", gameId, mode],
     queryFn: async () => {
-      return await query.gameForceKeys(gameId, mode)
+      return await query.gameTagKeys(gameId, mode)
     },
   })
 
@@ -240,13 +240,13 @@ const Filters = ({ mode, filters, onValueChange }: FiltersProps) => {
     ))
   }
 
-  const allFilters = Object.keys(data.forceKeys)
+  const allFilters = Object.keys(data.tagKeys)
   const availableFilters = allFilters.filter((f) => !filters.find((ff) => ff.name === f))
   const availableValuesForFilter = (name: string) => {
     const values = new Set<string>()
-    const options = data.forceKeys[name]
+    const options = data.tagKeys[name]
     if (!Array.isArray(options)) return ["some weird error occurred, try reloading"]
-    for (const val of data.forceKeys[name]) {
+    for (const val of data.tagKeys[name]) {
       values.add(val)
     }
     return Array.from(values)

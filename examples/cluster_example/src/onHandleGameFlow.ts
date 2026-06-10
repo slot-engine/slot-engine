@@ -257,19 +257,19 @@ function checkFreespins(ctx: Context) {
       },
     })
 
-    // We can optionally record how many scatters triggered the free spins
-    ctx.services.data.recordSymbolOccurrence({
+    // We can optionally tag how many scatters triggered the free spins
+    ctx.services.data.tagSymbolOccurrence({
       kind: scatCount,
       symbolId: scatter.id,
       spinType: ctx.state.currentSpinType,
     })
 
-    ctx.services.data.record({
+    ctx.services.data.tag({
       triggeredFS: true,
     })
 
     playFreeSpins(ctx)
-    // We return here to avoid recording a retrigger event right after all free spins were played
+    // We return here to avoid tagging a retrigger event right after all free spins were played
     return
   }
 

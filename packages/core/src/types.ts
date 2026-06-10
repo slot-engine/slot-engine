@@ -45,7 +45,7 @@ export interface GameHooks<
    * - Tumbling mechanics
    * - Updating wallet
    * - Handling free spins
-   * - Recording events
+   * - Tagging events
    * - ... and everything in between.
    *
    * You can access the config and state from the context.

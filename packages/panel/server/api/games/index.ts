@@ -9,7 +9,7 @@ import {
   APIGameSimSummaryResponse,
   APIGameExploreResponse,
   APIGameExploreBookResponse,
-  APIGameForceKeysResponse,
+  APIGameTagKeysResponse,
   APIGameGetBetSimConfResponse,
   APIGamePostBetSimConfResponse,
   APIGamePostBetSimRunResponse,
@@ -23,7 +23,7 @@ import {
   assignColorsToSymbols,
   exploreLookupTable,
   getBook,
-  getForceKeys,
+  getTagKeys,
   getGameById,
   getGameInfo,
   getReelSets,
@@ -175,7 +175,7 @@ app.post("/:id/sim-run", async (c) => {
     doAnalysis: true,
     analysisOpts: {
       gameModes: Object.keys(config.simulation.simRunsAmount),
-      recordStats: [
+      tagStats: [
         { groupBy: ["symbolId", "kind", "spinType"] },
         { groupBy: ["criteria"] },
       ],
@@ -220,7 +220,7 @@ app.get("/:id/sim-summary", (c) => {
   return c.json<APIGameSimSummaryResponse>({ summary })
 })
 
-app.get("/:id/force-keys/:mode", (c) => {
+app.get("/:id/tag-keys/:mode", (c) => {
   const gameId = c.req.param("id")
   const game = getGameById(gameId, c)
 
@@ -229,13 +229,13 @@ app.get("/:id/force-keys/:mode", (c) => {
   }
 
   const mode = c.req.param("mode")
-  const forceKeys = getForceKeys({ game, mode })
+  const tagKeys = getTagKeys({ game, mode })
 
-  if (!forceKeys) {
+  if (!tagKeys) {
     return c.json<APIMessageResponse>({ message: "Not found" }, 404)
   }
 
-  return c.json<APIGameForceKeysResponse>({ forceKeys })
+  return c.json<APIGameTagKeysResponse>({ tagKeys })
 })
 
 app.get("/:id/explore/:mode", async (c) => {

@@ -136,7 +136,7 @@ export class ManywaysWinType extends WinType {
           payout: totalPayout,
         })
 
-        this.ctx.services.data.recordSymbolOccurrence({
+        this.ctx.services.data.tagSymbolOccurrence({
           kind: wayLength,
           symbolId: winBaseSymbol.id,
           spinType: this.ctx.state.currentSpinType,

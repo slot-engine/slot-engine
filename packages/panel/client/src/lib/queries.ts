@@ -8,7 +8,7 @@ import {
   type APIGameSimSummaryResponse,
   type APIGameExploreResponse,
   type APIGameExploreBookResponse,
-  type APIGameForceKeysResponse,
+  type APIGameTagKeysResponse,
   type APIGameGetBetSimConfResponse,
   type APIGamePostBetSimConfResponse,
   type APIGamePostSimConfResponse,
@@ -84,8 +84,8 @@ export const query = {
   },
   gameExploreBook: (id: string, mode: string, bookId: number) =>
     api<APIGameExploreBookResponse>(`games/${id}/explore/${mode}/${bookId}`),
-  gameForceKeys: (id: string, mode: string) =>
-    api<APIGameForceKeysResponse>(`games/${id}/force-keys/${mode}`),
+  gameTagKeys: (id: string, mode: string) =>
+    api<APIGameTagKeysResponse>(`games/${id}/tag-keys/${mode}`),
   gameStatsSummary: (id: string) =>
     api<APIGameStatsSummaryResponse>(`games/${id}/stats-summary`),
   gameStatsPayouts: (id: string) =>

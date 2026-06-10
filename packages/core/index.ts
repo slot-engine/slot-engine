@@ -38,7 +38,7 @@ export {
 export { parseLookupTable, parseLookupTableSegmented } from "./src/analysis/utils"
 export { type PayoutStatistics, type Statistics } from "./src/analysis"
 
-export { type RecordItem } from "./src/recorder"
+export { type TagItem } from "./src/tagger"
 
 export { type SimulationSummary } from "./src/simulation"
 

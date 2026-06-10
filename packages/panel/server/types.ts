@@ -146,8 +146,8 @@ export type APIGameExploreBookResponse = {
   book: WrittenBook
 }
 
-export type APIGameForceKeysResponse = {
-  forceKeys: Record<string, string[]>
+export type APIGameTagKeysResponse = {
+  tagKeys: Record<string, string[]>
 }
 
 export type APIGameGetBetSimConfResponse = {

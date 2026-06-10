@@ -13,14 +13,14 @@ export type PermanentFilePaths = {
   lookupTableSegmented: (mode: string) => string
   lookupTableSegmentedIndex: (mode: string) => string
   lookupTablePublish: (mode: string) => string
-  forceRecords: (mode: string) => string
-  forceKeys: (mode: string) => string
+  tags: (mode: string) => string
+  tagKeys: (mode: string) => string
   indexJson: string
   publishFiles: string
   simulationSummary: string
   statsPayouts: string
   statsSummary: string
-  statsRecords: string
+  statsTags: string
   frontendConfig: string
 }
 
@@ -28,7 +28,7 @@ export type TemporaryFilePaths = {
   tempBooks: (mode: string, i: number) => string
   tempLookupTable: (mode: string, i: number) => string
   tempLookupTableSegmented: (mode: string, i: number) => string
-  tempRecords: (mode: string) => string
+  tempTags: (mode: string) => string
 }
 
 export type FilePaths = PermanentFilePaths & TemporaryFilePaths
@@ -58,14 +58,14 @@ export function createPermanentFilePaths(basePath: string): PermanentFilePaths {
       path.join(basePath, `lookUpTableSegmented_${mode}.index`),
     lookupTablePublish: (mode: string) =>
       path.join(basePath, "publish_files", `lookUpTable_${mode}_0.csv`),
-    forceRecords: (mode: string) => path.join(basePath, `force_record_${mode}.json`),
-    forceKeys: (mode: string) => path.join(basePath, `force_keys_${mode}.json`),
+    tags: (mode: string) => path.join(basePath, `tags_${mode}.json`),
+    tagKeys: (mode: string) => path.join(basePath, `tag_keys_${mode}.json`),
     indexJson: path.join(basePath, "publish_files", "index.json"),
     publishFiles: path.join(basePath, "publish_files"),
     simulationSummary: path.join(basePath, "simulation_summary.json"),
     statsPayouts: path.join(basePath, "stats_payouts.json"),
     statsSummary: path.join(basePath, "stats_summary.json"),
-    statsRecords: path.join(basePath, "stats_records.json"),
+    statsTags: path.join(basePath, "stats_tags.json"),
     frontendConfig: path.join(basePath, "frontend_config.json"),
   }
 }
@@ -81,7 +81,7 @@ export function createTemporaryFilePaths(
       path.join(basePath, tempFolder, `temp_lookup_${mode}_${i}.csv`),
     tempLookupTableSegmented: (mode: string, i: number) =>
       path.join(basePath, tempFolder, `temp_lookup_segmented_${mode}_${i}.csv`),
-    tempRecords: (mode: string) =>
-      path.join(basePath, tempFolder, `temp_records_${mode}.jsonl`),
+    tempTags: (mode: string) =>
+      path.join(basePath, tempFolder, `temp_tags_${mode}.jsonl`),
   }
 }

@@ -1,6 +1,6 @@
 import { AbstractService } from "."
 import { GameContext } from "../game-context"
-import { Recorder } from "../recorder"
+import { Tagger } from "../tagger"
 import { AnyGameModes, AnySymbols, AnyUserData, SpinType } from "../types"
 import { Book, BookEvent } from "../book"
 import { isMainThread, parentPort } from "worker_threads"
@@ -10,7 +10,7 @@ export class DataService<
   TSymbols extends AnySymbols = AnySymbols,
   TUserState extends AnyUserData = AnyUserData,
 > extends AbstractService {
-  private recorder!: Recorder
+  private tagger!: Tagger
   private book!: Book
 
   constructor(ctx: () => GameContext<TGameModes, TSymbols, TUserState>) {
@@ -21,8 +21,8 @@ export class DataService<
   /**
    * Intended for internal use only.
    */
-  _setRecorder(recorder: Recorder) {
-    this.recorder = recorder
+  _setTagger(tagger: Tagger) {
+    this.tagger = tagger
   }
 
   /**
@@ -42,39 +42,39 @@ export class DataService<
   /**
    * Intended for internal use only.
    */
-  _getRecorder() {
-    return this.recorder
+  _getTagger() {
+    return this.tagger
   }
 
   /**
    * Intended for internal use only.
    */
-  _getRecords() {
-    return this.recorder.records
+  _getTags() {
+    return this.tagger.tags
   }
 
   /**
-   * Record data for statistical analysis.
+   * Tag the current simulation for statistical analysis and book filtering.
    */
-  record(data: Record<string, string | number | boolean>) {
+  tag(data: Record<string, string | number | boolean>) {
     const properties: Record<string, string> = {}
     for (const key in data) {
       properties[key] = String(data[key])
     }
 
-    this.recorder.pendingRecords.push({
+    this.tagger.pendingTags.push({
       bookId: this.ctx().state.currentSimulationId,
       properties,
     })
   }
 
   /**
-   * Records a symbol occurrence for statistical analysis.
+   * Tags a symbol occurrence for statistical analysis.
    *
-   * Calls `ctx.services.data.record()` with the provided data.
+   * Calls `ctx.services.data.tag()` with the provided data.
    */
-  recordSymbolOccurrence(data: { kind: number; symbolId: string; [key: string]: any }) {
-    this.record({
+  tagSymbolOccurrence(data: { kind: number; symbolId: string; [key: string]: any }) {
+    this.tag({
       ...data,
       spinType: this.ctx().state.currentSpinType,
     })
@@ -98,7 +98,7 @@ export class DataService<
   /**
    * Intended for internal use only.
    */
-  _clearPendingRecords() {
-    this.recorder.pendingRecords = []
+  _clearPendingTags() {
+    this.tagger.pendingTags = []
   }
 }

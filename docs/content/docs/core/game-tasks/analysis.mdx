@@ -23,7 +23,7 @@ game.runTasks({
   analysisOpts: {
     gameModes: ["base"],
     // Optionally analyze hit rates of tagged simulations
-    recordStats: [
+    tagStats: [
       { groupBy: ["symbolId", "kind", "spinType"] }, // Hit rates of win combinations
       { groupBy: ["criteria"] }, // Hit rates of criteria
     ],
@@ -36,21 +36,21 @@ game.runTasks({
 
 ## Analyze Hit Rates
 
-Using the option `recordStats`, you can generate the `stats_records.json` file to get
+Using the option `tagStats`, you can generate the `stats_tags.json` file to get
 a breakdown of hit rates for simulations with arbitrary tags.
 Hit rates are calculated considering the weights in the lookup table.
 
-`recordStats` is an array of configurations, where a config item is built like this:
+`tagStats` is an array of configurations, where a config item is built like this:
 
 ```ts
-interface RecordStatsConfig {
+interface TagStatsConfig {
   /**
-   * Properties to group by from the recorded search entries.
+   * Properties to group by from the tagged search entries.
    * E.g. `["symbolId", "kind", "spinType"]` for symbol hit rates.
    */
   groupBy: string[]
   /**
-   * Optional filter to only include records matching these values.
+   * Optional filter to only include tags matching these values.
    */
   filter?: Record<string, string>
   /**
@@ -62,7 +62,7 @@ interface RecordStatsConfig {
 
 The resulting file will look like this:
 
-```json title="stats_records.json"
+```json title="stats_tags.json"
 [
   {
     "gameMode": "base",
@@ -103,6 +103,6 @@ Contains a list of win ranges and how many simulations (from the final lookup ta
 
 Contains various statistics about volatility, hit rates, etc.
 
-### stats_records.json [!toc]
+### stats_tags.json [!toc]
 
 Arbitrary hit rate analysis.

@@ -20,7 +20,7 @@ import {
 import { round, writeJsonFile } from "../../utils"
 import { isMainThread } from "worker_threads"
 import { SlotGame } from "../slot-game"
-import { RecordItem } from "../recorder"
+import { TagItem } from "../tagger"
 import chalk from "chalk"
 
 export class Analysis {
@@ -31,15 +31,15 @@ export class Analysis {
   }
 
   async runAnalysis(opts: AnalysisOpts) {
-    const { gameModes, recordStats = [] } = opts
+    const { gameModes, tagStats = [] } = opts
 
     if (!isMainThread) return // IMPORTANT: Prevent workers from kicking off (multiple) analysis runs
     console.log(chalk.gray("Starting analysis..."))
 
     this.getNumberStats(gameModes)
     this.getWinRanges(gameModes)
-    if (recordStats.length > 0) {
-      this.getRecordStats(gameModes, recordStats)
+    if (tagStats.length > 0) {
+      this.getTagStats(gameModes, tagStats)
     }
 
     console.log("Analysis complete. Files written to build directory.")
@@ -257,9 +257,9 @@ export class Analysis {
     writeJsonFile(meta.paths.statsPayouts, payoutRanges)
   }
 
-  private getRecordStats(gameModes: string[], recordStatsConfig: RecordStatsConfig[]) {
+  private getTagStats(gameModes: string[], tagStatsConfig: TagStatsConfig[]) {
     const meta = this.game.getMetadata()
-    const allStats: RecordStatistics[] = []
+    const allStats: TagStatistics[] = []
 
     for (const modeStr of gameModes) {
       const lutOptimized = parseLookupTable(
@@ -271,19 +271,17 @@ export class Analysis {
         weightMap.set(bookId, weight)
       })
 
-      const forceRecordsPath = meta.paths.forceRecords(modeStr)
-      if (!fs.existsSync(forceRecordsPath)) continue
+      const tagsPath = meta.paths.tags(modeStr)
+      if (!fs.existsSync(tagsPath)) continue
 
-      const forceRecords: RecordItem[] = JSON.parse(
-        fs.readFileSync(forceRecordsPath, "utf-8"),
-      )
+      const tags: TagItem[] = JSON.parse(fs.readFileSync(tagsPath, "utf-8"))
 
-      const modeStats: RecordStatistics = {
+      const modeStats: TagStatistics = {
         gameMode: modeStr,
         groups: [],
       }
 
-      for (const config of recordStatsConfig) {
+      for (const config of tagStatsConfig) {
         const groupName = config.name || config.groupBy.join("_")
         const aggregated = new Map<
           string,
@@ -294,8 +292,8 @@ export class Analysis {
           }
         >()
 
-        for (const record of forceRecords) {
-          const searchMap = new Map(record.search.map((s) => [s.name, s.value]))
+        for (const tag of tags) {
+          const searchMap = new Map(tag.search.map((s) => [s.name, s.value]))
 
           if (config.filter) {
             let matches = true
@@ -317,18 +315,18 @@ export class Analysis {
           )
 
           let totalWeight = 0
-          for (const bookId of record.bookIds) {
+          for (const bookId of tag.bookIds) {
             totalWeight += weightMap.get(bookId) ?? 0
           }
 
           const existing = aggregated.get(key)
           if (existing) {
-            existing.count += record.timesTriggered
+            existing.count += tag.timesTriggered
             existing.totalWeight += totalWeight
           } else {
             aggregated.set(key, {
               properties,
-              count: record.timesTriggered,
+              count: tag.timesTriggered,
               totalWeight,
             })
           }
@@ -344,7 +342,7 @@ export class Analysis {
               hitRateString: `1 in ${Math.round(hitRate).toLocaleString()}`,
               hitRatePercentage: round((1 / hitRate) * 100, 4),
               hitRate,
-            } satisfies RecordStatisticsItem
+            } satisfies TagStatisticsItem
           })
           .sort((a, b) => a.hitRate - b.hitRate)
 
@@ -359,7 +357,7 @@ export class Analysis {
       allStats.push(modeStats)
     }
 
-    writeJsonFile(meta.paths.statsRecords, allStats)
+    writeJsonFile(meta.paths.statsTags, allStats)
   }
 
   private getGameModeConfig(mode: string) {
@@ -387,30 +385,30 @@ export interface AnalysisOpts {
    */
   gameModes: string[]
   /**
-   * Configure which recorded properties to analyze.
+   * Configure which tagged properties to analyze.
    * This will provide you with hit rates for the specified groupings.
    * Each entry defines a grouping strategy for statistics.
    *
    * @example
    * ```ts
-   * recordStats: [
+   * tagStats: [
    *   { groupBy: ["symbolId", "kind", "spinType"] }, // All win combinations
    *   { groupBy: ["symbolId", "kind"], filter: { spinType: "basegame" } }, // Base game win combinations only
    *   { groupBy: ["criteria"] }, // Hit rate by result set criteria
    * ]
    * ```
    */
-  recordStats?: RecordStatsConfig[]
+  tagStats?: TagStatsConfig[]
 }
 
-export interface RecordStatsConfig {
+export interface TagStatsConfig {
   /**
-   * Properties to group by from the recorded search entries.\
+   * Properties to group by from the tagged search entries.\
    * E.g. `["symbolId", "kind", "spinType"]` for symbol hit rates.
    */
   groupBy: string[]
   /**
-   * Optional filter to only include records matching these values.
+   * Optional filter to only include tags matching these values.
    */
   filter?: Record<string, string>
   /**
@@ -419,17 +417,17 @@ export interface RecordStatsConfig {
   name?: string
 }
 
-export interface RecordStatistics {
+export interface TagStatistics {
   gameMode: string
   groups: Array<{
     name: string
     groupBy: string[]
     filter?: Record<string, string>
-    items: RecordStatisticsItem[]
+    items: TagStatisticsItem[]
   }>
 }
 
-type RecordStatisticsItem = {
+type TagStatisticsItem = {
   key: string
   properties: Record<string, string>
   count: number
