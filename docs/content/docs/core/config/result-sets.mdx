@@ -133,11 +133,11 @@ because the optimizer will redistribute the weights of all simulations.
 
 ### multiplier [!toc]
 
-| Property     | Type     | Required |
-| ------------ | -------- | -------- |
-| `multiplier` | `number` |          |
+| Property     | Type                         | Required |
+| ------------ | ---------------------------- | -------- |
+| `multiplier` | `number \| [number, number]` |          |
 
-The exact payout multiplier to be hit.
+The payout multiplier to be hit. Either an exact number, or a range.
 
 ### forceMaxWin [!toc]
 
@@ -171,8 +171,8 @@ Additional data that can be used in a custom evaluation function or in your game
 
 ### evaluate [!toc]
 
-| Property   | Type                                              | Required |
-| ---------- | ------------------------------------------------- | -------- |
+| Property   | Type                            | Required |
+| ---------- | ------------------------------- | -------- |
 | `evaluate` | `(ctx: GameContext) => boolean` |          |
 
 Inject **custom checks** into the simulation evaluation logic.
@@ -227,6 +227,7 @@ you can provide an `evaluate` function that returns the desired weights.
 If the `evaluate` function returns a falsy value, the usual spin type based weights will be used.
 
 #### Example 1 [!toc]
+
 During the first spin of a "freespins" simulation (when scatters trigger FS),
 the reels with the ID `base1` will always be used to draw the board.
 
