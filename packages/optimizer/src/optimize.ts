@@ -1,6 +1,12 @@
 import fs from "fs"
 import path from "path"
-import { readLookupTable, readCriteriaMap, writeLookupTable } from "./lut"
+import {
+  readLookupTable,
+  readCriteriaMap,
+  writeLookupTable,
+  readTags,
+  getTaggedBookIds,
+} from "./lut"
 import {
   PayoutGroup,
   InfeasibleError,
@@ -16,7 +22,7 @@ const DEFAULT_PAYOUT_DIVISOR = 100
 
 interface CriteriaData {
   name: string
-  /** Indexes into the LUT arrays of all books belonging to this criteria. */
+  /** Indexes into the LUT arrays of all books belonging to this target. */
   bookIndexes: number[]
   /** Scaled prior weight per book (parallel to bookIndexes). */
   scaledPriors: number[]
@@ -24,7 +30,7 @@ interface CriteriaData {
   groupIndexes: number[]
   /** Unique payouts (multiplier units) with prior masses. */
   group: PayoutGroup
-  /** Target probability of this criteria occurring. */
+  /** Target probability of this target group occurring. */
   probability: number
 }
 
@@ -43,7 +49,7 @@ export async function optimize(opts: OptimizeOptions): Promise<OptimizeResult> {
   const lut = await readLookupTable(opts.input.lookupTable)
   const criteriaMap = await readCriteriaMap(opts.input.lookupTableSegmented)
 
-  const criteriaData = groupByCriteria(lut, criteriaMap, opts, payoutDivisor)
+  const criteriaData = groupByTarget(lut, criteriaMap, opts, payoutDivisor)
   assignProbabilities(criteriaData, opts)
   const tilts = solveTilts(criteriaData, opts)
 
@@ -104,6 +110,36 @@ function validateOptions(
         `Optimization target "${criteria}" defines both "rtp" and "avgWin". Define at most one of them.`,
       )
     }
+    if (target.match !== undefined) {
+      const { criteria: matchCriteria, tags, winRange } = target.match
+      if (matchCriteria === undefined && tags === undefined && winRange === undefined) {
+        throw new Error(
+          `Optimization target "${criteria}" has an empty "match". Define at least one of "criteria", "tags" or "winRange", or omit "match" to target the criteria "${criteria}".`,
+        )
+      }
+      if (matchCriteria !== undefined && [matchCriteria].flat().length === 0) {
+        throw new Error(
+          `Optimization target "${criteria}" has an empty "match.criteria" array.`,
+        )
+      }
+      if (tags !== undefined) {
+        if (Object.keys(tags).length === 0) {
+          throw new Error(
+            `Optimization target "${criteria}" has an empty "match.tags" object.`,
+          )
+        }
+        if (!opts.input.tags) {
+          throw new Error(
+            `Optimization target "${criteria}" matches by tags, but "input.tags" (path to the tags file) is not set.`,
+          )
+        }
+      }
+      if (winRange !== undefined && winRange[0] > winRange[1]) {
+        throw new Error(
+          `Optimization target "${criteria}" has an invalid "match.winRange": [${winRange}]. Min must be <= max.`,
+        )
+      }
+    }
     if (target.hitRate !== undefined && !(target.hitRate >= 1)) {
       throw new Error(
         `Optimization target "${criteria}" has an invalid hitRate: ${target.hitRate}. Must be >= 1 (a hit rate of N means "1 in N spins").`,
@@ -143,17 +179,39 @@ function validateOptions(
   }
 }
 
-function groupByCriteria(
+function groupByTarget(
   lut: { ids: number[]; weights: number[]; payouts: number[] },
   criteriaMap: Map<number, string>,
   opts: OptimizeOptions,
   payoutDivisor: number,
 ) {
-  // Collect books per criteria
-  const byCriteria = new Map<
+  const targetEntries = Object.entries(opts.targets)
+
+  // Precompute matcher data for targets with an explicit "match".
+  // They claim books first, in the order they are defined (first match wins).
+  const tags = targetEntries.some(([, t]) => t.match?.tags)
+    ? readTags(opts.input.tags!)
+    : []
+
+  const matchers = targetEntries
+    .filter(([, t]) => t.match)
+    .map(([name, t]) => ({
+      name,
+      criteriaSet: t.match!.criteria ? new Set([t.match!.criteria].flat()) : undefined,
+      taggedBookIds: t.match!.tags ? getTaggedBookIds(tags, t.match!.tags) : undefined,
+      winRange: t.match!.winRange,
+    }))
+
+  const criteriaTargetNames = new Set(
+    targetEntries.filter(([, t]) => !t.match).map(([name]) => name),
+  )
+
+  // Assign every book to exactly one target
+  const byTarget = new Map<
     string,
     { bookIndexes: number[]; scaledPriors: number[]; payoutMultipliers: number[] }
   >()
+  const unmatched = new Map<string, number>() // criteria -> count
 
   for (let i = 0; i < lut.ids.length; i++) {
     const id = lut.ids[i]!
@@ -164,17 +222,34 @@ function groupByCriteria(
       )
     }
 
-    let entry = byCriteria.get(criteria)
-    if (!entry) {
-      entry = { bookIndexes: [], scaledPriors: [], payoutMultipliers: [] }
-      byCriteria.set(criteria, entry)
+    const x = lut.payouts[i]! / payoutDivisor
+
+    let assigned: string | undefined
+    for (const m of matchers) {
+      if (m.criteriaSet && !m.criteriaSet.has(criteria)) continue
+      if (m.winRange && (x < m.winRange[0] || x > m.winRange[1])) continue
+      if (m.taggedBookIds && !m.taggedBookIds.has(id)) continue
+      assigned = m.name
+      break
+    }
+    if (assigned === undefined && criteriaTargetNames.has(criteria)) {
+      assigned = criteria
+    }
+    if (assigned === undefined) {
+      unmatched.set(criteria, (unmatched.get(criteria) ?? 0) + 1)
+      continue
     }
 
-    const x = lut.payouts[i]! / payoutDivisor
-    const target = opts.targets[criteria]
+    let entry = byTarget.get(assigned)
+    if (!entry) {
+      entry = { bookIndexes: [], scaledPriors: [], payoutMultipliers: [] }
+      byTarget.set(assigned, entry)
+    }
+
+    const target = opts.targets[assigned]!
 
     let prior = lut.weights[i]!
-    if (target?.scale) {
+    if (target.scale) {
       for (const rule of target.scale) {
         if (x >= rule.winRange[0] && x <= rule.winRange[1]) {
           prior *= rule.factor
@@ -187,27 +262,32 @@ function groupByCriteria(
     entry.payoutMultipliers.push(x)
   }
 
-  // Validate target <-> criteria coverage
-  const targetNames = Object.keys(opts.targets)
-  const missingTargets = [...byCriteria.keys()].filter((c) => !targetNames.includes(c))
-  if (missingTargets.length > 0) {
+  if (unmatched.size > 0) {
+    const details = [...unmatched.entries()]
+      .map(([c, n]) => `${n} books of criteria "${c}"`)
+      .join(", ")
     throw new Error(
-      `No optimization target defined for criteria: ${missingTargets.map((c) => `"${c}"`).join(", ")}.`,
+      `Some books are not covered by any optimization target: ${details}. ` +
+        `Every book must be covered by exactly one target.`,
     )
   }
-  const unknownTargets = targetNames.filter((c) => !byCriteria.has(c))
-  if (unknownTargets.length > 0) {
+
+  const emptyTargets = targetEntries
+    .map(([name]) => name)
+    .filter((name) => !byTarget.has(name))
+  if (emptyTargets.length > 0) {
     throw new Error(
-      `Optimization targets defined for criteria that do not exist in the lookup table: ${unknownTargets
+      `Optimization targets that do not match any books: ${emptyTargets
         .map((c) => `"${c}"`)
-        .join(", ")}.`,
+        .join(", ")}. ` +
+        `Check the target keys (ResultSet criteria) and "match" definitions.`,
     )
   }
 
   // Build unique payout groups
   const criteriaData = new Map<string, CriteriaData>()
 
-  for (const [name, entry] of byCriteria) {
+  for (const [name, entry] of byTarget) {
     const uniquePayouts = [...new Set(entry.payoutMultipliers)].sort((a, b) => a - b)
     const payoutToGroup = new Map<number, number>()
     uniquePayouts.forEach((x, j) => payoutToGroup.set(x, j))

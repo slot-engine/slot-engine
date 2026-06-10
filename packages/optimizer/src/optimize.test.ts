@@ -263,7 +263,7 @@ describe("optimize", () => {
           freespins: { hitRate: 150 },
         },
       }),
-    ).rejects.toThrow(/No optimization target defined for criteria: "maxwin"/)
+    ).rejects.toThrow(/not covered by any optimization target.*"maxwin"/)
   })
 
   it("rejects infeasible targets with a helpful error", async () => {
@@ -286,5 +286,180 @@ describe("optimize", () => {
         },
       }),
     ).rejects.toThrow(/infeasible/)
+  })
+
+  it("matches books by winRange with fallback to criteria targets", async () => {
+    const books = makeBooks()
+    const { lutPath, segPath, outPath } = writeFixture(books)
+
+    const result = await optimize({
+      input: { lookupTable: lutPath, lookupTableSegmented: segPath },
+      output: { lookupTable: outPath },
+      cost: 1,
+      rtp: 0.96,
+      verbose: false,
+      targets: {
+        "0": {},
+        basegame: { hitRate: 4 },
+        // claims all books paying >= 500x, regardless of criteria
+        bigwins: { match: { winRange: [500, 5000] }, hitRate: 5000, rtp: 0.1 },
+        freespins: { hitRate: 150 },
+      },
+    })
+
+    expect(result.rtp).toBeCloseTo(0.96, 6)
+    expect(result.criteria.bigwins!.hitRate).toBeCloseTo(5000, 0)
+    expect(result.criteria.bigwins!.rtp).toBeCloseTo(0.1, 6)
+    expect(result.criteria.bigwins!.minWin).toBeGreaterThanOrEqual(500)
+    expect(result.criteria.bigwins!.maxWin).toBe(5000)
+    // freespins target only keeps its books below 500x
+    expect(result.criteria.freespins!.maxWin).toBeLessThan(500)
+
+    // book counts: maxwin books (10) + freespins >= 500x
+    const expectedBig = makeBooks().filter((b) => b.payoutX >= 500).length
+    expect(result.criteria.bigwins!.books).toBe(expectedBig)
+  })
+
+  it("matches books by tags", async () => {
+    const books = makeBooks()
+    const { lutPath, segPath, outPath } = writeFixture(books)
+
+    // Tag some freespins books as "retrigger"
+    const taggedIds = books
+      .filter((b) => b.criteria === "freespins")
+      .slice(0, 30)
+      .map((b) => b.id)
+    const tagsPath = path.join(dir, "tags_base.json")
+    fs.writeFileSync(
+      tagsPath,
+      JSON.stringify([
+        {
+          search: [{ name: "retrigger", value: "true" }],
+          timesTriggered: taggedIds.length,
+          bookIds: taggedIds,
+        },
+      ]),
+    )
+
+    const result = await optimize({
+      input: { lookupTable: lutPath, lookupTableSegmented: segPath, tags: tagsPath },
+      output: { lookupTable: outPath },
+      cost: 1,
+      rtp: 0.96,
+      verbose: false,
+      targets: {
+        "0": {},
+        basegame: { hitRate: 4 },
+        retriggers: { match: { tags: { retrigger: true } }, hitRate: 400, rtp: 0.15 },
+        freespins: { hitRate: 150, rtp: 0.3 },
+        maxwin: { hitRate: 100_000 },
+      },
+    })
+
+    expect(result.rtp).toBeCloseTo(0.96, 6)
+    expect(result.criteria.retriggers!.books).toBe(taggedIds.length)
+    expect(result.criteria.retriggers!.hitRate).toBeCloseTo(400, 1)
+    expect(result.criteria.retriggers!.rtp).toBeCloseTo(0.15, 6)
+    expect(result.criteria.freespins!.books).toBe(100 - taggedIds.length)
+  })
+
+  it("combines tag, criteria and winRange matchers with AND semantics and declaration order", async () => {
+    const books = makeBooks()
+    const { lutPath, segPath, outPath } = writeFixture(books)
+
+    const result = await optimize({
+      input: { lookupTable: lutPath, lookupTableSegmented: segPath },
+      output: { lookupTable: outPath },
+      cost: 1,
+      rtp: 0.96,
+      verbose: false,
+      targets: {
+        "0": {},
+        basegame: { hitRate: 4 },
+        // only freespins books paying >= 500x (AND of criteria + winRange)
+        bigfs: {
+          match: { criteria: "freespins", winRange: [500, Infinity] },
+          hitRate: 2000,
+        },
+        freespins: { hitRate: 150, rtp: 0.3 },
+        maxwin: { hitRate: 100_000 },
+      },
+    })
+
+    const expected = makeBooks().filter(
+      (b) => b.criteria === "freespins" && b.payoutX >= 500,
+    ).length
+    expect(result.criteria.bigfs!.books).toBe(expected)
+    expect(result.criteria.maxwin!.books).toBe(10) // maxwin untouched by criteria filter
+    expect(result.rtp).toBeCloseTo(0.96, 6)
+  })
+
+  it("rejects invalid match definitions", async () => {
+    const books = makeBooks()
+    const { lutPath, segPath, outPath } = writeFixture(books)
+
+    const baseOpts = {
+      input: { lookupTable: lutPath, lookupTableSegmented: segPath },
+      output: { lookupTable: outPath },
+      cost: 1,
+      rtp: 0.96,
+      verbose: false,
+    }
+
+    // Empty match
+    await expect(
+      optimize({
+        ...baseOpts,
+        targets: {
+          "0": {},
+          basegame: { hitRate: 4 },
+          freespins: { hitRate: 150 },
+          maxwin: { hitRate: 100_000 },
+          x: { match: {}, hitRate: 10 },
+        },
+      }),
+    ).rejects.toThrow(/empty "match"/)
+
+    // Tags matcher without input.tags
+    await expect(
+      optimize({
+        ...baseOpts,
+        targets: {
+          "0": {},
+          basegame: { hitRate: 4 },
+          freespins: { hitRate: 150 },
+          maxwin: { hitRate: 100_000 },
+          x: { match: { tags: { a: 1 } }, hitRate: 10 },
+        },
+      }),
+    ).rejects.toThrow(/"input.tags".*is not set/)
+
+    // Invalid winRange
+    await expect(
+      optimize({
+        ...baseOpts,
+        targets: {
+          "0": {},
+          basegame: { hitRate: 4 },
+          freespins: { hitRate: 150 },
+          maxwin: { hitRate: 100_000 },
+          x: { match: { winRange: [10, 5] }, hitRate: 10 },
+        },
+      }),
+    ).rejects.toThrow(/invalid "match.winRange"/)
+
+    // Matcher that matches no books
+    await expect(
+      optimize({
+        ...baseOpts,
+        targets: {
+          "0": {},
+          basegame: { hitRate: 4 },
+          freespins: { hitRate: 150 },
+          maxwin: { hitRate: 100_000 },
+          x: { match: { winRange: [100_000, 200_000] }, hitRate: 10 },
+        },
+      }),
+    ).rejects.toThrow(/do not match any books.*"x"/)
   })
 })

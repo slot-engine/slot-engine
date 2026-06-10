@@ -46,6 +46,7 @@ export class Optimizer {
         input: {
           lookupTable: this.gameMeta.paths.lookupTable(mode),
           lookupTableSegmented: this.gameMeta.paths.lookupTableSegmented(mode),
+          tags: this.gameMeta.paths.tags(mode),
         },
         output: {
           lookupTable: this.gameMeta.paths.lookupTablePublish(mode),
@@ -74,21 +75,30 @@ export class Optimizer {
       }
       if (!modeConfig) continue
 
-      const targets = Object.keys(modeConfig.targets)
+      // Targets with an explicit "match" are labels that match books by tags,
+      // payout ranges and/or criteria - only plain targets must match a criteria.
+      const targetEntries = Object.entries(modeConfig.targets)
+      const criteriaTargets = targetEntries
+        .filter(([, t]) => !t.match)
+        .map(([name]) => name)
+      const hasMatchers = targetEntries.some(([, t]) => t.match)
 
-      for (const rs of configMode.resultSets) {
-        if (!targets.includes(rs.criteria)) {
-          throw new Error(
-            `ResultSet criteria "${rs.criteria}" in game mode "${modeName}" does not have a corresponding optimization target defined.`,
-          )
+      if (!hasMatchers) {
+        for (const rs of configMode.resultSets) {
+          if (!criteriaTargets.includes(rs.criteria)) {
+            throw new Error(
+              `ResultSet criteria "${rs.criteria}" in game mode "${modeName}" does not have a corresponding optimization target defined.`,
+            )
+          }
         }
       }
 
       const criteriaNames = configMode.resultSets.map((rs) => rs.criteria)
-      for (const target of targets) {
+      for (const target of criteriaTargets) {
         if (!criteriaNames.includes(target)) {
           throw new Error(
-            `Optimization target "${target}" in game mode "${modeName}" does not match any ResultSet criteria.`,
+            `Optimization target "${target}" in game mode "${modeName}" does not match any ResultSet criteria. ` +
+              `Define "match" on the target to match books by tags, payout ranges or criteria instead.`,
           )
         }
       }

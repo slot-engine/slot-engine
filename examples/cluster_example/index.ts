@@ -306,9 +306,6 @@ game.runTasks({
   doAnalysis: true,
   analysisOpts: {
     gameModes: ["base", "bonus"],
-    tagStats: [
-      { groupBy: ["symbolId", "kind", "spinType"] },
-      { groupBy: ["criteria"] },
-    ],
+    tagStats: [{ groupBy: ["symbolId", "kind", "spinType"] }, { groupBy: ["criteria"] }],
   },
 })

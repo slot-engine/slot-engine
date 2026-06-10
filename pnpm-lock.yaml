@@ -136,7 +136,7 @@ importers:
   packages/core:
     dependencies:
       '@slot-engine/optimizer':
-        specifier: workspace:^
+        specifier: 0.1.0
         version: link:../optimizer
       chalk:
         specifier: 5.6.2

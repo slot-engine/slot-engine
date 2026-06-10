@@ -32,6 +32,7 @@ export { type OptimizationConfig } from "./src/optimizer"
 export {
   type GameModeOptimization,
   type OptimizationTarget,
+  type TargetMatch,
   type ScaleRule,
 } from "@slot-engine/optimizer"
 

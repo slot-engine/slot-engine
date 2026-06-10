@@ -20,38 +20,75 @@ export interface ScaleRule {
 }
 
 /**
- * The optimization target for a single criteria (ResultSet) of a game mode.
+ * Defines which books an optimization target applies to.
  *
- * - `hitRate` pins how often the criteria occurs. It may be omitted for **at most one**
- *   criteria per game mode, which then absorbs the remaining probability.
- * - `rtp` / `avgWin` (mutually exclusive) pin how much the criteria pays out.
- *   If omitted, the criteria shares the remaining RTP of the game mode with all
- *   other criteria that don't define a payout target.
+ * All specified matchers must hold (logical AND). Targets with a `match` claim
+ * their books *before* plain criteria targets, in the order they are defined —
+ * the first matching target wins. Books not claimed by any matcher fall back
+ * to the target whose key equals their ResultSet criteria.
+ */
+export interface TargetMatch {
+  /**
+   * Match books belonging to one or more ResultSet criteria.
+   */
+  criteria?: string | string[]
+  /**
+   * Match books that were tagged with all of the given properties
+   * (via `ctx.services.data.tag()`), e.g. `{ triggeredFS: true }`.
+   *
+   * Requires `input.tags` to be set.
+   */
+  tags?: Record<string, string | number | boolean>
+  /**
+   * Match books whose payout multiplier falls within the inclusive range `[min, max]`.
+   */
+  winRange?: [number, number]
+}
+
+/**
+ * The optimization target for a group of books of a game mode.
+ *
+ * By default a target matches all books of the ResultSet criteria equal to its key.
+ * Define `match` to instead target books by tags, payout ranges and/or criteria.
+ *
+ * - `hitRate` pins how often the target group occurs. It may be omitted for **at most one**
+ *   target per game mode, which then absorbs the remaining probability.
+ * - `rtp` / `avgWin` (mutually exclusive) pin how much the target group pays out.
+ *   If omitted, the group shares the remaining RTP of the game mode with all
+ *   other targets that don't define a payout target.
  */
 export interface OptimizationTarget {
   /**
-   * The target hit rate as "1 in N spins", e.g. `150` means the criteria
+   * Defines which books this target applies to.
+   *
+   * If omitted, the target matches all books of the ResultSet criteria equal
+   * to the target's key. If defined, the key is just a label and the books
+   * are matched by the given criteria, tags and/or payout range instead.
+   */
+  match?: TargetMatch
+  /**
+   * The target hit rate as "1 in N spins", e.g. `150` means the target group
    * occurs once every 150 spins on average.
    *
-   * Can be omitted for **at most one** criteria per game mode. That criteria
+   * Can be omitted for **at most one** target per game mode. That target
    * then absorbs the remaining probability (commonly the "0" / losing criteria
    * or the most frequent win criteria).
    */
   hitRate?: number
   /**
-   * The target RTP contribution of this criteria, as a fraction of the bet cost (e.g. `0.38`).
+   * The target RTP contribution of this group, as a fraction of the bet cost (e.g. `0.38`).
    *
-   * Optional: criteria without `rtp` / `avgWin` automatically share the remaining
+   * Optional: targets without `rtp` / `avgWin` automatically share the remaining
    * RTP of the game mode. Cannot be combined with `avgWin`.
    */
   rtp?: number
   /**
-   * The target average payout multiplier per hit of this criteria (e.g. `5000` for max wins).
+   * The target average payout multiplier per hit of this group (e.g. `5000` for max wins).
    * Alternative to `rtp`: the RTP contribution is derived as `avgWin / (hitRate * cost)`.
    */
   avgWin?: number
   /**
-   * Optional rules to reshape the payout distribution within this criteria.
+   * Optional rules to reshape the payout distribution within this group.
    */
   scale?: ScaleRule[]
 }
@@ -61,8 +98,11 @@ export interface OptimizationTarget {
  */
 export interface GameModeOptimization {
   /**
-   * The optimization targets, keyed by ResultSet criteria name.
-   * Every criteria of the game mode must have a target.
+   * The optimization targets. By default a target is keyed by (and matches)
+   * a ResultSet criteria name. Targets may instead define `match` to target
+   * books by tags, payout ranges and/or criteria — their key is then just a label.
+   *
+   * Every book of the game mode must be covered by exactly one target.
    */
   targets: Record<string, OptimizationTarget>
   /**
@@ -87,6 +127,11 @@ export interface OptimizeOptions extends GameModeOptimization {
      * Path to the segmented lookup table CSV.
      */
     lookupTableSegmented: string
+    /**
+     * Path to the tags JSON file (`tags_<mode>.json`).
+     * Required if any target matches by `tags`.
+     */
+    tags?: string
   }
   output: {
     /**
@@ -118,15 +163,15 @@ export interface OptimizeOptions extends GameModeOptimization {
 }
 
 /**
- * Achieved statistics for a single criteria after optimization.
+ * Achieved statistics for a single optimization target after optimization.
  */
 export interface CriteriaResult {
   /**
-   * Number of books belonging to this criteria.
+   * Number of books belonging to this target.
    */
   books: number
   /**
-   * The achieved probability of this criteria occurring on a spin.
+   * The achieved probability of this target group occurring on a spin.
    */
   probability: number
   /**
@@ -142,11 +187,11 @@ export interface CriteriaResult {
    */
   avgWin: number
   /**
-   * The lowest payout multiplier of this criteria.
+   * The lowest payout multiplier of this target group.
    */
   minWin: number
   /**
-   * The highest payout multiplier of this criteria.
+   * The highest payout multiplier of this target group.
    */
   maxWin: number
   /**
@@ -173,7 +218,7 @@ export interface OptimizeResult {
    */
   weightScale: number
   /**
-   * Achieved statistics per criteria.
+   * Achieved statistics per optimization target, keyed by target name.
    */
   criteria: Record<string, CriteriaResult>
 }

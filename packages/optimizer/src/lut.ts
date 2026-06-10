@@ -94,6 +94,53 @@ export async function readCriteriaMap(filePath: string): Promise<Map<number, str
 }
 
 /**
+ * A single tag entry from a `tags_<mode>.json` file.
+ */
+export interface TagEntry {
+  search: Array<{ name: string; value: string }>
+  bookIds: number[]
+}
+
+/**
+ * Reads a tags JSON file (`tags_<mode>.json`).
+ */
+export function readTags(filePath: string): TagEntry[] {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Tags file does not exist: ${filePath}`)
+  }
+
+  const data = JSON.parse(fs.readFileSync(filePath, "utf-8"))
+  if (!Array.isArray(data)) {
+    throw new Error(`Invalid tags file (expected a JSON array): ${filePath}`)
+  }
+
+  return data as TagEntry[]
+}
+
+/**
+ * Returns the set of book ids tagged with all of the given properties.
+ */
+export function getTaggedBookIds(
+  tags: TagEntry[],
+  filter: Record<string, string | number | boolean>,
+) {
+  const entries = Object.entries(filter).map(
+    ([name, value]) => [name, String(value)] as const,
+  )
+  const bookIds = new Set<number>()
+
+  for (const tag of tags) {
+    const matches = entries.every(([name, value]) =>
+      tag.search.some((s) => s.name === name && s.value === value),
+    )
+    if (!matches) continue
+    for (const id of tag.bookIds) bookIds.add(id)
+  }
+
+  return bookIds
+}
+
+/**
  * Writes a lookup table CSV (`bookId,weight,payout`), preserving the input order.
  */
 export async function writeLookupTable(
