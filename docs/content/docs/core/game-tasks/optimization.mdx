@@ -10,7 +10,7 @@ icon: "Rocket"
 
 After simulating and analyzing the outcomes of your game, you may notice that
 your RTP may be too high or too low and that the game may generally be unbalanced.
-To achieve a desired target RTP between 94% and 98%, the optimizer can be used.
+To achieve a desired target RTP, the optimizer can be used.
 
 The optimizer is a **first-party, pure TypeScript** package: `@slot-engine/optimizer`.
 It assigns new weights to your lookup tables so the game pays out **exactly** the configured RTP,
@@ -160,31 +160,23 @@ game.configureOptimization({
 
 ## Using the optimizer manually
 
-The optimizer is a standalone package. If you need full control — for example optimizing
-each game mode right after it finishes simulating — you can call `optimize()` yourself
-from the [`onGameModeComplete` hook](/docs/core/config/hooks#ongamemodecomplete), which exposes all file paths:
+The optimizer is a standalone package. If you need full control, you can call `optimize()` yourself:
 
 ```ts lineNumbers
 import { optimize } from "@slot-engine/optimizer"
 
-const game = createSlotGame({
-  // ...
-  hooks: {
-    onHandleGameFlow,
-    onGameModeComplete: async ({ mode, paths }) => {
-      await optimize({
-        input: {
-          lookupTable: paths.lookupTable(mode),
-          lookupTableSegmented: paths.lookupTableSegmented(mode),
-        },
-        output: { lookupTable: paths.lookupTablePublish(mode) },
-        cost: gameModes[mode].cost,
-        rtp: gameModes[mode].rtp,
-        targets: {
-          /* ... */
-        },
-      })
-    },
+await optimize({
+  input: {
+    lookupTable: "path_to_lookup_table",
+    lookupTableSegmented: "path_to_lookup_table_segmented",
+  },
+  output: {
+    lookupTable: "output_path_to_optimized_lookup_table"
+  },
+  cost: 1, // game mode cost
+  rtp: 0.96, // target RTP
+  targets: {
+    /* ... */
   },
 })
 ```

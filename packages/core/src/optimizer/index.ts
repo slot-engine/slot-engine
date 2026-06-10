@@ -60,7 +60,7 @@ export class Optimizer {
         this.gameMeta.paths.lookupTableIndex(mode),
       )
     }
-    console.log("Optimization complete. Files written to build directory.")
+    console.log("Optimization complete. Files written to publish_files directory.")
   }
 
   private verifyConfig() {

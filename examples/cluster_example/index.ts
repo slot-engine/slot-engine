@@ -277,8 +277,8 @@ export const game = createSlotGame<GameType>({
 
 game.configureSimulation({
   simRunsAmount: {
-    base: 200000,
-    bonus: 200000,
+    base: 20000,
+    bonus: 20000,
   },
   concurrency: 8,
 })
@@ -286,21 +286,15 @@ game.configureSimulation({
 game.configureOptimization({
   base: {
     targets: {
-      // Losing books: no hitRate, so they absorb the remaining probability
       "0": {},
-      // No rtp / avgWin, so this criteria gets the remaining RTP of the mode (0.57)
       basegame: { hitRate: 4 },
       freespins: { hitRate: 150, rtp: 0.38 },
-      // All maxwin books pay exactly 5000x, so the RTP contribution
-      // is fixed at 5000 / 500000 = 0.01
       maxwin: { hitRate: 500_000 },
     },
   },
   bonus: {
     targets: {
-      // Absorbs the remaining probability and gets the remaining RTP (0.95)
       freespins: {},
-      // 5000x / (5000 * cost 100) = 0.01 RTP
       maxwin: { hitRate: 5000 },
     },
   },

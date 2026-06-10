@@ -235,7 +235,6 @@ export class Simulation {
           totalSims,
         })
 
-        createDirIfNotExists(this.PATHS.optimizationFiles)
         createDirIfNotExists(this.PATHS.publishFiles)
 
         statusMessage = `Writing final files for game mode "${mode}". This may take a while...`

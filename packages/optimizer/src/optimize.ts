@@ -9,6 +9,7 @@ import {
   achievableRange,
 } from "./solver"
 import { OptimizeOptions, OptimizeResult, CriteriaResult } from "./types"
+import chalk from "chalk"
 
 const DEFAULT_WEIGHT_SCALE = 2 ** 50
 const DEFAULT_PAYOUT_DIVISOR = 100
@@ -28,15 +29,7 @@ interface CriteriaData {
 }
 
 /**
- * Optimizes a lookup table so the game pays out exactly the configured RTP,
- * with the configured hit rates and payout distribution per criteria.
- *
- * Reads the unoptimized lookup table, assigns new weights by solving a convex
- * optimization problem (minimum KL-divergence from the simulated distribution,
- * subject to hit rate and RTP constraints), and writes the optimized lookup table.
- *
- * Book ids, order and payouts of the output are identical to the input - only
- * the weights change.
+ * Optimizes a lookup table so the game pays out exactly the configured RTP.
  */
 export async function optimize(opts: OptimizeOptions): Promise<OptimizeResult> {
   const weightScale = opts.weightScale ?? DEFAULT_WEIGHT_SCALE
@@ -45,7 +38,7 @@ export async function optimize(opts: OptimizeOptions): Promise<OptimizeResult> {
 
   validateOptions(opts, weightScale, payoutDivisor)
 
-  if (verbose) console.log(`Optimizing lookup table: ${opts.input.lookupTable}`)
+  if (verbose) console.log(chalk.gray("Starting optimization..."))
 
   const lut = await readLookupTable(opts.input.lookupTable)
   const criteriaMap = await readCriteriaMap(opts.input.lookupTableSegmented)
@@ -73,7 +66,11 @@ export async function optimize(opts: OptimizeOptions): Promise<OptimizeResult> {
   fs.mkdirSync(path.dirname(opts.output.lookupTable), { recursive: true })
   await writeLookupTable(opts.output.lookupTable, lut.ids, finalWeights, lut.payouts)
 
-  if (verbose) printSummary(result, opts)
+  if (verbose) {
+    console.log(
+      `Optimization complete. Achieved RTP: ${result.rtp.toFixed(6)} (target: ${opts.rtp})`,
+    )
+  }
 
   return result
 }
@@ -418,18 +415,5 @@ function buildResult(
     rtp: totalPayout / totalWeight / opts.cost,
     weightScale,
     criteria,
-  }
-}
-
-function printSummary(result: OptimizeResult, opts: OptimizeOptions) {
-  console.log(
-    `Optimization complete. Achieved RTP: ${result.rtp.toFixed(6)} (target: ${opts.rtp})`,
-  )
-
-  for (const [name, c] of Object.entries(result.criteria)) {
-    const zeroed = c.zeroWeightBooks > 0 ? `, ${c.zeroWeightBooks} books zeroed` : ""
-    console.log(
-      `  ${name}: hit rate 1 in ${c.hitRate.toFixed(2)}, rtp ${c.rtp.toFixed(6)}, avg win ${c.avgWin.toFixed(4)}x (${c.books} books${zeroed})`,
-    )
   }
 }
