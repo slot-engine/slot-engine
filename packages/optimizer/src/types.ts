@@ -13,8 +13,8 @@ export interface ScaleRule {
    */
   winRange: [number, number]
   /**
-   * The factor to multiply the weights by. Values > 1 make results in
-   * the range more likely, values < 1 make them less likely.
+   * The factor to multiply the weights by.\
+   * Values > 1 make results in the range more likely, values < 1 make them less likely.
    */
   factor: number
 }
@@ -80,28 +80,26 @@ export interface GameModeOptimization {
 export interface OptimizeOptions extends GameModeOptimization {
   input: {
     /**
-     * Path to the unoptimized lookup table CSV (`bookId,weight,payout`).
+     * Path to the unoptimized lookup table CSV.
      */
     lookupTable: string
     /**
-     * Path to the segmented lookup table CSV (`bookId,criteria,basegameWins,freespinsWins`).
-     * Used to determine which criteria each book belongs to.
+     * Path to the segmented lookup table CSV.
      */
     lookupTableSegmented: string
   }
   output: {
     /**
      * Path the optimized lookup table CSV is written to.
-     * Book ids, order and payouts are identical to the input, only weights change.
      */
     lookupTable: string
   }
   /**
-   * The bet cost of the game mode (e.g. `1` for base, `100` for a bonus buy).
+   * The bet cost of the game mode.
    */
   cost: number
   /**
-   * The target RTP of the game mode as a fraction of the bet cost (e.g. `0.96`).
+   * The target RTP (0-1).
    */
   rtp: number
   /**

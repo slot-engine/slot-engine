@@ -17,7 +17,6 @@ export type PermanentFilePaths = {
   forceKeys: (mode: string) => string
   indexJson: string
   publishFiles: string
-  optimizationFiles: string
   simulationSummary: string
   statsPayouts: string
   statsSummary: string
@@ -62,7 +61,6 @@ export function createPermanentFilePaths(basePath: string): PermanentFilePaths {
     forceRecords: (mode: string) => path.join(basePath, `force_record_${mode}.json`),
     forceKeys: (mode: string) => path.join(basePath, `force_keys_${mode}.json`),
     indexJson: path.join(basePath, "publish_files", "index.json"),
-    optimizationFiles: path.join(basePath, "optimization_files"),
     publishFiles: path.join(basePath, "publish_files"),
     simulationSummary: path.join(basePath, "simulation_summary.json"),
     statsPayouts: path.join(basePath, "stats_payouts.json"),
