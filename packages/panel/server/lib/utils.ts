@@ -20,7 +20,7 @@ import { PanelGameConfig } from "../types"
 import chalk from "chalk"
 
 export function round(value: number, decimals: number) {
-  return Number(Math.round(Number(value + "e" + decimals)) + "e-" + decimals)
+  return Number(value.toFixed(decimals))
 }
 
 export function getGameById(gameId: string, c: Context<{ Variables: Variables }>) {
@@ -230,7 +230,7 @@ export async function readLutRows(opts: {
   offset: number
   take: number
   bookIds?: number[]
-  payoutRange: { min: number; max: number }
+  payoutRange?: { min: number; max: number }
 }) {
   const { path: filePath, indexPath, offset, take, bookIds, payoutRange } = opts
 
@@ -259,10 +259,12 @@ export async function readLutRows(opts: {
         if (!bookIds!.includes(id)) continue
       }
 
-      const payout = isSegmented
-        ? Number(cols[2]) + Number(cols[3]) // LUT segmented values are stored as decimals
-        : Number(cols[2]) / 100 // LUT values are stored as integers (payout * 100)
-      if (payout < payoutRange!.min || payout > payoutRange!.max) continue
+      if (payoutRange) {
+        const payout = isSegmented
+          ? Number(cols[2]) + Number(cols[3]) // LUT segmented values are stored as decimals
+          : Number(cols[2]) / 100 // LUT values are stored as integers (payout * 100)
+        if (payout < payoutRange.min || payout > payoutRange.max) continue
+      }
 
       rows.push(line)
       if (rows.length >= take) {
@@ -405,6 +407,9 @@ async function filterByTags(opts: {
           matches = false
           break
         }
+      }
+
+      if (matches) {
         tag.bookIds.forEach((id) => bookIds.add(id))
       }
     } catch (error) {

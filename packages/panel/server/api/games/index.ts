@@ -305,28 +305,25 @@ app.get("/:id/bet-sim-conf", (c) => {
   return c.json<APIGameGetBetSimConfResponse>({ configs: config.betSimulations })
 })
 
+const betSimConfigSchema = z.object({
+  id: z.string(),
+  players: z.object({
+    count: z.number().int().min(1).max(2000),
+    startingBalance: z.number().int().min(1).max(20_000),
+  }),
+  betGroups: z
+    .object({
+      id: z.string(),
+      mode: z.string(),
+      betAmount: z.number().min(0.1).multipleOf(0.1).max(1000),
+      spins: z.number().int().min(1).max(5000),
+    })
+    .array(),
+})
+
 app.post(
   "/:id/bet-sim-conf",
-  zValidator(
-    "json",
-    z
-      .object({
-        id: z.string(),
-        players: z.object({
-          count: z.number().int().min(1).max(2000),
-          startingBalance: z.number().int().min(1).max(20_000),
-        }),
-        betGroups: z
-          .object({
-            id: z.string(),
-            mode: z.string(),
-            betAmount: z.number().min(0.1).multipleOf(0.1).max(1000),
-            spins: z.number().int().min(1).max(5000),
-          })
-          .array(),
-      })
-      .array(),
-  ),
+  zValidator("json", betSimConfigSchema.array()),
   (c) => {
     const gameId = c.req.param("id")
     const game = getGameById(gameId, c)
@@ -347,20 +344,23 @@ app.post(
   },
 )
 
-app.post("/:id/bet-sim-run", async (c) => {
+app.post("/:id/bet-sim-run", zValidator("json", betSimConfigSchema), async (c) => {
   const gameId = c.req.param("id")
   const game = getGameById(gameId, c)
-  const config = loadOrCreatePanelGameConfig(game)
 
-  if (!game || !config) {
+  if (!game) {
     return c.json<APIMessageResponse>({ message: "Not found" }, 404)
   }
 
-  const configId = c.req.query("configId")
-  const simConfig = config.betSimulations.find((conf) => conf.id === configId)
+  // Use the posted config directly: the saved panel config may lag behind
+  // the client state, and running a stale config yields empty/zeroed results.
+  const simConfig = c.req.valid("json")
 
-  if (!simConfig) {
-    return c.json<APIMessageResponse>({ message: "Not found" }, 404)
+  if (simConfig.betGroups.length === 0) {
+    return c.json<APIMessageResponse>(
+      { message: "The bet simulation has no bet groups configured" },
+      400,
+    )
   }
 
   const results = await betSimulation(game, simConfig)

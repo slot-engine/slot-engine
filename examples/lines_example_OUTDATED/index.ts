@@ -2,9 +2,6 @@ import {
   GameMode,
   GameSymbol,
   InferGameType,
-  OptimizationConditions,
-  OptimizationParameters,
-  OptimizationScaling,
   ResultSet,
   createSlotGame,
   defineGameModes,
@@ -295,93 +292,22 @@ game.configureSimulation({
 })
 
 game.configureOptimization({
-  gameModes: {
-    base: {
-      conditions: {
-        freespinsUpgradeToSuperMaxwin: new OptimizationConditions({
-          rtp: 0.002,
-          avgWin: 2000,
-          searchConditions: {
-            criteria: "freespinsUpgradeToSuperMaxwin",
-          },
-          priority: 10,
-        }),
-        maxwin: new OptimizationConditions({
-          rtp: 0.008,
-          avgWin: 2000,
-          searchConditions: {
-            criteria: "maxwin",
-          },
-          priority: 8,
-        }),
-        "0": new OptimizationConditions({
-          rtp: 0,
-          avgWin: 0,
-          searchConditions: 0,
-          priority: 6,
-        }),
-        freespinsUpgradeToSuper: new OptimizationConditions({
-          rtp: 0.03,
-          hitRate: 500,
-          searchConditions: {
-            criteria: "freespinsUpgradeToSuper",
-          },
-          priority: 4,
-        }),
-        superFreespins: new OptimizationConditions({
-          rtp: 0.02,
-          hitRate: 500,
-          searchConditions: {
-            criteria: "superFreespins",
-          },
-          priority: 3,
-        }),
-        freespins: new OptimizationConditions({
-          rtp: 0.38,
-          hitRate: 150,
-          searchConditions: {
-            criteria: "freespins",
-          },
-          priority: 2,
-        }),
-        basegame: new OptimizationConditions({
-          rtp: 0.52,
-          hitRate: 4,
-          priority: 1,
-        }),
-      },
-      scaling: new OptimizationScaling([]),
-      parameters: new OptimizationParameters(),
+  base: {
+    targets: {
+      "0": {},
+      basegame: { hitRate: 4 },
+      freespins: { hitRate: 150, rtp: 0.38 },
+      freespinsUpgradeToSuper: { hitRate: 500, rtp: 0.03 },
+      superFreespins: { hitRate: 500, rtp: 0.02 },
+      freespinsUpgradeToSuperMaxwin: { hitRate: 1_000_000, avgWin: 2000 },
+      maxwin: { hitRate: 250_000, avgWin: 2000 },
     },
-    bonus: {
-      conditions: {
-        freespinsUpgradeToSuperMaxwin: new OptimizationConditions({
-          rtp: 0.12,
-          avgWin: 2000,
-          searchConditions: {
-            criteria: "freespinsUpgradeToSuperMaxwin",
-          },
-          priority: 10,
-        }),
-        freespinsUpgradeToSuper: new OptimizationConditions({
-          rtp: 0.24,
-          hitRate: 25,
-          searchConditions: {
-            criteria: "freespinsUpgradeToSuper",
-          },
-          priority: 5,
-        }),
-        freespins: new OptimizationConditions({
-          rtp: 0.6,
-          hitRate: "x",
-          searchConditions: {
-            criteria: "freespins",
-          },
-          priority: 1,
-        }),
-      },
-      scaling: new OptimizationScaling([]),
-      parameters: new OptimizationParameters(),
+  },
+  bonus: {
+    targets: {
+      freespins: {},
+      freespinsUpgradeToSuper: { hitRate: 25, rtp: 0.24 },
+      freespinsUpgradeToSuperMaxwin: { hitRate: 238, avgWin: 2000 },
     },
   },
 })
@@ -395,7 +321,7 @@ game.runTasks({
   doAnalysis: true,
   analysisOpts: {
     gameModes: ["base", "bonus"],
-    recordStats: [
+    tagStats: [
       { groupBy: ["symbolId", "kind", "spinType"] },
       { groupBy: ["criteria"] },
     ],
