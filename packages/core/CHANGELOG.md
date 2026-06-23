@@ -1,5 +1,24 @@
 # @slot-engine/core
 
+## 0.3.0
+
+### Minor Changes
+
+- Replaced Force Records API with Tagging API for improved clarity ([#86](https://github.com/slot-engine/slot-engine/pull/86)) - Thanks @nordowl
+
+- Introduced new optimizer that replaces the old Rust optimizer ([#87](https://github.com/slot-engine/slot-engine/pull/87)) - Thanks @nordowl
+
+### Patch Changes
+
+- ResultSet now supports multiplier range instead of single fixed value ([#84](https://github.com/slot-engine/slot-engine/pull/84)) - Thanks @nordowl
+
+- Internal performance improvements for symbols ([#84](https://github.com/slot-engine/slot-engine/pull/84)) - Thanks @nordowl
+
+- Introduce internal dry-runs for performance benefits. Add skipAttempt state ([#84](https://github.com/slot-engine/slot-engine/pull/84)) - Thanks @nordowl
+
+- Updated dependencies [[`034a62f`](https://github.com/slot-engine/slot-engine/commit/034a62f16785208ab767334c3a40c440f1f69f58)]:
+  - @slot-engine/optimizer@0.1.0
+
 ## 0.2.12
 
 ### Patch Changes
