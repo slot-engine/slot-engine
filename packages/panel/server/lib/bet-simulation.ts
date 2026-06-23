@@ -65,6 +65,7 @@ export async function betSimulation(game: SlotGame, config: BetSimulationConfig)
   )
 
   const criteriaPerGroup: Record<string, Record<string, number>> = {}
+  const groupWarnings: string[] = []
 
   let booksWithLowWeight = 0
 
@@ -107,6 +108,8 @@ export async function betSimulation(game: SlotGame, config: BetSimulationConfig)
     const selector = selectors.get(group.mode)!
     const totalCost = round(group.betAmount * mode.cost, 2)
 
+    let groupBets = 0
+
     for (const player of players) {
       for (let spin = 0; spin < group.spins; spin++) {
         if (!player.canAfford(totalCost)) break
@@ -147,28 +150,38 @@ export async function betSimulation(game: SlotGame, config: BetSimulationConfig)
           payout,
           returnMultiplier,
         })
+        groupBets++
       }
+    }
+
+    if (groupBets === 0) {
+      groupWarnings.push(
+        `No bets were placed in bet group "${group.id}" (mode "${group.mode}"): ` +
+          `a single bet costs ${totalCost} (bet ${group.betAmount} × mode cost ${mode.cost}), ` +
+          `which no player could afford. Increase the starting balance or lower the bet amount.`,
+      )
     }
   }
 
-  return getBetStats({ players, criteriaPerGroup, booksWithLowWeight })
+  return getBetStats({ players, criteriaPerGroup, booksWithLowWeight, groupWarnings })
 }
 
 function getBetStats(opts: {
   players: VirtualPlayer[]
   criteriaPerGroup: Record<string, Record<string, number>>
   booksWithLowWeight: number
+  groupWarnings: string[]
 }): BetSimulationStats {
-  const { players, criteriaPerGroup, booksWithLowWeight } = opts
+  const { players, criteriaPerGroup, booksWithLowWeight, groupWarnings } = opts
   if (players.length === 0) return createDefaultResults()
 
   const profits = players.map((p) => p.profit).sort((a, b) => a - b)
   const betCounts = players.map((p) => p.betsPlaced).sort((a, b) => a - b)
   const totalBets = betCounts.reduce((acc, curr) => acc + curr, 0)
-  const balances = players.map((p) => p.balance).sort((a, b) => a - b)
+  // Players who never placed a bet have no RTP and would skew the stats
   const playerRtps = players
-    .map((p) => (p.wager > 0 ? round((p.wager + p.profit) / p.wager, 4) : 0))
-    .filter((rtp) => Number.isFinite(rtp))
+    .filter((p) => p.wager > 0)
+    .map((p) => round((p.wager + p.profit) / p.wager, 4))
     .sort((a, b) => a - b)
 
   let longestWinStreak = 0
@@ -203,15 +216,16 @@ function getBetStats(opts: {
   }
 
   const payoutStdDev = (() => {
+    if (allReturns.length === 0) return 0
     const mean = allReturns.reduce((sum, r) => sum + r, 0) / allReturns.length
     const variance =
       allReturns.reduce((sum, r) => sum + (r - mean) ** 2, 0) / allReturns.length
     return round(Math.sqrt(variance), 4)
   })()
 
-  const warnings: string[] = []
+  const warnings: string[] = [...groupWarnings]
 
-  if (opts.booksWithLowWeight >= totalBets * 0.5) {
+  if (opts.booksWithLowWeight > 0 && opts.booksWithLowWeight >= totalBets * 0.5) {
     warnings.push(
       `${opts.booksWithLowWeight} bet results come from books with very low weight (<= 1). Is this intended?`,
     )
@@ -240,14 +254,14 @@ function getBetStats(opts: {
     longestWinStreak,
     longestLoseStreak,
     longest0Streak,
-    highestBalance: balances.at(-1)!,
-    lowestBalance: balances[0]!,
+    highestBalance: Math.max(...players.map((p) => p.highestBalance)),
+    lowestBalance: Math.min(...players.map((p) => p.lowestBalance)),
     avgRtp: playerRtps.length > 0 ? round(rtpSum / playerRtps.length, 4) : 0,
     medianRtp: percentile(playerRtps, 0.5),
     low20PercentileRtp: percentile(playerRtps, 0.2),
     high20PercentileRtp: percentile(playerRtps, 0.8),
-    highestRtp: playerRtps.at(-1)!,
-    lowestRtp: playerRtps[0]!,
+    highestRtp: playerRtps.at(-1) ?? 0,
+    lowestRtp: playerRtps[0] ?? 0,
     hits15: players.reduce((acc, curr) => acc + curr.hits15, 0),
     hits40: players.reduce((acc, curr) => acc + curr.hits40, 0),
     hits90: players.reduce((acc, curr) => acc + curr.hits90, 0),
@@ -277,6 +291,9 @@ class VirtualPlayer {
   longestLoseStreak = 0
   longest0Streak = 0
 
+  highestBalance: number
+  lowestBalance: number
+
   hits15 = 0 // 15x - 40x
   hits40 = 0 // 40x - 90x
   hits90 = 0 // 90x+
@@ -294,6 +311,8 @@ class VirtualPlayer {
     this.id = id
     this.startingBalance = startingBalance
     this.balance = startingBalance
+    this.highestBalance = startingBalance
+    this.lowestBalance = startingBalance
   }
 
   canAfford(amount: number) {
@@ -318,6 +337,8 @@ class VirtualPlayer {
     this.balance = round(this.balance - wager + payout, 2)
     this.wager = round(this.wager + wager, 2)
     this.profit = round(this.profit + payout - wager, 2)
+    this.highestBalance = Math.max(this.highestBalance, this.balance)
+    this.lowestBalance = Math.min(this.lowestBalance, this.balance)
 
     const isWin = payout >= wager
     if (isWin) {
@@ -335,6 +356,9 @@ class VirtualPlayer {
       if (payout === 0) {
         this.current0Streak++
         this.longest0Streak = Math.max(this.longest0Streak, this.current0Streak)
+      } else {
+        // A partial return (payout below the wager but > 0) still breaks the zero streak
+        this.current0Streak = 0
       }
     }
 

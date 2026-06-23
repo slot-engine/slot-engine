@@ -10,7 +10,7 @@ import {
   parseLookupTableSegmented,
   Statistics,
   type PayoutStatistics,
-  type RecordItem,
+  type TagItem,
   type SimulationSummary,
   type SlotGame,
   type WrittenBook,
@@ -20,7 +20,7 @@ import { PanelGameConfig } from "../types"
 import chalk from "chalk"
 
 export function round(value: number, decimals: number) {
-  return Number(Math.round(Number(value + "e" + decimals)) + "e-" + decimals)
+  return Number(value.toFixed(decimals))
 }
 
 export function getGameById(gameId: string, c: Context<{ Variables: Variables }>) {
@@ -183,7 +183,7 @@ export async function exploreLookupTable(opts: {
   const indexPath = meta.paths.lookupTableIndex(mode)
   const indexSegmentedPath = meta.paths.lookupTableSegmentedIndex(mode)
 
-  const bookIds = await filterForceRecords({
+  const bookIds = await filterByTags({
     game,
     mode,
     filter: filter as Record<string, string> | undefined,
@@ -230,7 +230,7 @@ export async function readLutRows(opts: {
   offset: number
   take: number
   bookIds?: number[]
-  payoutRange: { min: number; max: number }
+  payoutRange?: { min: number; max: number }
 }) {
   const { path: filePath, indexPath, offset, take, bookIds, payoutRange } = opts
 
@@ -259,10 +259,12 @@ export async function readLutRows(opts: {
         if (!bookIds!.includes(id)) continue
       }
 
-      const payout = isSegmented
-        ? Number(cols[2]) + Number(cols[3]) // LUT segmented values are stored as decimals
-        : Number(cols[2]) / 100 // LUT values are stored as integers (payout * 100)
-      if (payout < payoutRange!.min || payout > payoutRange!.max) continue
+      if (payoutRange) {
+        const payout = isSegmented
+          ? Number(cols[2]) + Number(cols[3]) // LUT segmented values are stored as decimals
+          : Number(cols[2]) / 100 // LUT values are stored as integers (payout * 100)
+        if (payout < payoutRange.min || payout > payoutRange.max) continue
+      }
 
       rows.push(line)
       if (rows.length >= take) {
@@ -356,13 +358,13 @@ export async function getBook(opts: { game: SlotGame; mode: string; bookId: numb
   return book
 }
 
-export function getForceKeys(opts: { game: SlotGame; mode: string }) {
+export function getTagKeys(opts: { game: SlotGame; mode: string }) {
   const { game, mode } = opts
-  const forceKeysPath = game.getMetadata().paths.forceKeys(mode)
-  if (!fs.existsSync(forceKeysPath)) return
+  const tagKeysPath = game.getMetadata().paths.tagKeys(mode)
+  if (!fs.existsSync(tagKeysPath)) return
 
   const data = JSON.parse(
-    fs.readFileSync(forceKeysPath, {
+    fs.readFileSync(tagKeysPath, {
       encoding: "utf-8",
     }),
   ) as Record<string, string[]>
@@ -370,7 +372,7 @@ export function getForceKeys(opts: { game: SlotGame; mode: string }) {
   return data
 }
 
-async function filterForceRecords(opts: {
+async function filterByTags(opts: {
   game: SlotGame
   mode: string
   filter: Record<string, string> | undefined
@@ -379,10 +381,10 @@ async function filterForceRecords(opts: {
 
   if (!filter || Object.keys(filter).length === 0) return []
 
-  const forceFile = game.getMetadata().paths.forceRecords(mode)
-  if (!fs.existsSync(forceFile)) return []
+  const tagsFile = game.getMetadata().paths.tags(mode)
+  if (!fs.existsSync(tagsFile)) return []
 
-  const stream = fs.createReadStream(forceFile)
+  const stream = fs.createReadStream(tagsFile)
   const rl = readline.createInterface({
     input: stream,
     crlfDelay: Infinity,
@@ -390,25 +392,28 @@ async function filterForceRecords(opts: {
 
   const bookIds = new Set<number>()
 
-  // Every unique force value fits in one line, so we can just scan the file line by line.
+  // Every unique tag fits in one line, so we can just scan the file line by line.
   for await (const l of rl) {
     // Skip empty or invalid lines, e.g. first and last lines which contain only brackets for opening/closing the array
     if (l.trim() === "" || l.length < 5) continue
 
     try {
       const line = l.trim().replace(/,$/, "") // Remove trailing comma if present
-      const record = JSON.parse(line) as RecordItem
+      const tag = JSON.parse(line) as TagItem
       let matches = true
 
       for (const [key, value] of Object.entries(filter)) {
-        if (!record.search.find((s) => s.name === key && s.value === value)) {
+        if (!tag.search.find((s) => s.name === key && s.value === value)) {
           matches = false
           break
         }
-        record.bookIds.forEach((id) => bookIds.add(id))
+      }
+
+      if (matches) {
+        tag.bookIds.forEach((id) => bookIds.add(id))
       }
     } catch (error) {
-      console.log("Error parsing force record line:", error)
+      console.log("Error parsing tag line:", error)
       continue
     }
   }

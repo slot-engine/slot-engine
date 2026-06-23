@@ -15,7 +15,7 @@ import { createGameContext, GameContext } from "../game-context"
 import { createDirIfNotExists, round, writeFile } from "../../utils"
 import { SPIN_TYPE } from "../constants"
 import { Book } from "../book"
-import { Recorder, RecordItem } from "../recorder"
+import { Tagger, TagItem } from "../tagger"
 import { Wallet } from "../wallet"
 import { ResultSet } from "../result-set"
 import { pipeline } from "stream/promises"
@@ -60,8 +60,8 @@ export class Simulation {
   private actualSims = 0
   private wallet: Wallet = new Wallet()
   private summary: SimulationSummary = {}
-  private recordsWriteStream: fs.WriteStream | undefined
-  private hasWrittenRecord = false
+  private tagsWriteStream: fs.WriteStream | undefined
+  private hasWrittenTag = false
   private readonly streamHighWaterMark = 500 * 1024 * 1024
   private readonly maxPendingSims: number
   private readonly maxHighWaterMark: number
@@ -182,7 +182,7 @@ export class Simulation {
           gameMode: mode,
           totalSims: this.simRunsAmount[mode] || 0,
         })
-        this.hasWrittenRecord = false
+        this.hasWrittenTag = false
         this.bookIndexMetas = []
         this.tempBookIndexPaths = []
         this.bookChunkIndexes = new Map()
@@ -208,13 +208,13 @@ export class Simulation {
           criteria: {},
         }
 
-        const tempRecordsPath = this.PATHS.tempRecords(mode)
+        const tempTagsPath = this.PATHS.tempTags(mode)
 
         createDirIfNotExists(this.PATHS.base)
         createDirIfNotExists(path.join(this.PATHS.base, TEMP_FOLDER))
 
-        this.recordsWriteStream = fs
-          .createWriteStream(tempRecordsPath, {
+        this.tagsWriteStream = fs
+          .createWriteStream(tempTagsPath, {
             highWaterMark: this.maxHighWaterMark,
           })
           .setMaxListeners(30)
@@ -237,7 +237,6 @@ export class Simulation {
           totalSims,
         })
 
-        createDirIfNotExists(this.PATHS.optimizationFiles)
         createDirIfNotExists(this.PATHS.publishFiles)
 
         statusMessage = `Writing final files for game mode "${mode}". This may take a while...`
@@ -297,16 +296,16 @@ export class Simulation {
           this.PATHS.lookupTableSegmentedIndex(mode),
         )
 
-        if (this.recordsWriteStream) {
+        if (this.tagsWriteStream) {
           await new Promise<void>((resolve) => {
-            this.recordsWriteStream!.end(() => {
+            this.tagsWriteStream!.end(() => {
               resolve()
             })
           })
-          this.recordsWriteStream = undefined
+          this.tagsWriteStream = undefined
         }
 
-        await this.writeRecords(mode)
+        await this.writeTags(mode)
         this.writeIndexJson()
 
         if (this.makeUncompressedBooks) {
@@ -346,6 +345,19 @@ export class Simulation {
             this.tui?.log(statusMessage)
             this.sendSimulationStatus(statusMessage)
           }
+        }
+
+        if (this.gameConfig.hooks.onGameModeComplete) {
+          statusMessage = `Running onGameModeComplete hook for mode "${mode}"...`
+          this.tui?.log(statusMessage)
+          this.sendSimulationStatus(statusMessage)
+
+          const { outputDir, rootDir, isCustomRoot, paths } = this.gameConfig
+          await this.gameConfig.hooks.onGameModeComplete({
+            mode,
+            paths,
+            metadata: { outputDir, rootDir, isCustomRoot, paths },
+          })
         }
 
         const endTime = Date.now()
@@ -652,13 +664,13 @@ export class Simulation {
               }
 
               if (
-                this.recordsWriteStream &&
-                typeof msg.recordsLines === "string" &&
-                msg.recordsLines.length
+                this.tagsWriteStream &&
+                typeof msg.tagsLines === "string" &&
+                msg.tagsLines.length
               ) {
-                const recordPrefix = this.hasWrittenRecord ? "\n" : ""
-                await write(this.recordsWriteStream, recordPrefix + msg.recordsLines)
-                this.hasWrittenRecord = true
+                const tagPrefix = this.hasWrittenTag ? "\n" : ""
+                await write(this.tagsWriteStream, tagPrefix + msg.tagsLines)
+                this.hasWrittenTag = true
               }
 
               this.wallet.mergeSerialized(msg.wallet)
@@ -741,7 +753,7 @@ export class Simulation {
         }),
       )
       ctx.services.wallet._setWallet(new Wallet())
-      ctx.services.data._setRecorder(new Recorder())
+      ctx.services.data._setTagger(new Tagger())
       this.workerCtx = ctx
     }
 
@@ -813,13 +825,13 @@ export class Simulation {
       ctx.state.triggeredMaxWin = true
     }
 
-    ctx.services.data.record({
+    ctx.services.data.tag({
       criteria: resultSet.criteria,
     })
 
     ctx.config.hooks.onSimulationAccepted?.(ctx)
 
-    this.confirmRecords(ctx)
+    this.confirmTags(ctx)
 
     // Pre-serialize the book line in the worker to avoid overhead
     const bookLine = JSON.stringify({
@@ -828,9 +840,8 @@ export class Simulation {
       events: book.events,
     })
 
-    const records = ctx.services.data._getRecords()
-    const recordsLines =
-      records.length > 0 ? records.map((r) => JSON.stringify(r)).join("\n") : ""
+    const tags = ctx.services.data._getTags()
+    const tagsLines = tags.length > 0 ? tags.map((t) => JSON.stringify(t)).join("\n") : ""
 
     parentPort?.postMessage({
       type: "complete",
@@ -842,7 +853,7 @@ export class Simulation {
       bookBasegameWins: book.basegameWins,
       bookFreespinsWins: book.freespinsWins,
       wallet: wallet.serialize(),
-      recordsLines,
+      tagsLines,
     })
   }
 
@@ -886,7 +897,7 @@ export class Simulation {
   protected resetSimulation(ctx: GameContext) {
     this.resetState(ctx)
     ctx.services.board.resetBoard()
-    ctx.services.data._getRecorder()._reset()
+    ctx.services.data._getTagger()._reset()
     ctx.services.wallet._getWallet()._reset()
     ctx.services.data
       ._getBook()
@@ -912,7 +923,7 @@ export class Simulation {
    * - Evaluating wins
    * - Updating wallet
    * - Handling free spins
-   * - Recording events
+   * - Tagging events
    *
    * You can customize the game flow by implementing the `onHandleGameFlow` hook in the game configuration.
    */
@@ -920,18 +931,18 @@ export class Simulation {
     this.gameConfig.hooks.onHandleGameFlow(ctx)
   }
 
-  private async writeRecords(mode: string) {
-    const tempRecordsPath = this.PATHS.tempRecords(mode)
-    const forceRecordsPath = this.PATHS.forceRecords(mode)
+  private async writeTags(mode: string) {
+    const tempTagsPath = this.PATHS.tempTags(mode)
+    const tagsPath = this.PATHS.tags(mode)
 
     const allSearchKeysAndValues = new Map<string, Set<string>>()
 
-    // Use a local Map to aggregate records efficiently without cluttering the main Recorder
+    // Use a local Map to aggregate tags efficiently without cluttering the main Tagger
     // Key is the stringified search criteria
-    const aggregatedRecords = new Map<string, RecordItem>()
+    const aggregatedTags = new Map<string, TagItem>()
 
-    if (fs.existsSync(tempRecordsPath)) {
-      const fileStream = fs.createReadStream(tempRecordsPath, {
+    if (fs.existsSync(tempTagsPath)) {
+      const fileStream = fs.createReadStream(tempTagsPath, {
         highWaterMark: this.streamHighWaterMark,
       })
 
@@ -942,47 +953,47 @@ export class Simulation {
 
       for await (const line of rl) {
         if (line.trim() === "") continue
-        const record: RecordItem = JSON.parse(line)
+        const tag: TagItem = JSON.parse(line)
 
-        for (const entry of record.search) {
+        for (const entry of tag.search) {
           if (!allSearchKeysAndValues.has(entry.name)) {
             allSearchKeysAndValues.set(entry.name, new Set<string>())
           }
           allSearchKeysAndValues.get(entry.name)!.add(String(entry.value))
         }
 
-        const key = JSON.stringify(record.search)
+        const key = JSON.stringify(tag.search)
 
-        let existing = aggregatedRecords.get(key)
+        let existing = aggregatedTags.get(key)
         if (!existing) {
           existing = {
-            search: record.search,
+            search: tag.search,
             timesTriggered: 0,
             bookIds: [],
           }
-          aggregatedRecords.set(key, existing)
+          aggregatedTags.set(key, existing)
         }
 
-        existing.timesTriggered += record.timesTriggered
+        existing.timesTriggered += tag.timesTriggered
 
-        for (const bookId of record.bookIds) {
+        for (const bookId of tag.bookIds) {
           existing.bookIds.push(bookId)
         }
       }
     }
 
-    fs.rmSync(forceRecordsPath, { force: true })
-    fs.rmSync(this.PATHS.forceKeys(mode), { force: true })
+    fs.rmSync(tagsPath, { force: true })
+    fs.rmSync(this.PATHS.tagKeys(mode), { force: true })
 
-    const writeStream = fs.createWriteStream(forceRecordsPath, { encoding: "utf-8" })
+    const writeStream = fs.createWriteStream(tagsPath, { encoding: "utf-8" })
     writeStream.write("[\n")
 
     let isFirst = true
-    for (const record of aggregatedRecords.values()) {
+    for (const tag of aggregatedTags.values()) {
       if (!isFirst) {
         writeStream.write(",\n")
       }
-      writeStream.write(JSON.stringify(record))
+      writeStream.write(JSON.stringify(tag))
       isFirst = false
     }
 
@@ -993,14 +1004,14 @@ export class Simulation {
       writeStream.on("finish", () => resolve())
     })
 
-    const forceJson = Object.fromEntries(
+    const tagKeysJson = Object.fromEntries(
       Array.from(allSearchKeysAndValues.entries())
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([key, values]) => [key, Array.from(values)]),
     )
-    writeFile(this.PATHS.forceKeys(mode), JSON.stringify(forceJson, null, 2))
+    writeFile(this.PATHS.tagKeys(mode), JSON.stringify(tagKeysJson, null, 2))
 
-    fs.rmSync(tempRecordsPath, { force: true })
+    fs.rmSync(tempTagsPath, { force: true })
   }
 
   private writeIndexJson() {
@@ -1160,38 +1171,38 @@ export class Simulation {
   }
 
   /**
-   * Confirms all pending records and adds them to the main records list.
+   * Confirms all pending tags and adds them to the main tags list.
    */
-  confirmRecords(ctx: GameContext) {
-    const recorder = ctx.services.data._getRecorder()
+  confirmTags(ctx: GameContext) {
+    const tagger = ctx.services.data._getTagger()
 
-    for (const pendingRecord of recorder.pendingRecords) {
-      const key = Object.keys(pendingRecord.properties)
+    for (const pendingTag of tagger.pendingTags) {
+      const key = Object.keys(pendingTag.properties)
         .sort()
-        .map((k) => `${k}:${pendingRecord.properties[k]}`)
+        .map((k) => `${k}:${pendingTag.properties[k]}`)
         .join("|")
 
-      let record = recorder.recordsMap.get(key)
-      if (!record) {
-        const search = Object.entries(pendingRecord.properties)
+      let tag = tagger.tagsMap.get(key)
+      if (!tag) {
+        const search = Object.entries(pendingTag.properties)
           .map(([name, value]) => ({ name, value }))
           .sort((a, b) => a.name.localeCompare(b.name))
 
-        record = {
+        tag = {
           search,
           timesTriggered: 0,
           bookIds: [],
         }
-        recorder.recordsMap.set(key, record)
-        recorder.records.push(record)
+        tagger.tagsMap.set(key, tag)
+        tagger.tags.push(tag)
       }
-      record.timesTriggered++
-      if (!record.bookIds.includes(pendingRecord.bookId)) {
-        record.bookIds.push(pendingRecord.bookId)
+      tag.timesTriggered++
+      if (!tag.bookIds.includes(pendingTag.bookId)) {
+        tag.bookIds.push(pendingTag.bookId)
       }
     }
 
-    recorder.pendingRecords = []
+    tagger.pendingTags = []
   }
 
   async printSimulationSummary() {

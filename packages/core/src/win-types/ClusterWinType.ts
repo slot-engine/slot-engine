@@ -148,7 +148,7 @@ export class ClusterWinType extends WinType {
         symbols,
       })
 
-      this.ctx.services.data.recordSymbolOccurrence({
+      this.ctx.services.data.tagSymbolOccurrence({
         kind,
         symbolId: baseSymbol.id,
         spinType: this.ctx.state.currentSpinType,

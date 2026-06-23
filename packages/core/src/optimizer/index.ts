@@ -1,87 +1,118 @@
-import path from "path"
-import assert from "assert"
-import { spawn } from "child_process"
 import { isMainThread } from "worker_threads"
-import { makeMathConfig } from "../utils/math-config"
-import { makeSetupFile } from "../utils/setup-file"
-import { OptimizationParameters } from "./OptimizationParameters"
-import { OptimizationConditions } from "./OptimizationConditions"
-import { OptimizationScaling } from "./OptimizationScaling"
+import { optimize, type GameModeOptimization } from "@slot-engine/optimizer"
 import { SlotGame } from "../slot-game"
 import { GameConfig, GameMetadata } from "../game-config"
+import { AnyGameModes } from "../types"
 import { makeLutIndexFromPublishLut } from "../simulation/utils"
+
+/**
+ * The optimization configuration, keyed by game mode name.
+ */
+export type OptimizationConfig<TGameModes extends AnyGameModes = AnyGameModes> = {
+  [K in keyof TGameModes]?: GameModeOptimization
+}
 
 export class Optimizer {
   protected readonly gameConfig: GameConfig
   protected readonly gameMeta: GameMetadata
-  protected readonly gameModes: OptimzierGameModeConfig
+  protected readonly config: OptimizationConfig
 
   constructor(opts: OptimizerOpts) {
     this.gameConfig = opts.game.getConfig()
     this.gameMeta = opts.game.getMetadata()
-    this.gameModes = opts.gameModes
+    this.config = opts.config
     this.verifyConfig()
   }
 
   /**
-   * Runs the optimization process, and runs analysis after.
+   * Runs the optimization for the configured game modes.
    */
-  async runOptimization({ gameModes }: OptimizationOpts) {
+  async runOptimization(opts: OptimizationOpts = {}) {
     if (!isMainThread) return // IMPORTANT: Prevent workers from kicking off (multiple) optimizations
 
-    const mathConfig = makeMathConfig(this, { writeToFile: true })
+    const configuredModes = Object.keys(this.config)
+    const modes = opts.gameModes?.length ? opts.gameModes : configuredModes
 
-    for (const mode of gameModes) {
-      const setupFile = makeSetupFile(this, mode)
-      await this.runSingleOptimization()
+    for (const mode of modes) {
+      const modeConfig = this.config[mode]
+      if (!modeConfig) {
+        throw new Error(
+          `Tried to optimize game mode "${mode}", but it has no optimization configured.`,
+        )
+      }
+      const gameMode = this.gameConfig.gameModes[mode]!
+
+      await optimize({
+        input: {
+          lookupTable: this.gameMeta.paths.lookupTable(mode),
+          lookupTableSegmented: this.gameMeta.paths.lookupTableSegmented(mode),
+          tags: this.gameMeta.paths.tags(mode),
+        },
+        output: {
+          lookupTable: this.gameMeta.paths.lookupTablePublish(mode),
+        },
+        cost: gameMode.cost,
+        rtp: gameMode.rtp,
+        ...modeConfig,
+      })
+
       await makeLutIndexFromPublishLut(
         this.gameMeta.paths.lookupTablePublish(mode),
         this.gameMeta.paths.lookupTableIndex(mode),
       )
     }
-    console.log("Optimization complete. Files written to build directory.")
-  }
-
-  private async runSingleOptimization() {
-    return await rustProgram()
+    console.log("Optimization complete. Files written to publish_files directory.")
   }
 
   private verifyConfig() {
-    for (const [k, mode] of Object.entries(this.gameModes)) {
-      const configMode = this.gameConfig.gameModes[k]
+    for (const [modeName, modeConfig] of Object.entries(this.config)) {
+      const configMode = this.gameConfig.gameModes[modeName]
 
       if (!configMode) {
         throw new Error(
-          `Game mode "${mode}" defined in optimizer config does not exist in the game config.`,
+          `Game mode "${modeName}" defined in the optimization config does not exist in the game config.`,
         )
       }
+      if (!modeConfig) continue
 
-      const conditions = Object.keys(mode.conditions)
-      const scalings = Object.keys(mode.scaling)
-      const parameters = Object.keys(mode.parameters)
+      // Targets with an explicit "match" are labels that match books by tags,
+      // payout ranges and/or criteria - only plain targets must match a criteria.
+      const targetEntries = Object.entries(modeConfig.targets)
+      const criteriaTargets = targetEntries
+        .filter(([, t]) => !t.match)
+        .map(([name]) => name)
+      const hasMatchers = targetEntries.some(([, t]) => t.match)
 
-      for (const rs of configMode.resultSets) {
-        if (!conditions.includes(rs.criteria)) {
+      if (!hasMatchers) {
+        for (const rs of configMode.resultSets) {
+          if (!criteriaTargets.includes(rs.criteria)) {
+            throw new Error(
+              `ResultSet criteria "${rs.criteria}" in game mode "${modeName}" does not have a corresponding optimization target defined.`,
+            )
+          }
+        }
+      }
+
+      const criteriaNames = configMode.resultSets.map((rs) => rs.criteria)
+      for (const target of criteriaTargets) {
+        if (!criteriaNames.includes(target)) {
           throw new Error(
-            `ResultSet criteria "${rs.criteria}" in game mode "${k}" does not have a corresponding optimization condition defined.`,
+            `Optimization target "${target}" in game mode "${modeName}" does not match any ResultSet criteria. ` +
+              `Define "match" on the target to match books by tags, payout ranges or criteria instead.`,
           )
         }
       }
 
-      let gameModeRtp = configMode.rtp
-      let paramRtp = 0
-      for (const cond of conditions) {
-        const paramConfig = mode.conditions[cond]!
-        paramRtp += Number(paramConfig.getRtp())
-      }
-
-      gameModeRtp = Math.round(gameModeRtp * 1000) / 1000
-      paramRtp = Math.round(paramRtp * 1000) / 1000
-
-      assert(
-        gameModeRtp === paramRtp,
-        `Sum of all RTP conditions (${paramRtp}) does not match the game mode RTP (${gameModeRtp}) in game mode "${k}".`,
+      const absorbers = Object.entries(modeConfig.targets).filter(
+        ([, t]) => t.hitRate === undefined,
       )
+      if (absorbers.length > 1) {
+        throw new Error(
+          `Game mode "${modeName}": only one optimization target may omit "hitRate" (it absorbs the remaining probability), but ${absorbers.length} do: ${absorbers
+            .map(([c]) => `"${c}"`)
+            .join(", ")}.`,
+        )
+      }
     }
   }
 
@@ -92,61 +123,16 @@ export class Optimizer {
   getGameMeta() {
     return this.gameMeta
   }
-
-  getOptimizerGameModes() {
-    return this.gameModes
-  }
-}
-
-async function rustProgram(...args: string[]) {
-  console.log("Starting Rust optimizer. This may take a while...")
-
-  return new Promise((resolve, reject) => {
-    const task = spawn("cargo", ["run", "-q", "--release", ...args], {
-      cwd: path.join(__dirname, "./optimizer-rust"),
-      stdio: "pipe",
-    })
-    task.on("error", (error) => {
-      console.error("Error:", error)
-      reject(error)
-    })
-    task.on("exit", () => {
-      resolve(true)
-    })
-    task.on("close", () => {
-      resolve(true)
-    })
-    task.stdout.on("data", (data) => {
-      console.log(data.toString())
-    })
-    task.stderr.on("data", (data) => {
-      console.log(data.toString())
-    })
-    task.stdout.on("error", (data) => {
-      console.log(data.toString())
-      reject(data.toString())
-    })
-  })
 }
 
 export interface OptimizationOpts {
-  gameModes: string[]
+  /**
+   * The game modes to optimize. Defaults to all configured game modes.
+   */
+  gameModes?: string[]
 }
 
 export interface OptimizerOpts {
   game: SlotGame<any, any, any>
-  gameModes: OptimzierGameModeConfig
+  config: OptimizationConfig
 }
-
-export type OptimzierGameModeConfig = Record<
-  string,
-  {
-    conditions: Record<string, OptimizationConditions>
-    scaling: OptimizationScaling
-    parameters: OptimizationParameters
-  }
->
-
-export { OptimizationConditions } from "./OptimizationConditions"
-export { OptimizationScaling } from "./OptimizationScaling"
-export { OptimizationParameters } from "./OptimizationParameters"

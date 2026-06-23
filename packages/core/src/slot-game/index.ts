@@ -2,7 +2,7 @@ import { AnyGameModes, AnySymbols, AnyUserData } from "../types"
 import { createGameConfig, GameConfigOptions } from "../game-config"
 import { Simulation, SimulationConfigOptions, SimulationOptions } from "../simulation"
 import { Analysis, AnalysisOpts } from "../analysis"
-import { OptimizationOpts, Optimizer, OptimizerOpts } from "../optimizer"
+import { OptimizationConfig, OptimizationOpts, Optimizer } from "../optimizer"
 import { isMainThread, workerData } from "worker_threads"
 import { CLI_ARGS } from "../constants"
 import { createFrontendConfig } from "../utils/frontend-config"
@@ -37,11 +37,14 @@ export class SlotGame<
   /**
    * Sets up the optimization configuration.\
    * Must be called before `runTasks()`.
+   *
+   * The keys of the config object are the game mode names, each defining
+   * the optimization targets for the criteria of that game mode.
    */
-  configureOptimization(opts: Pick<OptimizerOpts, "gameModes">) {
+  configureOptimization(config: OptimizationConfig<TGameModes>) {
     this.optimizer = new Optimizer({
       game: this,
-      gameModes: opts.gameModes,
+      config,
     })
   }
 
@@ -122,7 +125,7 @@ export class SlotGame<
     }
 
     if (opts.doOptimization) {
-      await this.runOptimization(opts.optimizationOpts || { gameModes: [] })
+      await this.runOptimization(opts.optimizationOpts || {})
 
       // Run analysis again because LUTs have changed
       if (opts.doAnalysis) {

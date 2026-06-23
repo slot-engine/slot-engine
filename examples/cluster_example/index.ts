@@ -2,9 +2,6 @@ import {
   GameMode,
   GameSymbol,
   InferGameType,
-  OptimizationConditions,
-  OptimizationParameters,
-  OptimizationScaling,
   ResultSet,
   createSlotGame,
   defineGameModes,
@@ -287,72 +284,28 @@ game.configureSimulation({
 })
 
 game.configureOptimization({
-  gameModes: {
-    base: {
-      conditions: {
-        maxwin: new OptimizationConditions({
-          rtp: 0.01,
-          avgWin: 5000,
-          searchConditions: {
-            criteria: "maxwin",
-          },
-          priority: 8,
-        }),
-        "0": new OptimizationConditions({
-          rtp: 0,
-          avgWin: 0,
-          searchConditions: 0,
-          priority: 6,
-        }),
-        freespins: new OptimizationConditions({
-          rtp: 0.38,
-          hitRate: 150,
-          searchConditions: {
-            criteria: "freespins",
-          },
-          priority: 2,
-        }),
-        basegame: new OptimizationConditions({
-          rtp: 0.57,
-          hitRate: 4,
-          priority: 1,
-        }),
-      },
-      scaling: new OptimizationScaling([]),
-      parameters: new OptimizationParameters(),
+  base: {
+    targets: {
+      "0": {},
+      basegame: { hitRate: 4 },
+      freespins: { hitRate: 150, rtp: 0.38 },
+      maxwin: { hitRate: 500_000 },
     },
-    bonus: {
-      conditions: {
-        maxwin: new OptimizationConditions({
-          rtp: 0.01,
-          avgWin: 5000,
-          searchConditions: 5000,
-          priority: 2,
-        }),
-        freespins: new OptimizationConditions({
-          rtp: 0.95,
-          hitRate: "x",
-          priority: 1,
-        }),
-      },
-      scaling: new OptimizationScaling([]),
-      parameters: new OptimizationParameters(),
+  },
+  bonus: {
+    targets: {
+      freespins: {},
+      maxwin: { hitRate: 5000 },
     },
   },
 })
 
 game.runTasks({
   doSimulation: true,
-  doOptimization: false,
-  optimizationOpts: {
-    gameModes: ["base", "bonus"],
-  },
+  doOptimization: true,
   doAnalysis: true,
   analysisOpts: {
     gameModes: ["base", "bonus"],
-    recordStats: [
-      { groupBy: ["symbolId", "kind", "spinType"] },
-      { groupBy: ["criteria"] },
-    ],
+    tagStats: [{ groupBy: ["symbolId", "kind", "spinType"] }, { groupBy: ["criteria"] }],
   },
 })

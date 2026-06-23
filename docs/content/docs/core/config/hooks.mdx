@@ -34,5 +34,30 @@ Useful to run code after completing a simulation and before continuing with the 
 
 <Callout title="Important">
   **No payouts or results should be altered using this hook!** But adding additional data
-  with `ctx.services.data.record()` is perfectly fine.
+  with `ctx.services.data.tag()` is perfectly fine.
 </Callout>
+
+### onGameModeComplete
+
+| Property             | Type                                                    | Required |
+| -------------------- | ------------------------------------------------------- | -------- |
+| `onGameModeComplete` | `(info: GameModeCompleteInfo) => void \| Promise<void>` |          |
+
+This hook is called after a game mode has been **fully simulated** and all of its files
+have been written. It only runs on the main thread, and is awaited.
+
+It receives the completed `mode` name, all file `paths` of the build directory,
+and the game `metadata`. A common use case is feeding the lookup table paths into the
+`optimize()` function of [`@slot-engine/optimizer`](/docs/core/game-tasks/optimization#using-the-optimizer-manually).
+
+```ts lineNumbers
+const game = createSlotGame({
+  // ...
+  hooks: {
+    onHandleGameFlow,
+    onGameModeComplete: async ({ mode, paths, metadata }) => {
+      console.log(`Mode ${mode} done:`, paths.lookupTable(mode))
+    },
+  },
+})
+```

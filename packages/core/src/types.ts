@@ -3,6 +3,8 @@ import { GameContext } from "./game-context"
 import { GameMode } from "./game-mode"
 import { GameSymbol } from "./game-symbol"
 import { SlotGame } from "./slot-game"
+import type { GameMetadata } from "./game-config"
+import type { PermanentFilePaths } from "./utils/file-paths"
 
 export type InferGameType<
   TGameModes extends AnyGameModes,
@@ -43,7 +45,7 @@ export interface GameHooks<
    * - Tumbling mechanics
    * - Updating wallet
    * - Handling free spins
-   * - Recording events
+   * - Tagging events
    * - ... and everything in between.
    *
    * You can access the config and state from the context.
@@ -56,6 +58,33 @@ export interface GameHooks<
    * This hook is called whenever a simulation is accepted, i.e. when the criteria of the current ResultSet is met.
    */
   onSimulationAccepted?: (ctx: GameContext<TGameModes, TSymbols, TUserState>) => void
+  /**
+   * This hook is called after a game mode has been fully simulated and all of its
+   * files have been written. It only runs on the main thread, and is awaited.
+   *
+   * It exposes the game metadata, including all file paths of the build directory.\
+   * A common use case is optimizing the lookup table of the completed game mode,
+   * e.g. by feeding the paths into the `optimize()` function of `@slot-engine/optimizer`.
+   */
+  onGameModeComplete?: (info: GameModeCompleteInfo) => void | Promise<void>
+}
+
+/**
+ * Info passed to the `onGameModeComplete` hook.
+ */
+export interface GameModeCompleteInfo {
+  /**
+   * The name of the game mode that completed.
+   */
+  mode: string
+  /**
+   * All file paths of the build directory, e.g. the lookup tables of the completed game mode.
+   */
+  paths: PermanentFilePaths
+  /**
+   * The game metadata.
+   */
+  metadata: GameMetadata
 }
 
 export type SpinType = (typeof SPIN_TYPE)[keyof typeof SPIN_TYPE]

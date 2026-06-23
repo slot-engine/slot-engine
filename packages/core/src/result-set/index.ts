@@ -120,7 +120,7 @@ export class ResultSet<TUserState extends AnyUserData> {
       customEval !== undefined ? coreCriteriaMet && customEval === true : coreCriteriaMet
 
     if (this.forceMaxWin && respectsMaxWin) {
-      ctx.services.data.record({
+      ctx.services.data.tag({
         maxwin: true,
       })
     }

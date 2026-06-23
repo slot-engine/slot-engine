@@ -5,7 +5,7 @@ import {
   GameMetadata,
 } from "../game-config"
 import { createGameState, GameState } from "../game-state"
-import { Recorder } from "../recorder"
+import { Tagger } from "../tagger"
 import { BoardService } from "../service/board"
 import { DataService } from "../service/data"
 import { GameService } from "../service/game"
@@ -77,7 +77,7 @@ export interface GameContextServices {
    */
   game: GameService
   /**
-   * Service for interacting with the book data or recorder.
+   * Service for interacting with the book data or tagger.
    */
   data: DataService
   /**
@@ -116,8 +116,8 @@ export function createTestContext(opts?: Partial<GameConfigOptions>) {
     config: { ...config, ...metadata },
   })
 
-  // it needs a recorder to work properly
-  ctx.services.data._setRecorder(new Recorder())
+  // it needs a tagger to work properly
+  ctx.services.data._setTagger(new Tagger())
 
   return ctx
 }

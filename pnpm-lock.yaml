@@ -135,6 +135,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@slot-engine/optimizer':
+        specifier: 0.1.0
+        version: link:../optimizer
       chalk:
         specifier: 5.6.2
         version: 5.6.2
@@ -153,6 +156,12 @@ importers:
         version: 17.0.35
 
   packages/lgs: {}
+
+  packages/optimizer:
+    dependencies:
+      chalk:
+        specifier: 5.6.2
+        version: 5.6.2
 
   packages/panel:
     dependencies:

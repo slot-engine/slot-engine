@@ -180,20 +180,20 @@ function checkFreespins(ctx: Context) {
   ctx.services.game.awardFreespins(freespinsAwarded)
 
   if (ctx.state.currentSpinType == SPIN_TYPE.BASE_GAME) {
-    ctx.services.data.recordSymbolOccurrence({
+    ctx.services.data.tagSymbolOccurrence({
       kind: scatters,
       symbolId: scatter.id,
       spinType: ctx.state.currentSpinType,
     })
 
-    ctx.services.data.record({
+    ctx.services.data.tag({
       triggeredFS: true,
     })
 
     // TODO FS triggered event
     if (superScatCount > 0) {
       ctx.state.userData.triggeredSuperFreespins = true
-      ctx.services.data.record({
+      ctx.services.data.tag({
         triggeredSuperFS: true,
       })
     }
@@ -208,7 +208,7 @@ function checkFreespins(ctx: Context) {
       // TODO Super FS upgrade event
       ctx.state.userData.triggeredSuperFreespins = true
       ctx.state.userData.freespinsUpgradedToSuper = true
-      ctx.services.data.record({
+      ctx.services.data.tag({
         fsUpgradeToSuper: true,
       })
     }
