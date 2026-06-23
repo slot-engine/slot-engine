@@ -1,3 +1,82 @@
+/**
+ * A copy-on-write Map used for cloned symbol properties.
+ *
+ * Cloned symbols share the source symbol's entries until the first mutation,
+ * which avoids copying entries for the vast majority of symbols that are
+ * drawn onto a board but never modified.
+ */
+export class CowPropertiesMap extends Map<string, any> {
+  private _source: Map<string, any> | null
+
+  constructor(source?: Map<string, any>) {
+    super()
+    this._source = source && source.size > 0 ? source : null
+  }
+
+  private _materialize() {
+    const source = this._source
+    if (!source) return
+    this._source = null
+    for (const [key, value] of source) {
+      super.set(key, value)
+    }
+  }
+
+  get size(): number {
+    return this._source ? this._source.size : super.size
+  }
+
+  get(key: string) {
+    return this._source ? this._source.get(key) : super.get(key)
+  }
+
+  has(key: string) {
+    return this._source ? this._source.has(key) : super.has(key)
+  }
+
+  set(key: string, value: any) {
+    this._materialize()
+    return super.set(key, value)
+  }
+
+  delete(key: string) {
+    this._materialize()
+    return super.delete(key)
+  }
+
+  clear() {
+    this._source = null
+    super.clear()
+  }
+
+  forEach(
+    callbackfn: (value: any, key: string, map: Map<string, any>) => void,
+    thisArg?: any,
+  ) {
+    if (this._source) {
+      this._source.forEach((value, key) => callbackfn.call(thisArg, value, key, this))
+      return
+    }
+    super.forEach(callbackfn, thisArg)
+  }
+
+  entries() {
+    return this._source ? this._source.entries() : super.entries()
+  }
+
+  keys() {
+    return this._source ? this._source.keys() : super.keys()
+  }
+
+  values() {
+    return this._source ? this._source.values() : super.values()
+  }
+
+  [Symbol.iterator]() {
+    return this._source ? this._source[Symbol.iterator]() : super[Symbol.iterator]()
+  }
+}
+
 export class GameSymbol {
   readonly id: string
   readonly pays?: Record<number, number>
@@ -29,7 +108,10 @@ export class GameSymbol {
       return this.id === symbolOrProperties.id
     } else {
       for (const prop in symbolOrProperties) {
-        if (!this.properties.has(prop) || this.properties.get(prop) !== symbolOrProperties[prop]) {
+        if (
+          !this.properties.has(prop) ||
+          this.properties.get(prop) !== symbolOrProperties[prop]
+        ) {
           return false
         }
       }
@@ -44,7 +126,7 @@ export class GameSymbol {
     const cloned = Object.create(GameSymbol.prototype)
     cloned.id = this.id
     cloned.pays = this.pays
-    cloned.properties = this.properties.size > 0 ? new Map(this.properties) : new Map()
+    cloned.properties = new CowPropertiesMap(this.properties)
     return cloned
   }
 }

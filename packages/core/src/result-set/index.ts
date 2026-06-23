@@ -8,7 +8,7 @@ import { SPIN_TYPE } from "../constants"
 export class ResultSet<TUserState extends AnyUserData> {
   criteria: string
   quota: number
-  multiplier?: number
+  multiplier?: number | [number, number]
   reelWeights: ReelWeights<TUserState>
   userData?: Record<string, any>
   forceMaxWin?: boolean
@@ -24,6 +24,13 @@ export class ResultSet<TUserState extends AnyUserData> {
     this.forceMaxWin = opts.forceMaxWin
     this.forceFreespins = opts.forceFreespins
     this.evaluate = opts.evaluate
+
+    if (Array.isArray(this.multiplier)) {
+      assert(
+        this.multiplier.length === 2 && this.multiplier[0] <= this.multiplier[1],
+        `ResultSet "${this.criteria}": multiplier range must be [min, max] with min <= max.`,
+      )
+    }
   }
 
   static getNumberOfSimsForCriteria(ctx: Simulation, gameModeName: string) {
@@ -90,16 +97,22 @@ export class ResultSet<TUserState extends AnyUserData> {
     const freespinsMet = this.forceFreespins ? ctx.state.triggeredFreespins : true
 
     const wallet = ctx.services.wallet._getWallet()
+    const currentWin = wallet.getCurrentWin()
 
-    const multiplierMet = this.forceMaxWin
-      ? true
-      : this.multiplier !== undefined
-        ? wallet.getCurrentWin() === this.multiplier
-        : wallet.getCurrentWin() > 0
+    let multiplierMet: boolean
+    if (this.forceMaxWin) {
+      multiplierMet = true
+    } else if (this.multiplier === undefined) {
+      multiplierMet = currentWin > 0
+    } else if (Array.isArray(this.multiplier)) {
+      multiplierMet = currentWin >= this.multiplier[0] && currentWin <= this.multiplier[1]
+    } else {
+      multiplierMet = currentWin === this.multiplier
+    }
 
     const respectsMaxWin = this.forceMaxWin
-      ? wallet.getCurrentWin() >= ctx.config.maxWinX
-      : wallet.getCurrentWin() < ctx.config.maxWinX
+      ? currentWin >= ctx.config.maxWinX
+      : currentWin < ctx.config.maxWinX
 
     const coreCriteriaMet = freespinsMet && multiplierMet && respectsMaxWin
 
@@ -128,8 +141,13 @@ interface ResultSetOpts<TUserState extends AnyUserData> {
   quota: number
   /**
    * The required multiplier for a simulated spin to be accepted.
+   *
+   * Can be an exact value, or an inclusive `[min, max]` range.
+   *
+   * Exact values can require many retries for hard-to-hit payouts.\
+   * Using a range can drastically speed up the simulation.
    */
-  multiplier?: number
+  multiplier?: number | [number, number]
   /**
    * Configure the weights of the reels in this ResultSet.
    *

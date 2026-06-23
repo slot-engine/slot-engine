@@ -39,4 +39,14 @@ export class RngService<
    * Sets the seed for the RNG.
    */
   setSeedIfDifferent = this.rng.setSeedIfDifferent.bind(this.rng)
+
+  /**
+   * Intended for internal use only.
+   */
+  _getStateSnapshot = this.rng.getStateSnapshot.bind(this.rng)
+
+  /**
+   * Intended for internal use only.
+   */
+  _restoreStateSnapshot = this.rng.restoreStateSnapshot.bind(this.rng)
 }
