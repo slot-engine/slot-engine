@@ -1,5 +1,18 @@
 # @slot-engine/panel
 
+## 0.2.0
+
+### Minor Changes
+
+- Replaced Force Records API with Tagging API for improved clarity ([#86](https://github.com/slot-engine/slot-engine/pull/86)) - Thanks @nordowl
+
+### Patch Changes
+
+- Introduced new optimizer that replaces the old Rust optimizer ([#87](https://github.com/slot-engine/slot-engine/pull/87)) - Thanks @nordowl
+
+- Updated dependencies [[`e59d47b`](https://github.com/slot-engine/slot-engine/commit/e59d47b35901c726cbdd45c8a6b008412837436a), [`682f489`](https://github.com/slot-engine/slot-engine/commit/682f489272a87c49d9e02b8bec4fd2a899ac7eb9), [`e8e01a2`](https://github.com/slot-engine/slot-engine/commit/e8e01a2afb1d971cf5eec4d689de036905d9bca6), [`034a62f`](https://github.com/slot-engine/slot-engine/commit/034a62f16785208ab767334c3a40c440f1f69f58), [`48a57f1`](https://github.com/slot-engine/slot-engine/commit/48a57f17d8031932b3fd0fe405b52e01e87bfb39)]:
+  - @slot-engine/core@0.3.0
+
 ## 0.1.14
 
 ### Patch Changes
