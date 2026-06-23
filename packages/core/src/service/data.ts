@@ -57,6 +57,8 @@ export class DataService<
    * Tag the current simulation for statistical analysis and book filtering.
    */
   tag(data: Record<string, string | number | boolean>) {
+    if (this.ctx().state.isDryRun) return
+
     const properties: Record<string, string> = {}
     for (const key in data) {
       properties[key] = String(data[key])
@@ -84,6 +86,7 @@ export class DataService<
    * Adds an event to the book.
    */
   addBookEvent(event: Omit<BookEvent, "index">) {
+    if (this.ctx().state.isDryRun) return
     this.book.addEvent(event)
   }
 

@@ -12,7 +12,7 @@ import {
   GameMetadata,
 } from "../game-config"
 import { createGameContext, GameContext } from "../game-context"
-import { copy, createDirIfNotExists, round, writeFile } from "../../utils"
+import { createDirIfNotExists, round, writeFile } from "../../utils"
 import { SPIN_TYPE } from "../constants"
 import { Book } from "../book"
 import { Tagger, TagItem } from "../tagger"
@@ -87,6 +87,8 @@ export class Simulation {
   private bookBuffers = new Map<number, string[]>()
   private bookBufferSizes = new Map<number, number>()
   private bookChunkIndexes = new Map<number, number>()
+  private workerCtx: GameContext | undefined
+  private userStateJson: string | undefined
 
   constructor(opts: SimulationOptions, gameConfigOpts: GameConfigOptions) {
     const { config, metadata } = createGameConfig(gameConfigOpts)
@@ -737,21 +739,27 @@ export class Simulation {
     const { simId, mode, criteria } = opts
     let retries = 0
 
-    const ctx = createGameContext({
-      config: this.gameConfig,
-    })
+    // Reuse a single game context (and its services) per worker.
+    // All mutable state is reset by `resetSimulation` before each attempt.
+    let ctx = this.workerCtx
+    if (!ctx) {
+      ctx = createGameContext({
+        config: this.gameConfig,
+      })
+      ctx.services.data._setBook(
+        new Book({
+          id: simId,
+          criteria,
+        }),
+      )
+      ctx.services.wallet._setWallet(new Wallet())
+      ctx.services.data._setTagger(new Tagger())
+      this.workerCtx = ctx
+    }
 
     ctx.state.currentGameMode = mode
     ctx.state.currentSimulationId = simId
     ctx.state.isCriteriaMet = false
-    ctx.services.data._setBook(
-      new Book({
-        id: simId,
-        criteria,
-      }),
-    )
-    ctx.services.wallet._setWallet(new Wallet())
-    ctx.services.data._setTagger(new Tagger())
 
     const resultSet = ctx.services.game.getResultSetByCriteria(
       ctx.state.currentGameMode,
@@ -762,11 +770,30 @@ export class Simulation {
 
     while (!ctx.state.isCriteriaMet) {
       this.actualSims++
+
+      // The first attempt records normally. Retries run as dry runs where book
+      // events and records are skipped for performance.
+      // Successfull attempt is then replayed once with recording enabled,
+      // restoring the RNG to reproduce the same outcome.
+      const isDryRun = retries > 0
+      const rngSnapshot = isDryRun ? ctx.services.rng._getStateSnapshot() : undefined
+
       this.resetSimulation(ctx)
+      ctx.state.isDryRun = isDryRun
 
       this.handleGameFlow(ctx)
 
-      if (resultSet.meetsCriteria(ctx)) {
+      if (!ctx.state.skipAttempt && resultSet.meetsCriteria(ctx)) {
+        if (isDryRun) {
+          ctx.services.rng._restoreStateSnapshot(rngSnapshot!)
+          this.resetSimulation(ctx)
+          ctx.state.isDryRun = false
+
+          this.handleGameFlow(ctx)
+
+          // Evaluate again for record side effects of the accepted attempt
+          resultSet.meetsCriteria(ctx)
+        }
         ctx.state.isCriteriaMet = true
       }
 
@@ -885,7 +912,9 @@ export class Simulation {
     ctx.state.totalFreespinAmount = 0
     ctx.state.triggeredMaxWin = false
     ctx.state.triggeredFreespins = false
-    ctx.state.userData = copy(ctx.config.userState)
+    ctx.state.skipAttempt = false
+    this.userStateJson ??= JSON.stringify(ctx.config.userState)
+    ctx.state.userData = JSON.parse(this.userStateJson)
   }
 
   /**

@@ -53,6 +53,32 @@ export class RandomNumberGenerator {
     }
   }
 
+  /**
+   * Captures the full internal state of the RNG.
+   *
+   * Intended for internal use only.
+   */
+  getStateSnapshot(): RngStateSnapshot {
+    return {
+      mIdum: this.mIdum,
+      mIy: this.mIy,
+      mIv: this.mIv.slice(),
+      currentSeed: this._currentSeed,
+    }
+  }
+
+  /**
+   * Restores the RNG to a previously captured state.
+   *
+   * Intended for internal use only.
+   */
+  restoreStateSnapshot(snapshot: RngStateSnapshot) {
+    this.mIdum = snapshot.mIdum
+    this.mIy = snapshot.mIy
+    this.mIv = snapshot.mIv.slice()
+    this._currentSeed = snapshot.currentSeed
+  }
+
   generateRandomNumber(): number {
     let k: number
     let j: number
@@ -147,4 +173,11 @@ export class RandomNumberGenerator {
 
     return newArray
   }
+}
+
+export interface RngStateSnapshot {
+  mIdum: number
+  mIy: number
+  mIv: number[]
+  currentSeed: number
 }

@@ -40,6 +40,21 @@ export interface GameStateOptions<TUserState extends AnyUserData> {
    * Whether freespins have been triggered during the active simulation.
    */
   triggeredFreespins: boolean
+  /**
+   * Whether the current simulation attempt is a dry run.
+   *
+   * During a dry run, book events and records are skipped.
+   * Retries of a simulation run as dry runs and the accepted attempt
+   * is replayed once with recording enabled.
+   *
+   * Intended for internal use only.
+   */
+  isDryRun: boolean
+  /**
+   * Can be set to `true` from the game flow to skip the current simulation
+   * attempt early, e.g. when the criteria of the current ResultSet can no longer be met.
+   */
+  skipAttempt: boolean
 }
 
 export function createGameState<TUserState extends AnyUserData = AnyUserData>(
@@ -65,6 +80,8 @@ export function createGameState<TUserState extends AnyUserData = AnyUserData>(
     userData: opts?.userData || ({} as TUserState),
     triggeredMaxWin: opts?.triggeredMaxWin || false,
     triggeredFreespins: opts?.triggeredFreespins || false,
+    isDryRun: opts?.isDryRun || false,
+    skipAttempt: opts?.skipAttempt || false,
   }
 }
 
