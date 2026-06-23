@@ -18,6 +18,14 @@ ctx.services.data.tag({}) // [!code ++]
 
 ctx.services.data.recordSymbolOccurrence() // [!code --]
 ctx.services.data.tagSymbolOccurrence() // [!code ++]
+
+game.runTasks({
+  // ...
+  analysisOpts: {
+    recordStats: [], // [!code --]
+    tagStats: [], // [!code ++]
+  },
+})
 ```
 
 ### Update optimization configuration
