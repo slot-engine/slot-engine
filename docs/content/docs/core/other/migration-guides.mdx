@@ -4,6 +4,27 @@ description: Learn how to upgrade your games to a newer version of Core.
 icon: "Rocket"
 ---
 
+## Upgrade from 0.2.x to 0.3.x
+
+### Replace `record` API with `tag` API
+
+For clarity, the old "force record" system was renamed to "tagging".
+You will need to **replace method calls** and **re-run simulations, because output file names have changed**.
+The functionality remains the same.
+
+```ts
+ctx.services.data.record({}) // [!code --]
+ctx.services.data.tag({}) // [!code ++]
+
+ctx.services.data.recordSymbolOccurrence() // [!code --]
+ctx.services.data.tagSymbolOccurrence() // [!code ++]
+```
+
+### Update optimization configuration
+
+The old and slow Rust optimizer was replaced with a Typescript optimizer, resulting in noticably faster optimization.
+The API has also changed. [Learn how to use the new optimizer](/docs/core/game-tasks/optimization)
+
 ## Upgrade from 0.1.x to 0.2.x
 
 ### Adjust npm scripts or commands [!toc]
