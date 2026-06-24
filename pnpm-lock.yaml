@@ -110,7 +110,7 @@ importers:
         specifier: 4.20.6
         version: 4.20.6
 
-  examples/lines_example_OUTDATED:
+  examples/lines_example:
     dependencies:
       '@slot-engine/core':
         specifier: 0.3.0

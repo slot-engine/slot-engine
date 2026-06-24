@@ -10,14 +10,20 @@ import { GameModesType, SymbolsType, UserStateType } from ".."
 type Context = GameContext<GameModesType, SymbolsType, UserStateType>
 
 export function onHandleGameFlow(ctx: Context) {
+  // Build initial board
   drawBoard(ctx)
-  ctx.services.data.addBookEvent({
-    type: "test",
-    data: { test: 123 },
-  })
+
+  // If we have 2 scatters on the board, the next reels should anticipate
   handleAnticipation(ctx)
+
+  // Add event data for client
+  handleRevealEvent(ctx)
+
+  // Calculate wins and add to wallet
   handleWins(ctx)
   ctx.services.wallet.confirmSpinWin()
+
+  // Maybe enter freespins loop
   checkFreespins(ctx)
 }
 
@@ -31,6 +37,7 @@ function drawBoard(ctx: Context) {
       getScatterWeights(ctx.state.currentResultSet.criteria),
     ),
   )
+  // sanity check to ensure scatter count is valid. you may omit this
   numScatters = ctx.services.game.verifyScatterCount(numScatters)
 
   if (
@@ -64,6 +71,7 @@ function drawBoard(ctx: Context) {
       const [scatCount] = ctx.services.board.countSymbolsOnBoard(scatter)
       const [superScatCount] = ctx.services.board.countSymbolsOnBoard(superScatter)
 
+      // skip boards that would trigger super FS
       if (superScatCount > 0) continue
       if (scatCount == numScatters && !scatInvalid) break
     }
@@ -83,6 +91,7 @@ function drawBoard(ctx: Context) {
       const [superScatCount] = ctx.services.board.countSymbolsOnBoard(superScatter)
       const scatters = scatCount + superScatCount
 
+      // skip boards that would trigger FS
       if (
         scatters > ctx.config.anticipationTriggers[ctx.state.currentSpinType] ||
         superScatCount > 1
@@ -93,7 +102,7 @@ function drawBoard(ctx: Context) {
       if (!scatInvalid && !superScatInvalid) break
     }
   } else if (
-    // If FS should upgrade to super FS, increase chance of upgrade withing the current freespins batch.
+    // If FS should upgrade to super FS, increase chance of upgrade within the current freespins batch.
     // We do this to improve performance of matching ResultSets.
     ctx.state.currentSpinType == SPIN_TYPE.FREE_SPINS &&
     ctx.state.currentResultSet.userData?.upgradeFreespins &&
@@ -107,6 +116,7 @@ function drawBoard(ctx: Context) {
       drawDefaultBoard(ctx, reels, scatter, superScatter)
     }
   } else {
+    // No special condition / fallback -> default board draw
     drawDefaultBoard(ctx, reels, scatter, superScatter)
   }
 }
@@ -157,7 +167,19 @@ function handleWins(ctx: Context) {
     .evaluateWins(ctx.services.board.getBoardReels())
     .getWins()
 
+  // Add in-round win data
   ctx.services.wallet.addSpinWin(payout)
+
+  // Win event must be recorded before `confirmSpinWin` is called, because the wallet will be reset
+  if (payout > 0) {
+    ctx.services.data.addBookEvent({
+      type: "show-wins",
+      data: {
+        payout,
+        winCombinations,
+      },
+    })
+  }
 }
 
 function checkFreespins(ctx: Context) {
@@ -177,8 +199,10 @@ function checkFreespins(ctx: Context) {
   // no freespins, return early
   if (freespinsAwarded <= 0) return
 
+  // Sets some internal state
   ctx.services.game.awardFreespins(freespinsAwarded)
 
+  // Spin that triggers FS
   if (ctx.state.currentSpinType == SPIN_TYPE.BASE_GAME) {
     ctx.services.data.tagSymbolOccurrence({
       kind: scatters,
@@ -190,22 +214,56 @@ function checkFreespins(ctx: Context) {
       triggeredFS: true,
     })
 
-    // TODO FS triggered event
     if (superScatCount > 0) {
       ctx.state.userData.triggeredSuperFreespins = true
       ctx.services.data.tag({
         triggeredSuperFS: true,
       })
+
+      ctx.services.data.addBookEvent({
+        type: "fs-triggered",
+        data: {
+          type: "super",
+          fs: freespinsAwarded,
+        },
+      })
+    } else {
+      ctx.services.data.addBookEvent({
+        type: "fs-triggered",
+        data: {
+          type: "normal",
+          fs: freespinsAwarded,
+        },
+      })
     }
+
+    // Must be set manually currently
     ctx.state.currentSpinType = SPIN_TYPE.FREE_SPINS
+
     playFreeSpins(ctx) // only call while in base game to avoid recursion
-    return // return to avoid checking freespins again after they were played
+
+    // return to avoid bugs -> after FS are played, `ctx.state.currentSpinType` is still freespins,
+    // and the code would otherwise continue below
+    return
   }
 
+  // We are in FS here
   if (ctx.state.currentSpinType == SPIN_TYPE.FREE_SPINS) {
-    // TODO FS retrigger event
+    ctx.services.data.addBookEvent({
+      type: "fs-retrigger",
+      data: {
+        fs: freespinsAwarded,
+      },
+    })
+
     if (superScatCount > 0) {
-      // TODO Super FS upgrade event
+      ctx.services.data.addBookEvent({
+        type: "fs-upgrade",
+        data: {
+          fs: freespinsAwarded,
+        },
+      })
+
       ctx.state.userData.triggeredSuperFreespins = true
       ctx.state.userData.freespinsUpgradedToSuper = true
       ctx.services.data.tag({
@@ -218,12 +276,28 @@ function checkFreespins(ctx: Context) {
 function playFreeSpins(ctx: Context) {
   while (ctx.state.currentFreespinAmount > 0) {
     ctx.state.currentFreespinAmount--
+
+    ctx.services.data.addBookEvent({
+      type: "fs-update",
+      data: {
+        fs: ctx.state.currentFreespinAmount,
+      },
+    })
+
     drawBoard(ctx)
     handleAnticipation(ctx)
+    handleRevealEvent(ctx)
     handleWins(ctx)
     ctx.services.wallet.confirmSpinWin()
     checkFreespins(ctx)
   }
+
+  ctx.services.data.addBookEvent({
+    type: "fs-done",
+    data: {
+      finalWin: ctx.services.wallet.getCurrentWin(),
+    },
+  })
 }
 
 function getScatterWeights(key: string) {
@@ -308,4 +382,22 @@ function drawSuperFSTriggerBoard(
       break
     }
   }
+}
+
+function handleRevealEvent(ctx: Context) {
+  ctx.services.data.addBookEvent({
+    type: "board-reveal",
+    data: {
+      reels: ctx.services.board
+        .getBoardReels()
+        .map((reel) => reel.map((symbol) => symbol.id)),
+      paddingTop: ctx.services.board
+        .getPaddingTop()
+        .map((reel) => reel.map((symbol) => symbol.id)),
+      paddingBottom: ctx.services.board
+        .getPaddingBottom()
+        .map((reel) => reel.map((symbol) => symbol.id)),
+      anticipation: ctx.services.board.getAnticipation(),
+    },
+  })
 }

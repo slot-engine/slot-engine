@@ -9,7 +9,7 @@ import {
   defineUserState,
   SPIN_TYPE,
 } from "@slot-engine/core"
-import { GENERATORS } from "./src/reels"
+import { REELS } from "./src/reels"
 import { onHandleGameFlow } from "./src/onHandleGameFlow"
 import {
   freeSpinsUpgradeEvaluation,
@@ -129,7 +129,7 @@ export const gameModes = defineGameModes({
     reelsAmount: 5,
     symbolsPerReel: [3, 3, 3, 3, 3],
     isBonusBuy: false,
-    reelSets: [...Object.values(GENERATORS)],
+    reelSets: [...Object.values(REELS)],
     resultSets: [
       new ResultSet({
         criteria: "0",
@@ -214,7 +214,7 @@ export const gameModes = defineGameModes({
     reelsAmount: 5,
     symbolsPerReel: [3, 3, 3, 3, 3],
     isBonusBuy: true,
-    reelSets: [...Object.values(GENERATORS)],
+    reelSets: [...Object.values(REELS)],
     resultSets: [
       new ResultSet({
         criteria: "freespins",
@@ -259,6 +259,7 @@ export type GameModesType = typeof gameModes
 export type GameType = InferGameType<GameModesType, SymbolsType, UserStateType>
 
 export const game = createSlotGame<GameType>({
+  rootDir: __dirname,
   id: "example-01",
   name: "Example Lines Game",
   maxWinX: 2000,
@@ -285,8 +286,8 @@ export const game = createSlotGame<GameType>({
 
 game.configureSimulation({
   simRunsAmount: {
-    base: 10000,
-    bonus: 10000,
+    base: 20000,
+    bonus: 20000,
   },
   concurrency: 8,
 })
@@ -314,9 +315,9 @@ game.configureOptimization({
 
 game.runTasks({
   doSimulation: true,
-  doOptimization: false,
+  doOptimization: true,
   optimizationOpts: {
-    gameModes: ["base"],
+    gameModes: ["base", "bonus"],
   },
   doAnalysis: true,
   analysisOpts: {

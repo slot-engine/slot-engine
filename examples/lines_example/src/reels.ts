@@ -74,7 +74,7 @@ const defaultSettings = {
   },
 }
 
-export const GENERATORS = {
+export const REELS = {
   base1: new GeneratedReelSet({
     id: "base1",
     ...defaultSettings,
