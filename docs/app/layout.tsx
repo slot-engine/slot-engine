@@ -31,7 +31,7 @@ export default function Layout({ children }: LayoutProps<"/">) {
             "#b753db",
           ]}
         >
-          Slot Engine is in Beta - Expect bugs!
+          Slot Engine is in Beta - Stable, but may contain minor bugs
         </Banner>
         <RootProvider>{children}</RootProvider>
       </body>
