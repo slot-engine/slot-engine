@@ -10,23 +10,23 @@
   },
   "dependencies": {
     "cva": "1.0.0-beta.4",
-    "next": "16.2.3",
-    "react": "19.2.5",
-    "react-dom": "19.2.5",
+    "next": "16.2.9",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
     "lucide-react": "0.544.0",
-    "fumadocs-ui": "16.4.9",
-    "fumadocs-core": "16.4.9",
-    "fumadocs-mdx": "14.2.6",
+    "fumadocs-ui": "16.10.5",
+    "fumadocs-core": "16.10.5",
+    "fumadocs-mdx": "15.0.12",
     "tailwind-merge": "3.4.0"
   },
   "devDependencies": {
     "@types/node": "24.9.1",
-    "@types/react": "19.2.10",
+    "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "typescript": "5.9.3",
-    "@types/mdx": "2.0.13",
-    "@tailwindcss/postcss": "4.1.14",
-    "tailwindcss": "4.1.18",
+    "@types/mdx": "2.0.14",
+    "@tailwindcss/postcss": "4.3.1",
+    "tailwindcss": "4.3.1",
     "postcss": "8.5.6"
   }
 }
