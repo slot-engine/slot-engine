@@ -4,6 +4,8 @@ import { GameConfig, GameMetadata } from "../game-config"
 export function createFrontendConfig(config: GameConfig, meta: GameMetadata) {
   const path = meta.paths.frontendConfig
 
+  const fullConfig = { ...config, ...meta }
+
   const gameModes = Object.values(config.gameModes).map((gm) => ({
     name: gm.name,
     cost: gm.cost,
@@ -15,7 +17,7 @@ export function createFrontendConfig(config: GameConfig, meta: GameMetadata) {
   Object.values(config.gameModes).forEach((gm) => {
     gm.reelSets.forEach((reelSet) => {
       reelSet.associatedGameModeName = gm.name
-      reelSet.generateReels(config)
+      reelSet.generateReels(fullConfig)
       if (!reelSets.has(reelSet.id)) {
         reelSets.set(
           reelSet.id,
