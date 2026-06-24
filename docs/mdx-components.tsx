@@ -15,6 +15,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     ...TabsComponents,
     Accordion,
     Accordions,
+    // @ts-expect-error
     img: (props) => <ImageZoom {...props} />,
     Step,
     Steps,
