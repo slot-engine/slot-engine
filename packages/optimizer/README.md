@@ -2,7 +2,7 @@
 
 Optimize lookup tables to reach a target RTP.
 
-[📖 Documentation](https://slot-engine.dev)
+[📖 Documentation](https://slot-engine.dev/docs/core/game-tasks/optimization)
 
 
 ## Usage

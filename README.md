@@ -3,9 +3,6 @@
 > [!NOTE]
 > Slot Engine is a community project and is not affiliated with Stake.
 
-> [!NOTE]
-> **Yes**, Slot Engine is still **actively maintained**. Don't worry about the lack of updates the past months. Will ramp up again.
-
 # Slot Engine
 
 TypeScript libraries for building slot games.
@@ -24,7 +21,13 @@ Web GUI for interacting with Slot Engine. Run simulations, view statistics, expl
 
 [📖 Documentation](https://slot-engine.dev/docs/panel)
 
-### (WIP) `@slot-engine/lgs`
+### `@slot-engine/optimizer`
+
+Optimize lookup tables to reach a target RTP.
+
+[📖 Documentation](https://slot-engine.dev/docs/core/game-tasks/optimization)
+
+### (soon TM) `@slot-engine/lgs`
 
 Local gaming server. Test your game locally without uploading to Stake Engine and save time during development.
 
