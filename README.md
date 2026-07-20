@@ -7,6 +7,8 @@
 
 TypeScript libraries for building slot games.
 
+![NPM Downloads](https://img.shields.io/npm/dm/%40slot-engine%2Fcore)
+
 ## Available Packages
 
 ### `@slot-engine/core`
