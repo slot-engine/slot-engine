@@ -93,12 +93,12 @@ export class Analysis {
 
     if (zeroWeightBooks === 0) return
 
-    const unhittableMaxWin =
+    const message =
       topPayout > maxWin
-        ? `Max win ${maxWin}x unhittable in mode ${mode}. Highest payout is ${topPayout}x`
-        : ""
+        ? `Max win ${maxWin}x unhittable in mode ${mode}. Highest payout is ${topPayout}x.`
+        : "Some of your books have zero weight, which may lead to unexpected behavior."
 
-    console.warn(chalk.yellow(unhittableMaxWin))
+    console.log(chalk.yellow(message))
   }
 
   private getWinRanges(gameModes: string[]) {
