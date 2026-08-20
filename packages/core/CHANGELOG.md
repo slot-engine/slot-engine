@@ -1,5 +1,13 @@
 # @slot-engine/core
 
+## 0.3.2
+
+### Patch Changes
+
+- Warn during analysis if 0-weight books are found - Thanks @nordowl
+
+- Fix rounding & comparison bugs - Thanks @nordowl
+
 ## 0.3.1
 
 ### Patch Changes
