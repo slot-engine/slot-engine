@@ -15,11 +15,12 @@ import { createGameContext, GameContext } from "../game-context"
 import { createDirIfNotExists, round, writeFile } from "../../utils"
 import { SPIN_TYPE } from "../constants"
 import { Book } from "../book"
+import { assertBookInvariants } from "../book/invariants"
 import { Tagger, TagItem } from "../tagger"
 import { Wallet } from "../wallet"
 import { ResultSet } from "../result-set"
 import { pipeline } from "stream/promises"
-import { createCriteriaSampler, hashStringToInt, splitCountsAcrossChunks } from "./utils"
+import { createCriteriaSampler, hashStringToInt, retryBudgetForResultSet, retrySeed, splitCountsAcrossChunks, assertLookupIdsSequential } from "./utils"
 import { io, Socket } from "socket.io-client"
 import chalk from "chalk"
 import {
@@ -194,6 +195,8 @@ export class Simulation {
         this.tui?.log(statusMessage)
         this.sendSimulationStatus(statusMessage)
 
+        this.probeResultSetReachability(mode)
+
         const runs = this.simRunsAmount[mode] || 0
         if (runs <= 0) continue
 
@@ -295,6 +298,13 @@ export class Simulation {
           (i) => `temp_lookup_segmented_${mode}_${i}.csv`,
           this.PATHS.lookupTableSegmentedIndex(mode),
         )
+        try {
+          assertLookupIdsSequential(lutPathPublish, mode)
+        } catch (error) {
+          fs.rmSync(lutPathPublish, { force: true })
+          fs.rmSync(this.PATHS.booksCompressed(mode), { force: true })
+          throw error
+        }
 
         if (this.tagsWriteStream) {
           await new Promise<void>((resolve) => {
@@ -664,12 +674,14 @@ export class Simulation {
                   bsWins: 0,
                   fsWins: 0,
                   rtp: 0,
+                  retries: 0,
                 }
               }
               const bsWins = round(bookBasegameWins, 4)
               const fsWins = round(bookFreespinsWins, 4)
               const criteria = this.summary[mode]!.criteria[bookCriteria]!
               criteria.numSims += 1
+              criteria.retries = (criteria.retries ?? 0) + Number(msg.retries ?? 0)
               this.summary[mode]!.total.bsWins += bsWins
               this.summary[mode]!.total.fsWins += fsWins
               criteria.bsWins! += bsWins
@@ -817,6 +829,7 @@ export class Simulation {
     )
 
     ctx.state.currentResultSet = resultSet
+    const retryLimit = retryBudgetForResultSet(resultSet)
 
     while (!ctx.state.isCriteriaMet) {
       this.actualSims++
@@ -828,7 +841,7 @@ export class Simulation {
       const isDryRun = retries > 0
       const rngSnapshot = isDryRun ? ctx.services.rng._getStateSnapshot() : undefined
 
-      this.resetSimulation(ctx)
+      this.resetSimulation(ctx, { retry: retries, preserveRng: false })
       ctx.state.isDryRun = isDryRun
 
       this.handleGameFlow(ctx)
@@ -836,7 +849,7 @@ export class Simulation {
       if (!ctx.state.skipAttempt && resultSet.meetsCriteria(ctx)) {
         if (isDryRun) {
           ctx.services.rng._restoreStateSnapshot(rngSnapshot!)
-          this.resetSimulation(ctx)
+          this.resetSimulation(ctx, { retry: retries, preserveRng: true })
           ctx.state.isDryRun = false
 
           this.handleGameFlow(ctx)
@@ -858,9 +871,10 @@ export class Simulation {
         })
       }
 
-      if (!ctx.state.isCriteriaMet && retries >= 50_000) {
+      if (!ctx.state.isCriteriaMet && retries >= retryLimit) {
         const message =
-          `Unreachable ResultSet criteria "${criteria}" after ${retries} retries at sim #${simId}. ` +
+          `Unreachable ResultSet criteria "${criteria}" after ${retries} retries at sim #${simId} ` +
+          `(budget ${retryLimit}). ` +
           `Exact multiplier targets are matched at 0.01x precision — prefer a [min, max] range, ` +
           `or check that forceMaxWin / forceFreespins / evaluate can actually hit.`
         parentPort?.postMessage({
@@ -887,6 +901,8 @@ export class Simulation {
 
     ctx.config.hooks.onSimulationAccepted?.(ctx)
 
+    assertBookInvariants(book, { maxWinX: ctx.config.maxWinX })
+
     this.confirmTags(ctx)
 
     // Pre-serialize the book line in the worker to avoid overhead
@@ -908,6 +924,7 @@ export class Simulation {
       bookPayout: book.payout,
       bookBasegameWins: book.basegameWins,
       bookFreespinsWins: book.freespinsWins,
+      retries,
       wallet: wallet.serialize(),
       tagsLines,
     })
@@ -950,8 +967,11 @@ export class Simulation {
    *
    * This also runs once before each simulation to ensure a clean state.
    */
-  protected resetSimulation(ctx: GameContext) {
-    this.resetState(ctx)
+  protected resetSimulation(
+    ctx: GameContext,
+    opts: { retry?: number; preserveRng?: boolean } = {},
+  ) {
+    this.resetState(ctx, opts)
     ctx.services.board.resetBoard()
     ctx.services.data._getTagger()._reset()
     ctx.services.wallet._getWallet()._reset()
@@ -961,8 +981,13 @@ export class Simulation {
     ctx.services.game.getCurrentGameMode()._resetTempValues()
   }
 
-  protected resetState(ctx: GameContext) {
-    ctx.services.rng.setSeedIfDifferent(ctx.state.currentSimulationId)
+  protected resetState(
+    ctx: GameContext,
+    opts: { retry?: number; preserveRng?: boolean } = {},
+  ) {
+    if (!opts.preserveRng) {
+      ctx.services.rng.setSeed(retrySeed(ctx.state.currentSimulationId, opts.retry ?? 0))
+    }
     ctx.state.currentSpinType = SPIN_TYPE.BASE_GAME
     ctx.state.currentFreespinAmount = 0
     ctx.state.totalFreespinAmount = 0
@@ -1299,6 +1324,9 @@ export class Simulation {
         output += `    Basegame Wins: ${criteriaSummary.bsWins}\n`
         output += `    Freespins Wins: ${criteriaSummary.fsWins}\n`
         output += `    RTP (unoptimized): ${criteriaSummary.rtp}\n`
+        if (criteriaSummary.retries) {
+          output += `    Retries: ${criteriaSummary.retries} (avg ${(criteriaSummary.retries / Math.max(criteriaSummary.numSims, 1)).toFixed(1)} / sim)\n`
+        }
       }
     }
 
@@ -1310,6 +1338,50 @@ export class Simulation {
       this.socket.emit("simulationSummary", {
         summary: this.summary,
       })
+    }
+  }
+
+  /**
+   * Dry-probe each ResultSet before spawning workers so exact-multiplier
+   * criteria fail in seconds instead of at the retry ceiling.
+   */
+  private probeResultSetReachability(mode: string, attempts = 80) {
+    const gameMode = this.gameConfig.gameModes[mode]
+    if (!gameMode) return
+
+    const ctx = createGameContext({ config: this.gameConfig })
+    ctx.services.data._setBook(new Book({ id: 0, criteria: "probe" }))
+    ctx.services.wallet._setWallet(new Wallet())
+    ctx.services.data._setTagger(new Tagger())
+    ctx.state.currentGameMode = mode
+
+    for (const resultSet of gameMode.resultSets) {
+      let hits = 0
+      ctx.state.currentResultSet = resultSet
+      for (let i = 0; i < attempts; i++) {
+        ctx.state.currentSimulationId = 10_000_000 + i
+        this.resetSimulation(ctx, { retry: i, preserveRng: false })
+        ctx.state.isDryRun = true
+        this.handleGameFlow(ctx)
+        if (!ctx.state.skipAttempt && resultSet.meetsCriteria(ctx)) hits++
+      }
+
+      const exact =
+        typeof resultSet.multiplier === "number" && !resultSet.forceMaxWin
+      if (exact && hits === 0) {
+        throw new Error(
+          `ResultSet "${resultSet.criteria}" (exact multiplier ${resultSet.multiplier}) ` +
+            `never hit in ${attempts} reachability probes. Use a [min, max] range.`,
+        )
+      }
+      if (resultSet.forceMaxWin && hits === 0) {
+        this.tui?.log(
+          chalk.yellow(
+            `Reachability: "${resultSet.criteria}" (forceMaxWin) scored 0/${attempts} probes — ` +
+              `sim will rely on the full retry budget. Check reel weights / evaluate.`,
+          ),
+        )
+      }
     }
   }
 
@@ -1374,6 +1446,7 @@ export type SimulationSummary = Record<
         bsWins: number
         fsWins: number
         rtp: number
+        retries?: number
       }
     >
   }

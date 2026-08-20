@@ -67,6 +67,7 @@ describe("optimize", () => {
       cost: 1,
       rtp: 0.96,
       verbose: false,
+      preserveTopPays: 1,
       targets: {
         "0": {}, // absorbs remaining probability
         basegame: { hitRate: 4 },
@@ -85,6 +86,8 @@ describe("optimize", () => {
     // Max win contribution is fixed: 5000 / 100000 = 0.05
     expect(result.criteria.maxwin!.rtp).toBeCloseTo(0.05, 6)
     expect(result.criteria["0"]!.rtp).toBe(0)
+    expect(result.criteria.basegame!.zeroWeightRatio).toBeGreaterThanOrEqual(0)
+    expect(result.criteria.maxwin!.zeroWeightRatio).toBeLessThan(1)
     // The free criteria (basegame) gets the remaining RTP
     expect(result.criteria.basegame!.rtp).toBeCloseTo(0.96 - 0.38 - 0.05, 6)
     // Absorber probability
@@ -521,6 +524,6 @@ describe("optimize", () => {
           rare: { hitRate: 10_000 },
         },
       }),
-    ).rejects.toThrow(/total weight of 0|"rare"/i)
+    ).rejects.toThrow(/total weight of 0|"rare"|ids:/i)
   })
 })

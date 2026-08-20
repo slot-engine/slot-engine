@@ -12,6 +12,24 @@ export function hashStringToInt(input: string) {
   return h >>> 0
 }
 
+/** Deterministic seed for retry attempt `retry` of simulation `simId` (retry 0 = simId). */
+export function retrySeed(simId: number, retry: number): number {
+  if (retry <= 0) return simId
+  const hashed = hashStringToInt(`${simId}:retry:${retry}`)
+  return hashed === 0 ? simId + retry : hashed
+}
+
+/** Per-ResultSet retry ceiling — exact multipliers fail fast; maxwin keeps the full budget. */
+export function retryBudgetForResultSet(rs: {
+  forceMaxWin?: boolean
+  multiplier?: number | [number, number]
+}): number {
+  if (rs.forceMaxWin) return 50_000
+  if (typeof rs.multiplier === "number") return 8_000
+  if (Array.isArray(rs.multiplier)) return 20_000
+  return 25_000
+}
+
 export function splitCountsAcrossChunks(
   totalCounts: Record<string, number>,
   chunkSizes: number[],
@@ -180,5 +198,35 @@ export async function makeLutIndexFromPublishLut(
     await new Promise<void>((resolve) => lutIndexStream.on("finish", resolve))
   } catch (error) {
     throw new Error(`Error generating LUT index from publish LUT: ${error}`)
+  }
+}
+
+export function assertLookupIdsSequential(lutPath: string, mode: string) {
+  if (!fs.existsSync(lutPath)) {
+    throw new Error(`Publish LUT missing for mode "${mode}": ${lutPath}`)
+  }
+  const ids: number[] = []
+  const text = fs.readFileSync(lutPath, "utf8")
+  for (const line of text.split(/\r?\n/)) {
+    if (!line.trim()) continue
+    const id = Number(line.split(",")[0])
+    if (!Number.isFinite(id)) {
+      throw new Error(`Mode "${mode}": invalid LUT id on line "${line}"`)
+    }
+    ids.push(id)
+  }
+  if (ids.length === 0) {
+    throw new Error(`Mode "${mode}": publish LUT is empty`)
+  }
+  const sorted = [...ids].sort((a, b) => a - b)
+  const min = sorted[0]!
+  const max = sorted[sorted.length - 1]!
+  if (sorted.length !== new Set(sorted).size) {
+    throw new Error(`Mode "${mode}": duplicate book ids in publish LUT`)
+  }
+  if (max - min + 1 !== sorted.length) {
+    throw new Error(
+      `Mode "${mode}": LUT ids are not a contiguous range ${min}..${max} (got ${sorted.length} ids).`,
+    )
   }
 }

@@ -170,8 +170,9 @@ interface ResultSetOpts<TUserState extends AnyUserData> {
    */
   criteria: string
   /**
-   * The quota of spins, out of the total simulations, that must be forced to meet the specified criteria.\
-   * **Float from 0 to 1. Total quota of all ResultSets in a GameMode must be 1.**
+   * Relative share of simulations forced onto this ResultSet.\
+   * Quotas are **normalized** (Hamilton / largest-remainder) so they need not sum to 1,\
+   * but they must sum to a positive number. Each ResultSet still needs ≥1 sim.
    */
   quota: number
   /**

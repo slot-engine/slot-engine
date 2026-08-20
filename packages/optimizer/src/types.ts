@@ -112,6 +112,13 @@ export interface GameModeOptimization {
    * Default: `2^50`
    */
   weightScale?: number
+  /**
+   * Require at least one positive-weight book for each of the top N unique
+   * payouts in the LUT (global max win is always included as N=1).
+   *
+   * Default: `1`
+   */
+  preserveTopPays?: number
 }
 
 /**
@@ -199,6 +206,10 @@ export interface CriteriaResult {
    * These books can never be drawn by the RGS.
    */
   zeroWeightBooks: number
+  /**
+   * Fraction of this target's books that received weight 0 (0–1).
+   */
+  zeroWeightRatio: number
 }
 
 /**

@@ -38,6 +38,11 @@ export class RngService<
   /**
    * Sets the seed for the RNG.
    */
+  setSeed = this.rng.setSeed.bind(this.rng)
+
+  /**
+   * Sets the seed for the RNG if it differs from the current seed.
+   */
   setSeedIfDifferent = this.rng.setSeedIfDifferent.bind(this.rng)
 
   /**

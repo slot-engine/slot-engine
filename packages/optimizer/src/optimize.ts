@@ -68,8 +68,9 @@ export async function optimize(opts: OptimizeOptions): Promise<OptimizeResult> {
   }
 
   const result = buildResult(lut, criteriaData, finalWeights, opts, weightScale)
-  assertTargetsHittable(criteriaData, finalWeights, opts)
+  assertTargetsHittable(lut, criteriaData, finalWeights, opts)
   assertMaxWinHittable(lut, finalWeights, payoutDivisor)
+  assertTopPaysHittable(lut, finalWeights, payoutDivisor, opts.preserveTopPays ?? 1)
 
   fs.mkdirSync(path.dirname(opts.output.lookupTable), { recursive: true })
   await writeLookupTable(opts.output.lookupTable, lut.ids, finalWeights, lut.payouts)
@@ -489,6 +490,17 @@ function buildResult(
       minWin: data.group.xs[0]!,
       maxWin: data.group.xs[data.group.xs.length - 1]!,
       zeroWeightBooks,
+      zeroWeightRatio: data.bookIndexes.length
+        ? zeroWeightBooks / data.bookIndexes.length
+        : 0,
+    }
+
+    if (criteria[data.name]!.zeroWeightRatio > 0.5) {
+      console.warn(
+        `Optimizer: target "${data.name}" has ${(criteria[data.name]!.zeroWeightRatio * 100).toFixed(0)}% ` +
+          `zero-weight books (${zeroWeightBooks}/${data.bookIndexes.length}). ` +
+          `Give rare pays their own hitRate or raise weightScale.`,
+      )
     }
   }
 
@@ -536,14 +548,18 @@ function assertMaxWinHittable(
  * silently misses the configured hit rates.
  */
 function assertTargetsHittable(
+  lut: { ids: number[] },
   criteriaData: Map<string, CriteriaData>,
   finalWeights: Float64Array,
   opts: OptimizeOptions,
 ) {
   for (const data of criteriaData.values()) {
     let sumW = 0
+    const deadIds: number[] = []
     for (const idx of data.bookIndexes) {
-      sumW += finalWeights[idx]!
+      const w = finalWeights[idx]!
+      sumW += w
+      if (w === 0) deadIds.push(lut.ids[idx]!)
     }
     if (sumW > 0) continue
 
@@ -552,11 +568,39 @@ function assertTargetsHittable(
       target.hitRate !== undefined
         ? ` (hitRate ${target.hitRate})`
         : " (absorber / no hitRate)"
+    const sample = deadIds.slice(0, 12).join(", ")
     throw new Error(
       `Optimization gave target "${data.name}"${hitRateHint} a total weight of 0 ` +
-        `across ${data.bookIndexes.length} books. ` +
+        `across ${data.bookIndexes.length} books (ids: ${sample}${deadIds.length > 12 ? ", …" : ""}). ` +
+        `Suggested: ${JSON.stringify({ [data.name]: { hitRate: target.hitRate ?? 100_000 } })}. ` +
         `Increase weightScale, give this target fewer books / a higher probability, ` +
         `or relax scale/tilt so at least one book keeps positive weight.`,
     )
+  }
+}
+
+function assertTopPaysHittable(
+  lut: { ids: number[]; payouts: number[] },
+  finalWeights: Float64Array,
+  payoutDivisor: number,
+  topN: number,
+) {
+  if (!(topN >= 1)) return
+  const unique = [...new Set(lut.payouts.filter((p) => p > 0))].sort((a, b) => b - a)
+  const keep = unique.slice(0, topN)
+  for (const payout of keep) {
+    let hittable = false
+    for (let i = 0; i < lut.ids.length; i++) {
+      if (lut.payouts[i] === payout && finalWeights[i]! > 0) {
+        hittable = true
+        break
+      }
+    }
+    if (!hittable) {
+      throw new Error(
+        `Optimization made top payout ${payout / payoutDivisor}x unhittable ` +
+          `(preserveTopPays=${topN}). Give those books their own hitRate target.`,
+      )
+    }
   }
 }

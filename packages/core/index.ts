@@ -23,6 +23,7 @@ export {
 export { type SlotGameType as SlotGame } from "./src/slot-game"
 
 export { type WrittenBook } from "./src/book"
+export { assertBookInvariants } from "./src/book/invariants"
 
 export { GameMode } from "./src/game-mode"
 export { GameSymbol } from "./src/game-symbol"

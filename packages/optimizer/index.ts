@@ -1,4 +1,5 @@
 export { optimize } from "./src/optimize"
+export { suggestOptimizationTargets } from "./src/suggest"
 export {
   type OptimizeOptions,
   type OptimizeResult,
