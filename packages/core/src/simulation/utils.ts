@@ -35,12 +35,13 @@ export function splitCountsAcrossChunks(
       continue
     }
 
-    let chunks = chunkSizes.map((size) => (count * size) / total)
-    chunks = chunks.map((x) => Math.floor(x))
-    let assigned = chunks.reduce((a, b) => a + b, 0)
-    let remaining = count - assigned
+    // Hamilton / largest-remainder: keep fractional parts BEFORE flooring.
+    // (Flooring first made every remainder 0 and handed leftovers to chunk 0.)
+    const raw = chunkSizes.map((size) => (count * size) / total)
+    const chunks = raw.map((x) => Math.floor(x))
+    let remaining = count - chunks.reduce((a, b) => a + b, 0)
 
-    const remainders = chunks
+    const remainders = raw
       .map((x, i) => ({ i, r: x - Math.floor(x) }))
       .sort((a, b) => b.r - a.r)
 

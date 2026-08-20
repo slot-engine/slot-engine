@@ -86,8 +86,12 @@ export function getNullHitrate(payoutWeights: PayoutWeights) {
 export function getMaxwinHitrate(payoutWeights: PayoutWeights) {
   const totalWeight = getTotalWeight(payoutWeights)
   const maxWin = Math.max(...Object.keys(payoutWeights).map(Number))
-  const hitRate = (payoutWeights[maxWin] || 0) / totalWeight
-  return round(1 / hitRate, 4)
+  const maxWeight = payoutWeights[maxWin] || 0
+  if (maxWeight <= 0 || totalWeight <= 0) {
+    // Unhittable max win — do not round(Infinity) (that becomes NaN).
+    return Infinity
+  }
+  return round(totalWeight / maxWeight, 4)
 }
 
 export function getUniquePayouts(payoutWeights: PayoutWeights) {

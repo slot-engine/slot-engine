@@ -111,6 +111,14 @@ export class Analysis {
     const meta = this.game.getMetadata()
 
     for (const modeStr of gameModes) {
+      const lutOptimized = parseLookupTable(
+        fs.readFileSync(meta.paths.lookupTablePublish(modeStr), "utf-8"),
+      )
+      const weightById = new Map<number, number>()
+      for (const [id, weight] of lutOptimized) {
+        weightById.set(id, weight)
+      }
+
       const lutSegmented = parseLookupTableSegmented(
         fs.readFileSync(meta.paths.lookupTableSegmented(modeStr), "utf-8"),
       )
@@ -130,10 +138,13 @@ export class Analysis {
       const uniquePayoutsOverall = new Map<string, Set<number>>()
       const uniquePayoutsCriteria = new Map<string, Map<string, Set<number>>>()
 
-      lutSegmented.forEach(([, criteria, bp, fsp]) => {
+      lutSegmented.forEach(([bookId, criteria, bp, fsp]) => {
         const basePayout = bp
         const freeSpinPayout = fsp
         const payout = basePayout + freeSpinPayout
+        // Weight from the (optimized) publish LUT — not raw book count.
+        const weight = weightById.get(bookId) ?? 0
+        if (weight <= 0) return
 
         for (const [min, max] of winRanges) {
           if (payout >= min && payout <= max) {
@@ -143,7 +154,7 @@ export class Analysis {
             if (!range.allPayouts.overall[rangeKey]) {
               range.allPayouts.overall[rangeKey] = 0
             }
-            range.allPayouts.overall[rangeKey] += 1
+            range.allPayouts.overall[rangeKey] += weight
 
             // Criteria
             if (!range.allPayouts.criteria[criteria]) {
@@ -152,7 +163,7 @@ export class Analysis {
             if (!range.allPayouts.criteria[criteria]![rangeKey]) {
               range.allPayouts.criteria[criteria]![rangeKey] = 0
             }
-            range.allPayouts.criteria[criteria]![rangeKey] += 1
+            range.allPayouts.criteria[criteria]![rangeKey] += weight
 
             // Overall
             if (!uniquePayoutsOverall.has(rangeKey)) {

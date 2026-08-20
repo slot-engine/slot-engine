@@ -490,6 +490,37 @@ describe("optimize", () => {
           basegame: { hitRate: 2, avgWin: 1.2 },
         },
       }),
-    ).rejects.toThrow(/unhittable|maximum win/i)
+    ).rejects.toThrow(/unhittable|maximum win|total weight of 0/i)
+  })
+
+  it("rejects optimization that zeros an entire target via weight rounding", async () => {
+    const books: Book[] = []
+    let id = 1
+    for (let i = 0; i < 50; i++) books.push({ id: id++, criteria: "0", payoutX: 0 })
+    for (let i = 0; i < 20; i++) {
+      books.push({ id: id++, criteria: "basegame", payoutX: 1 + (i % 5) })
+    }
+    // Many rare books under a tiny hit-rate → each rounds to 0 at small weightScale
+    for (let i = 0; i < 40; i++) {
+      books.push({ id: id++, criteria: "rare", payoutX: 100 + i })
+    }
+
+    const { lutPath, segPath, outPath } = writeFixture(books)
+
+    await expect(
+      optimize({
+        input: { lookupTable: lutPath, lookupTableSegmented: segPath },
+        output: { lookupTable: outPath },
+        cost: 1,
+        rtp: 0.96,
+        weightScale: 50,
+        verbose: false,
+        targets: {
+          "0": {},
+          basegame: { hitRate: 2 },
+          rare: { hitRate: 10_000 },
+        },
+      }),
+    ).rejects.toThrow(/total weight of 0|"rare"/i)
   })
 })

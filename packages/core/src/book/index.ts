@@ -37,7 +37,8 @@ export class Book {
    */
   addEvent(event: Omit<BookEvent, "index">) {
     this.events.push({
-      index: this.events.length + 1,
+      // 0-based sequential indices (Stake / FE contract: 0..N-1).
+      index: this.events.length,
       type: event.type,
       data: copy(event.data),
     })

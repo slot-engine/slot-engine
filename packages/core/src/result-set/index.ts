@@ -2,7 +2,6 @@ import assert from "assert"
 import { AnyGameModes, AnySymbols, AnyUserData } from "../types"
 import { GameContext } from "../game-context"
 import { Simulation } from "../simulation"
-import { RandomNumberGenerator } from "../rng"
 import { SPIN_TYPE } from "../constants"
 
 export class ResultSet<TUserState extends AnyUserData> {
@@ -34,9 +33,6 @@ export class ResultSet<TUserState extends AnyUserData> {
   }
 
   static getNumberOfSimsForCriteria(ctx: Simulation, gameModeName: string) {
-    const rng = new RandomNumberGenerator()
-    rng.setSeed(0)
-
     assert(ctx.simRunsAmount, "Simulation configuration is not set.")
 
     const simNums = ctx.simRunsAmount[gameModeName]
@@ -50,39 +46,61 @@ export class ResultSet<TUserState extends AnyUserData> {
       throw new Error(`No simulations configured for game mode "${gameModeName}".`)
     }
 
-    const totalQuota = resultSets.reduce((sum, rs) => sum + rs.quota, 0)
-
-    const numberOfSimsForCriteria: Record<string, number> = Object.fromEntries(
-      resultSets.map((rs) => {
-        const normalizedQuota = totalQuota > 0 ? rs.quota / totalQuota : 0
-        return [rs.criteria, Math.max(Math.floor(normalizedQuota * simNums), 1)]
-      }),
-    )
-
-    let totalSims = Object.values(numberOfSimsForCriteria).reduce(
-      (sum, num) => sum + num,
-      0,
-    )
-    let reduceSims = totalSims > simNums
-
-    const criteriaToWeights = Object.fromEntries(
-      resultSets.map((rs) => [rs.criteria, rs.quota]),
-    )
-
-    while (totalSims !== simNums) {
-      const rs = rng.weightedRandom(criteriaToWeights)
-      if (reduceSims && numberOfSimsForCriteria[rs]! > 1) {
-        numberOfSimsForCriteria[rs]! -= 1
-      } else if (!reduceSims) {
-        numberOfSimsForCriteria[rs]! += 1
-      }
-
-      totalSims = Object.values(numberOfSimsForCriteria).reduce(
-        (sum, num) => sum + num,
-        0,
+    if (resultSets.length > simNums) {
+      throw new Error(
+        `Game mode "${gameModeName}" has ${resultSets.length} ResultSets but only ${simNums} simulations. ` +
+          `Need at least one simulation per ResultSet — increase simRunsAmount or reduce ResultSets.`,
       )
-      reduceSims = totalSims > simNums
     }
+
+    const totalQuota = resultSets.reduce((sum, rs) => sum + rs.quota, 0)
+    assert(
+      totalQuota > 0,
+      `Game mode "${gameModeName}": ResultSet quotas must sum to a positive number.`,
+    )
+
+    // Hamilton / largest-remainder allocation (avoids the old floor-to-1 + while
+    // loop that hung when ResultSets outnumbered sims).
+    const exact = resultSets.map((rs) => ({
+      criteria: rs.criteria,
+      value: (rs.quota / totalQuota) * simNums,
+    }))
+
+    const numberOfSimsForCriteria: Record<string, number> = {}
+    let assigned = 0
+    for (const row of exact) {
+      const n = Math.floor(row.value)
+      numberOfSimsForCriteria[row.criteria] = n
+      assigned += n
+    }
+
+    let remaining = simNums - assigned
+    const byFrac = [...exact].sort(
+      (a, b) => b.value - Math.floor(b.value) - (a.value - Math.floor(a.value)),
+    )
+    for (let i = 0; remaining > 0; i++, remaining--) {
+      numberOfSimsForCriteria[byFrac[i % byFrac.length]!.criteria]! += 1
+    }
+
+    // Prefer at least one book per ResultSet when sims allow it (steal from the fattest).
+    for (const rs of resultSets) {
+      if (numberOfSimsForCriteria[rs.criteria]! > 0) continue
+      const donor = Object.entries(numberOfSimsForCriteria)
+        .sort(([, a], [, b]) => b - a)
+        .find(([, n]) => n > 1)
+      assert(
+        donor,
+        `Unable to allocate at least one simulation to ResultSet "${rs.criteria}".`,
+      )
+      numberOfSimsForCriteria[donor[0]]! -= 1
+      numberOfSimsForCriteria[rs.criteria] = 1
+    }
+
+    const total = Object.values(numberOfSimsForCriteria).reduce((a, b) => a + b, 0)
+    assert(
+      total === simNums,
+      `Criteria allocation mismatch for mode "${gameModeName}": expected ${simNums}, got ${total}.`,
+    )
 
     return numberOfSimsForCriteria
   }

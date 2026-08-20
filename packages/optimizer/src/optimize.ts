@@ -68,6 +68,7 @@ export async function optimize(opts: OptimizeOptions): Promise<OptimizeResult> {
   }
 
   const result = buildResult(lut, criteriaData, finalWeights, opts, weightScale)
+  assertTargetsHittable(criteriaData, finalWeights, opts)
   assertMaxWinHittable(lut, finalWeights, payoutDivisor)
 
   fs.mkdirSync(path.dirname(opts.output.lookupTable), { recursive: true })
@@ -527,4 +528,35 @@ function assertMaxWinHittable(
       `Give max-win books their own hitRate target, relax high-end scale factors, ` +
       `or reduce RTP/tilt pressure on the top of the distribution.`,
   )
+}
+
+/**
+ * Integer weight rounding can zero an entire optimization target (rare hitRate +
+ * many books + modest weightScale). Refuse that instead of shipping a LUT that
+ * silently misses the configured hit rates.
+ */
+function assertTargetsHittable(
+  criteriaData: Map<string, CriteriaData>,
+  finalWeights: Float64Array,
+  opts: OptimizeOptions,
+) {
+  for (const data of criteriaData.values()) {
+    let sumW = 0
+    for (const idx of data.bookIndexes) {
+      sumW += finalWeights[idx]!
+    }
+    if (sumW > 0) continue
+
+    const target = opts.targets[data.name]!
+    const hitRateHint =
+      target.hitRate !== undefined
+        ? ` (hitRate ${target.hitRate})`
+        : " (absorber / no hitRate)"
+    throw new Error(
+      `Optimization gave target "${data.name}"${hitRateHint} a total weight of 0 ` +
+        `across ${data.bookIndexes.length} books. ` +
+        `Increase weightScale, give this target fewer books / a higher probability, ` +
+        `or relax scale/tilt so at least one book keeps positive weight.`,
+    )
+  }
 }

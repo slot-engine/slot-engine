@@ -876,7 +876,8 @@ export class Simulation {
     wallet.confirmWins(ctx)
 
     const book = ctx.services.data._getBook()
-    if (book.payout >= ctx.config.maxWinX) {
+    // book.payout is Stake cent-units (multiplier * 100); maxWinX is a multiplier.
+    if (book.payout >= Math.round(ctx.config.maxWinX * 100)) {
       ctx.state.triggeredMaxWin = true
     }
 
