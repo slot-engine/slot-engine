@@ -6,3 +6,4 @@ packages:
 allowBuilds:
   esbuild: true
   sharp: true
+linkWorkspacePackages: true
