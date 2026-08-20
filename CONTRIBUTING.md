@@ -83,7 +83,7 @@ pnpm test
 
 ## Contribution Guidelines
 
-- No AI slop
+- No AI slop (there may be exceptions)
 - Follow the existing code style and conventions
 - Write clear and concise commit messages
 - Ensure all tests pass before submitting a pull request
