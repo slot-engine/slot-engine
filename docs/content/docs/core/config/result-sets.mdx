@@ -137,7 +137,9 @@ because the optimizer will redistribute the weights of all simulations.
 | ------------ | ---------------------------- | -------- |
 | `multiplier` | `number \| [number, number]` |          |
 
-The payout multiplier to be hit. Either an exact number, or a range.
+The payout multiplier to be hit. Either an exact number, or an inclusive `[min, max]` range.
+
+Comparisons use **0.01x precision** (the same cent units as book / LUT `payoutMultiplier`), so exact targets like `multiplier: 5` match wallet totals that round to `5.00x`. Prefer ranges for hard-to-hit pays — exact values still retry until hit.
 
 ### forceMaxWin [!toc]
 

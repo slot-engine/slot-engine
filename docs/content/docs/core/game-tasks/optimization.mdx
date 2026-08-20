@@ -259,6 +259,12 @@ await optimize({
 the optimized lookup table. Book ids, order and payouts stay identical — only the weights change.
 It returns a result object with the achieved RTP, hit rates and average wins per criteria.
 
+<Callout title="Max win must stay hittable">
+If tilt or `scale` rules would assign weight `0` to every book that pays the global maximum,
+optimization **throws** instead of writing an unhittable max-win LUT. Give max-win books their
+own `hitRate` target (recommended) rather than burying them in a heavily tilted criteria.
+</Callout>
+
 <Callout title="Migrating from the Rust optimizer?">
 Earlier versions of Slot Engine used Stake's Rust-based optimization program.
 The new TypeScript optimizer replaces it entirely:

@@ -89,6 +89,10 @@ export class ResultSet<TUserState extends AnyUserData> {
 
   /**
    * Checks if core criteria is met, e.g. target multiplier or max win.
+   *
+   * Multiplier checks use Stake book precision (0.01x / cent units). Raw float
+   * equality against unrounded wallet totals never matches reliably and causes
+   * the simulation retry loop to spin until the 50k safety exit.
    */
   meetsCriteria(ctx: GameContext) {
     // @ts-ignore TODO: Fix type errors with AnyTypes
@@ -98,21 +102,25 @@ export class ResultSet<TUserState extends AnyUserData> {
 
     const wallet = ctx.services.wallet._getWallet()
     const currentWin = wallet.getCurrentWin()
+    const winCents = toPayoutCents(currentWin)
+    const maxWinCents = toPayoutCents(ctx.config.maxWinX)
 
     let multiplierMet: boolean
     if (this.forceMaxWin) {
       multiplierMet = true
     } else if (this.multiplier === undefined) {
-      multiplierMet = currentWin > 0
+      multiplierMet = winCents > 0
     } else if (Array.isArray(this.multiplier)) {
-      multiplierMet = currentWin >= this.multiplier[0] && currentWin <= this.multiplier[1]
+      multiplierMet =
+        winCents >= toPayoutCents(this.multiplier[0]) &&
+        winCents <= toPayoutCents(this.multiplier[1])
     } else {
-      multiplierMet = currentWin === this.multiplier
+      multiplierMet = winCents === toPayoutCents(this.multiplier)
     }
 
     const respectsMaxWin = this.forceMaxWin
-      ? currentWin >= ctx.config.maxWinX
-      : currentWin < ctx.config.maxWinX
+      ? winCents >= maxWinCents
+      : winCents < maxWinCents
 
     const coreCriteriaMet = freespinsMet && multiplierMet && respectsMaxWin
 
@@ -129,6 +137,15 @@ export class ResultSet<TUserState extends AnyUserData> {
   }
 }
 
+/**
+ * Stake book / LUT payouts are stored as integer cent-units of the bet multiplier
+ * (`payoutMultiplier * 100`). Criteria must compare at that precision — not raw
+ * IEEE floats from wallet accumulation.
+ */
+export function toPayoutCents(multiplier: number): number {
+  return Math.round(multiplier * 100)
+}
+
 interface ResultSetOpts<TUserState extends AnyUserData> {
   /**
    * A short string to describe the criteria for this ResultSet.
@@ -143,6 +160,7 @@ interface ResultSetOpts<TUserState extends AnyUserData> {
    * The required multiplier for a simulated spin to be accepted.
    *
    * Can be an exact value, or an inclusive `[min, max]` range.
+   * Compared at 0.01x precision (cent units), matching book/LUT storage.
    *
    * Exact values can require many retries for hard-to-hit payouts.\
    * Using a range can drastically speed up the simulation.

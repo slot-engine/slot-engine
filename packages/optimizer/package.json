@@ -7,7 +7,7 @@
   },
   "homepage": "https://slot-engine.dev/docs/core/game-tasks/optimization",
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit",
     "prebuild": "pnpm typecheck",
     "build": "tsup ./index.ts --dts --format cjs,esm --sourcemap",

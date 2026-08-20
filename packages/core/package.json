@@ -7,7 +7,7 @@
   },
   "homepage": "https://slot-engine.dev/docs/core",
   "scripts": {
-    "test": "vitest",
+    "test": "vitest --config vitest.config.ts",
     "typecheck": "tsc --noEmit",
     "prebuild": "pnpm typecheck && pnpm cleanup",
     "build": "tsup ./index.ts --dts --format cjs,esm --sourcemap",

@@ -462,4 +462,34 @@ describe("optimize", () => {
       }),
     ).rejects.toThrow(/do not match any books.*"x"/)
   })
+
+  it("rejects optimization that makes the global max win unhittable", async () => {
+    const books: Book[] = []
+    let id = 1
+    for (let i = 0; i < 40; i++) books.push({ id: id++, criteria: "0", payoutX: 0 })
+    // Dense low pays plus a single top pay in the same criteria
+    for (let i = 0; i < 40; i++) {
+      books.push({ id: id++, criteria: "basegame", payoutX: 1 + (i % 8) * 0.25 })
+    }
+    books.push({ id: id++, criteria: "basegame", payoutX: 5000 })
+
+    const { lutPath, segPath, outPath } = writeFixture(books)
+
+    await expect(
+      optimize({
+        input: { lookupTable: lutPath, lookupTableSegmented: segPath },
+        output: { lookupTable: outPath },
+        cost: 1,
+        // Must equal hitRate-pinned contribution: (1/2) * 1.2 = 0.6
+        rtp: 0.6,
+        // Tiny scale makes extreme tilt round the lone max-win book to weight 0
+        weightScale: 200,
+        verbose: false,
+        targets: {
+          "0": {},
+          basegame: { hitRate: 2, avgWin: 1.2 },
+        },
+      }),
+    ).rejects.toThrow(/unhittable|maximum win/i)
+  })
 })

@@ -68,6 +68,7 @@ export async function optimize(opts: OptimizeOptions): Promise<OptimizeResult> {
   }
 
   const result = buildResult(lut, criteriaData, finalWeights, opts, weightScale)
+  assertMaxWinHittable(lut, finalWeights, payoutDivisor)
 
   fs.mkdirSync(path.dirname(opts.output.lookupTable), { recursive: true })
   await writeLookupTable(opts.output.lookupTable, lut.ids, finalWeights, lut.payouts)
@@ -496,4 +497,34 @@ function buildResult(
     weightScale,
     criteria,
   }
+}
+
+/**
+ * Stake publish requires the advertised max win to be hittable. Exponential tilt
+ * (or aggressive scale rules) can round every top-payout book to weight 0 while
+ * still hitting RTP — refuse that LUT instead of writing it silently.
+ */
+function assertMaxWinHittable(
+  lut: { ids: number[]; payouts: number[] },
+  finalWeights: Float64Array,
+  payoutDivisor: number,
+) {
+  let maxPayout = -Infinity
+  for (let i = 0; i < lut.payouts.length; i++) {
+    const payout = lut.payouts[i]!
+    if (payout > maxPayout) maxPayout = payout
+  }
+
+  if (!(maxPayout > 0)) return
+
+  for (let i = 0; i < lut.ids.length; i++) {
+    if (lut.payouts[i] === maxPayout && finalWeights[i]! > 0) return
+  }
+
+  throw new Error(
+    `Optimization made the maximum win (${maxPayout / payoutDivisor}x) unhittable: ` +
+      `every book paying that amount received weight 0. ` +
+      `Give max-win books their own hitRate target, relax high-end scale factors, ` +
+      `or reduce RTP/tilt pressure on the top of the distribution.`,
+  )
 }

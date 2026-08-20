@@ -442,7 +442,7 @@ export class Simulation {
     const { mode, chunks, chunkCriteriaCounts, totalSims } = opts
 
     try {
-      await Promise.all(
+      const results = await Promise.all(
         chunks.map(([simStart, simEnd], index) => {
           return this.callWorker({
             basePath: this.PATHS.base,
@@ -455,6 +455,14 @@ export class Simulation {
           })
         }),
       )
+
+      const failed = results.filter((r) => r !== true)
+      if (failed.length > 0) {
+        throw new Error(
+          `Simulation workers failed for mode "${mode}" (${failed.length}/${results.length}). ` +
+            `Publish files were not written for this mode.`,
+        )
+      }
     } catch (error) {
       this.tui?.stop()
       throw error
@@ -483,6 +491,7 @@ export class Simulation {
       createDirIfNotExists(path.join(this.PATHS.base, "books_chunks"))
 
       const startTime = Date.now()
+      let settled = false
 
       const worker = new Worker(scriptPath, {
         workerData: {
@@ -538,9 +547,34 @@ export class Simulation {
       let booksIndexBatch: string[] = []
       let lookupBatch: string[] = []
       let lookupSegBatch: string[] = []
+      let acceptWrites = true
+
+      const destroyStreams = () => {
+        acceptWrites = false
+        booksIndexBatch = []
+        lookupBatch = []
+        lookupSegBatch = []
+        booksIndexStream.destroy()
+        lookupStream.destroy()
+        lookupSegmentedStream.destroy()
+      }
+
+      const settleReject = (error: Error) => {
+        if (settled) return
+        settled = true
+        destroyStreams()
+        void worker.terminate()
+        reject(error)
+      }
+
+      const settleResolve = (value: true) => {
+        if (settled) return
+        settled = true
+        resolve(value)
+      }
 
       const flushWriteBatches = async () => {
-        if (booksIndexBatch.length === 0) return
+        if (!acceptWrites || booksIndexBatch.length === 0) return
         const booksIndexData = booksIndexBatch.join("")
         const lookupData = lookupBatch.join("")
         const lookupSegData = lookupSegBatch.join("")
@@ -564,12 +598,20 @@ export class Simulation {
 
         if (msg.type === "log-exit") {
           this.tui?.log(msg.message)
-          this.tui?.stop()
           console.log(msg.message)
-          process.exit(1)
+          settleReject(
+            new Error(
+              typeof msg.message === "string"
+                ? msg.message.replace(/\u001b\[[0-9;]*m/g, "")
+                : `Worker ${index} aborted simulation`,
+            ),
+          )
+          return
         }
 
         if (msg.type === "complete") {
+          if (settled || !acceptWrites) return
+
           completedSimulations++
 
           // Moving this out of the writeChain hopefully doesn't cause desync, let's pray
@@ -606,6 +648,8 @@ export class Simulation {
 
           writeChain = writeChain
             .then(async () => {
+              if (!acceptWrites) return
+
               const bookId = msg.bookId as number
               const bookCriteria = msg.bookCriteria as string
               const bookPayout = msg.bookPayout as number
@@ -677,7 +721,7 @@ export class Simulation {
 
               worker.postMessage({ type: "credit", amount: 1 })
             })
-            .catch(reject)
+            .catch(settleReject)
 
           return
         }
@@ -685,6 +729,7 @@ export class Simulation {
         if (msg.type === "done") {
           writeChain
             .then(async () => {
+              if (!acceptWrites) return
               await flushWriteBatches()
               await flushBookChunk()
               lookupStream.end()
@@ -705,9 +750,9 @@ export class Simulation {
               }
               this.bookIndexMetas.push(bookIndexMeta)
 
-              resolve(true)
+              settleResolve(true)
             })
-            .catch(reject)
+            .catch(settleReject)
 
           return
         }
@@ -715,13 +760,18 @@ export class Simulation {
 
       worker.on("error", (error) => {
         this.tui?.log(error.message)
-        resolve(error)
+        settleReject(error instanceof Error ? error : new Error(String(error)))
       })
 
       worker.on("exit", (code) => {
         if (code !== 0) {
           this.tui?.log(chalk.yellow(`Worker stopped with exit code ${code}`))
-          resolve(false)
+          settleReject(
+            new Error(
+              `Worker ${index} for mode "${mode}" stopped with exit code ${code}. ` +
+                `Partial publish files were not finalized.`,
+            ),
+          )
         }
       })
     })
@@ -808,11 +858,16 @@ export class Simulation {
         })
       }
 
-      if (!ctx.state.isCriteriaMet && retries % 50_000 === 0) {
+      if (!ctx.state.isCriteriaMet && retries >= 50_000) {
+        const message =
+          `Unreachable ResultSet criteria "${criteria}" after ${retries} retries at sim #${simId}. ` +
+          `Exact multiplier targets are matched at 0.01x precision — prefer a [min, max] range, ` +
+          `or check that forceMaxWin / forceFreespins / evaluate can actually hit.`
         parentPort?.postMessage({
           type: "log-exit",
-          message: chalk.red("Possible infinite loop detected, exiting simulation."),
+          message: chalk.red(message),
         })
+        throw new Error(message)
       }
     }
 
