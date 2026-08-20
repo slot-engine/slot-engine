@@ -33,10 +33,10 @@ jobs:
       - uses: ./.github/actions/ci-checks
 
       - name: Create Release Pull Request or Publish to npm
-        uses: changesets/action@v1
+        uses: changesets/action@v2
         with:
-          publish: pnpm publish-release
-          commit: "chore: release new version"
+          publish-script: pnpm publish-release
+          commit-message: "chore: release new version"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           #NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
