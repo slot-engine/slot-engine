@@ -4,6 +4,7 @@ import { GameContext } from "../game-context"
 import { Simulation } from "../simulation"
 import { RandomNumberGenerator } from "../rng"
 import { SPIN_TYPE } from "../constants"
+import { round } from "../../utils"
 
 export class ResultSet<TUserState extends AnyUserData> {
   criteria: string
@@ -97,7 +98,7 @@ export class ResultSet<TUserState extends AnyUserData> {
     const freespinsMet = this.forceFreespins ? ctx.state.triggeredFreespins : true
 
     const wallet = ctx.services.wallet._getWallet()
-    const currentWin = wallet.getCurrentWin()
+    const currentWin = round(wallet.getCurrentWin(), 4)
 
     let multiplierMet: boolean
     if (this.forceMaxWin) {
