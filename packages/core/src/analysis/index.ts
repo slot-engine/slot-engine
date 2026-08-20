@@ -21,6 +21,7 @@ import { round, writeJsonFile } from "../../utils"
 import { isMainThread } from "worker_threads"
 import { SlotGame } from "../slot-game"
 import { TagItem } from "../tagger"
+import { LookupTable } from "../types"
 import chalk from "chalk"
 
 export class Analysis {
@@ -57,6 +58,9 @@ export class Analysis {
       )
       const totalWeight = getTotalLutWeight(lutOptimized)
       const payoutWeights = getPayoutWeights(lutOptimized)
+      const maxWin = getMaxWin(payoutWeights)
+
+      this.warnAboutZeroWeightBooks(modeStr, lutOptimized, maxWin)
 
       stats.push({
         gameMode: mode.name,
@@ -64,7 +68,7 @@ export class Analysis {
         avgWin: getAvgWin(payoutWeights),
         rtp: getRtp(payoutWeights, mode.cost),
         minWin: getMinWin(payoutWeights),
-        maxWin: getMaxWin(payoutWeights),
+        maxWin,
         stdDev: getStandardDeviation(payoutWeights),
         variance: getVariance(payoutWeights),
         nonZeroHitRate: getNonZeroHitrate(payoutWeights),
@@ -76,6 +80,25 @@ export class Analysis {
     }
 
     writeJsonFile(meta.paths.statsSummary, stats)
+  }
+
+  private warnAboutZeroWeightBooks(mode: string, lut: LookupTable, maxWin: number) {
+    let zeroWeightBooks = 0
+    let topPayout = -Infinity
+
+    for (const [, weight, payout] of lut) {
+      if (weight <= 0) zeroWeightBooks++
+      if (payout / 100 > topPayout) topPayout = payout / 100
+    }
+
+    if (zeroWeightBooks === 0) return
+
+    const unhittableMaxWin =
+      topPayout > maxWin
+        ? `Max win ${maxWin}x unhittable in mode ${mode}. Highest payout is ${topPayout}x`
+        : ""
+
+    console.warn(chalk.yellow(unhittableMaxWin))
   }
 
   private getWinRanges(gameModes: string[]) {
