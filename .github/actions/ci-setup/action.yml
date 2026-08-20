@@ -13,8 +13,11 @@ runs:
         cache: 'pnpm'
         registry-url: 'https://registry.npmjs.org'
 
+    # Pinned to 11.x: npm 12 made `npm view --json` always return an array,
+    # which breaks `changeset publish` (pnpm forwards `pnpm info` to npm).
+    # See https://github.com/npm/cli/releases/tag/v12.0.0
     - name: Update npm
-      run: npm install -g npm@latest
+      run: npm install -g npm@^11
       shell: bash
 
     - name: Install Dependencies
