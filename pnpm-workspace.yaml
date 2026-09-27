@@ -7,3 +7,6 @@ allowBuilds:
   esbuild: true
   sharp: true
 linkWorkspacePackages: true
+minimumReleaseAgeExclude:
+  - fumadocs-core@16.15.15
+  - fumadocs-ui@16.15.15
