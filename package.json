@@ -12,17 +12,18 @@
     "publish-release": "pnpm install --frozen-lockfile=false && pnpm --filter=\"@slot-engine/*\" build && pnpm changeset publish"
   },
   "devDependencies": {
-    "@types/node": "26.6.5",
     "@changesets/changelog-github": "1.0.1",
     "@changesets/cli": "3.0.3",
     "@changesets/get-github-info": "1.0.1",
+    "@types/node": "26.6.5",
+    "@typescript/typescript6": "^6.0.2",
     "dotenv": "18.0.1",
     "prettier": "3.6.2",
-    "tsup": "8.5.0",
+    "tsup": "9.0.0",
     "tsx": "4.23.15",
     "turbo": "2.11.10",
     "typescript": "7.0.2",
-    "vitest":"5.0.5"
+    "vitest": "5.0.5"
   },
   "packageManager": "pnpm@11.22.0",
   "engines": {
