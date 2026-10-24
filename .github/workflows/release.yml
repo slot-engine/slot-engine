@@ -42,3 +42,6 @@ jobs:
           #NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           #NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
+          # `changeset version` bumps manifests, then formats via `pnpm exec prettier`.
+          # pnpm 11 would run a frozen-lockfile install before exec and fail on the bump.
+          pnpm_config_verify_deps_before_run: false

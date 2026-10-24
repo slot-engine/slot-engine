@@ -34,3 +34,6 @@ jobs:
           pr-title: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # `changeset version` bumps manifests, then formats via `pnpm exec prettier`.
+          # pnpm 11 would run a frozen-lockfile install before exec and fail on the bump.
+          pnpm_config_verify_deps_before_run: false
