@@ -12,11 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GamesIndexRouteImport } from './routes/games/index'
 import { Route as GamesGameIdRouteRouteImport } from './routes/games/$gameId/route'
-import { Route as GamesGameIdSimulationIndexRouteImport } from './routes/games/$gameId/simulation/index'
-import { Route as GamesGameIdReelsetDesignerIndexRouteImport } from './routes/games/$gameId/reelset-designer/index'
-import { Route as GamesGameIdInfoIndexRouteImport } from './routes/games/$gameId/info/index'
-import { Route as GamesGameIdExplorerIndexRouteImport } from './routes/games/$gameId/explorer/index'
 import { Route as GamesGameIdBetSimulationIndexRouteImport } from './routes/games/$gameId/bet-simulation/index'
+import { Route as GamesGameIdExplorerIndexRouteImport } from './routes/games/$gameId/explorer/index'
+import { Route as GamesGameIdInfoIndexRouteImport } from './routes/games/$gameId/info/index'
+import { Route as GamesGameIdReelsetDesignerIndexRouteImport } from './routes/games/$gameId/reelset-designer/index'
+import { Route as GamesGameIdSimulationIndexRouteImport } from './routes/games/$gameId/simulation/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -33,16 +33,16 @@ const GamesGameIdRouteRoute = GamesGameIdRouteRouteImport.update({
   path: '/games/$gameId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GamesGameIdSimulationIndexRoute =
-  GamesGameIdSimulationIndexRouteImport.update({
-    id: '/simulation/',
-    path: '/simulation/',
+const GamesGameIdBetSimulationIndexRoute =
+  GamesGameIdBetSimulationIndexRouteImport.update({
+    id: '/bet-simulation/',
+    path: '/bet-simulation/',
     getParentRoute: () => GamesGameIdRouteRoute,
   } as any)
-const GamesGameIdReelsetDesignerIndexRoute =
-  GamesGameIdReelsetDesignerIndexRouteImport.update({
-    id: '/reelset-designer/',
-    path: '/reelset-designer/',
+const GamesGameIdExplorerIndexRoute =
+  GamesGameIdExplorerIndexRouteImport.update({
+    id: '/explorer/',
+    path: '/explorer/',
     getParentRoute: () => GamesGameIdRouteRoute,
   } as any)
 const GamesGameIdInfoIndexRoute = GamesGameIdInfoIndexRouteImport.update({
@@ -50,28 +50,28 @@ const GamesGameIdInfoIndexRoute = GamesGameIdInfoIndexRouteImport.update({
   path: '/info/',
   getParentRoute: () => GamesGameIdRouteRoute,
 } as any)
-const GamesGameIdExplorerIndexRoute =
-  GamesGameIdExplorerIndexRouteImport.update({
-    id: '/explorer/',
-    path: '/explorer/',
+const GamesGameIdReelsetDesignerIndexRoute =
+  GamesGameIdReelsetDesignerIndexRouteImport.update({
+    id: '/reelset-designer/',
+    path: '/reelset-designer/',
     getParentRoute: () => GamesGameIdRouteRoute,
   } as any)
-const GamesGameIdBetSimulationIndexRoute =
-  GamesGameIdBetSimulationIndexRouteImport.update({
-    id: '/bet-simulation/',
-    path: '/bet-simulation/',
+const GamesGameIdSimulationIndexRoute =
+  GamesGameIdSimulationIndexRouteImport.update({
+    id: '/simulation/',
+    path: '/simulation/',
     getParentRoute: () => GamesGameIdRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/games/$gameId': typeof GamesGameIdRouteRouteWithChildren
-  '/games': typeof GamesIndexRoute
-  '/games/$gameId/bet-simulation': typeof GamesGameIdBetSimulationIndexRoute
-  '/games/$gameId/explorer': typeof GamesGameIdExplorerIndexRoute
-  '/games/$gameId/info': typeof GamesGameIdInfoIndexRoute
-  '/games/$gameId/reelset-designer': typeof GamesGameIdReelsetDesignerIndexRoute
-  '/games/$gameId/simulation': typeof GamesGameIdSimulationIndexRoute
+  '/games/': typeof GamesIndexRoute
+  '/games/$gameId/bet-simulation/': typeof GamesGameIdBetSimulationIndexRoute
+  '/games/$gameId/explorer/': typeof GamesGameIdExplorerIndexRoute
+  '/games/$gameId/info/': typeof GamesGameIdInfoIndexRoute
+  '/games/$gameId/reelset-designer/': typeof GamesGameIdReelsetDesignerIndexRoute
+  '/games/$gameId/simulation/': typeof GamesGameIdSimulationIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -99,12 +99,12 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/games/$gameId'
-    | '/games'
-    | '/games/$gameId/bet-simulation'
-    | '/games/$gameId/explorer'
-    | '/games/$gameId/info'
-    | '/games/$gameId/reelset-designer'
-    | '/games/$gameId/simulation'
+    | '/games/'
+    | '/games/$gameId/bet-simulation/'
+    | '/games/$gameId/explorer/'
+    | '/games/$gameId/info/'
+    | '/games/$gameId/reelset-designer/'
+    | '/games/$gameId/simulation/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -145,7 +145,7 @@ declare module '@tanstack/react-router' {
     '/games/': {
       id: '/games/'
       path: '/games'
-      fullPath: '/games'
+      fullPath: '/games/'
       preLoaderRoute: typeof GamesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -156,39 +156,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesGameIdRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/games/$gameId/simulation/': {
-      id: '/games/$gameId/simulation/'
-      path: '/simulation'
-      fullPath: '/games/$gameId/simulation'
-      preLoaderRoute: typeof GamesGameIdSimulationIndexRouteImport
-      parentRoute: typeof GamesGameIdRouteRoute
-    }
-    '/games/$gameId/reelset-designer/': {
-      id: '/games/$gameId/reelset-designer/'
-      path: '/reelset-designer'
-      fullPath: '/games/$gameId/reelset-designer'
-      preLoaderRoute: typeof GamesGameIdReelsetDesignerIndexRouteImport
-      parentRoute: typeof GamesGameIdRouteRoute
-    }
-    '/games/$gameId/info/': {
-      id: '/games/$gameId/info/'
-      path: '/info'
-      fullPath: '/games/$gameId/info'
-      preLoaderRoute: typeof GamesGameIdInfoIndexRouteImport
+    '/games/$gameId/bet-simulation/': {
+      id: '/games/$gameId/bet-simulation/'
+      path: '/bet-simulation'
+      fullPath: '/games/$gameId/bet-simulation/'
+      preLoaderRoute: typeof GamesGameIdBetSimulationIndexRouteImport
       parentRoute: typeof GamesGameIdRouteRoute
     }
     '/games/$gameId/explorer/': {
       id: '/games/$gameId/explorer/'
       path: '/explorer'
-      fullPath: '/games/$gameId/explorer'
+      fullPath: '/games/$gameId/explorer/'
       preLoaderRoute: typeof GamesGameIdExplorerIndexRouteImport
       parentRoute: typeof GamesGameIdRouteRoute
     }
-    '/games/$gameId/bet-simulation/': {
-      id: '/games/$gameId/bet-simulation/'
-      path: '/bet-simulation'
-      fullPath: '/games/$gameId/bet-simulation'
-      preLoaderRoute: typeof GamesGameIdBetSimulationIndexRouteImport
+    '/games/$gameId/info/': {
+      id: '/games/$gameId/info/'
+      path: '/info'
+      fullPath: '/games/$gameId/info/'
+      preLoaderRoute: typeof GamesGameIdInfoIndexRouteImport
+      parentRoute: typeof GamesGameIdRouteRoute
+    }
+    '/games/$gameId/reelset-designer/': {
+      id: '/games/$gameId/reelset-designer/'
+      path: '/reelset-designer'
+      fullPath: '/games/$gameId/reelset-designer/'
+      preLoaderRoute: typeof GamesGameIdReelsetDesignerIndexRouteImport
+      parentRoute: typeof GamesGameIdRouteRoute
+    }
+    '/games/$gameId/simulation/': {
+      id: '/games/$gameId/simulation/'
+      path: '/simulation'
+      fullPath: '/games/$gameId/simulation/'
+      preLoaderRoute: typeof GamesGameIdSimulationIndexRouteImport
       parentRoute: typeof GamesGameIdRouteRoute
     }
   }

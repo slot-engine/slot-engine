@@ -1,6 +1,6 @@
 import { cn, cva } from "@/lib/cn"
 import { Menu as Primitive } from "@base-ui/react/menu"
-import { IconChevronRight } from "@tabler/icons-react"
+import { IconCheck, IconChevronRight } from "@tabler/icons-react"
 
 export const Menu = Primitive.Root
 
@@ -42,7 +42,10 @@ export const MenuSubmenuTrigger = ({
 }: MenuSubmenuTriggerProps) => {
   return (
     <Primitive.SubmenuTrigger
-      className={cn("flex gap-2 items-center", className)}
+      className={cn(
+        "flex gap-2 items-center px-2 py-1 rounded-sm cursor-pointer hover:bg-ui-800 data-popup-open:bg-ui-800",
+        className,
+      )}
       {...props}
     >
       {children}
@@ -75,6 +78,29 @@ export const MenuItem = ({
     <Primitive.Item {...props} className={itemStyles({ variant })}>
       {children}
     </Primitive.Item>
+  )
+}
+
+interface MenuCheckboxItemProps extends Primitive.CheckboxItem.Props {}
+
+export const MenuCheckboxItem = ({
+  className,
+  children,
+  ...props
+}: MenuCheckboxItemProps) => {
+  return (
+    <Primitive.CheckboxItem
+      {...props}
+      className={cn(
+        "flex gap-2 items-center px-2 py-1 rounded-sm cursor-pointer hover:bg-ui-800",
+        className,
+      )}
+    >
+      <span className="size-6 p-0.5 flex items-center justify-center bg-ui-800 border border-ui-700 rounded-lg shrink-0">
+        <Primitive.CheckboxItemIndicator render={<IconCheck />} />
+      </span>
+      {children}
+    </Primitive.CheckboxItem>
   )
 }
 

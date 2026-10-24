@@ -16,7 +16,7 @@ export const Checkbox = ({ label, description, className, ...props }: CheckboxPr
           {...props}
           className="size-6 p-0.5 flex items-center justify-center bg-ui-800 border border-ui-700 rounded-lg shrink-0"
         >
-          <Primitive.Indicator render={() => <IconCheck />} />
+          <Primitive.Indicator render={<IconCheck />} />
         </Primitive.Root>
         {label && <span className="block leading-5">{label}</span>}
       </Field.Label>

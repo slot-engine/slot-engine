@@ -1,6 +1,8 @@
-import { useRef } from "react"
+import { useRef, useState } from "react"
+import type { BaseUIEvent } from "@base-ui/react/types"
 import { useRseData, type ReelsetEditorReel } from "../context/DataContext"
-import { useRseUi } from "../context/UiContext"
+import { useRseUi, type ShuffleOptions } from "../context/UiContext"
+import { shuffleReel } from "../lib/shuffle"
 import { SortableSymbol, SymbolDropArea } from "./Symbol"
 import { useSortable } from "@dnd-kit/react/sortable"
 import { CollisionPriority } from "@dnd-kit/abstract"
@@ -9,17 +11,23 @@ import {
   IconArrowsShuffle,
   IconDots,
   IconGripVertical,
+  IconMinus,
   IconPlus,
   IconTrash,
+  IconX,
 } from "@tabler/icons-react"
 import {
   Menu,
+  MenuCheckboxItem,
   MenuContent,
   MenuItem,
   MenuSeparator,
+  MenuSubmenu,
+  MenuSubmenuTrigger,
   MenuTrigger,
 } from "@/components/Menu"
 import { Button } from "@/components/Button"
+import { NumberInput } from "@/components/NumberInput"
 
 interface SortableReelProps extends React.ComponentPropsWithoutRef<"div"> {
   reelId: number
@@ -32,7 +40,9 @@ export const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProp
   const [reels, setReels] = reelsState
   const [, setReelOrder] = reelOrderState
 
-  const { handleDialog } = useRseUi()
+  const { handleDialog, shuffleOptionsState } = useRseUi()
+  const [{ spaceBetweenSameSymbols, spacing }, setShuffleOptions] = shuffleOptionsState
+  const [shuffleError, setShuffleError] = useState<string | null>(null)
 
   const handleRef = useRef<HTMLDivElement>(null)
 
@@ -50,7 +60,7 @@ export const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProp
   const virtualizer = useVirtualizer({
     count: reel.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 48,
+    estimateSize: () => 32,
     overscan: 10,
     gap: 8,
     getItemKey: (itemIdx) => reels[reelId]?.[itemIdx]?.id,
@@ -66,21 +76,25 @@ export const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProp
     setReelOrder((currentOrder) => currentOrder.filter((id) => id !== reelId))
   }
 
-  function shuffleReel(reelId: number) {
+  function clearReel(reelId: number) {
     setReels((currentReels) => {
-      const reelToShuffle = currentReels[reelId]
-      if (!reelToShuffle) return currentReels
-
-      const shuffledReel = [...reelToShuffle]
-        .map((value) => ({ value, sort: Math.random() }))
-        .sort((a, b) => a.sort - b.sort)
-        .map(({ value }) => value)
-
-      return {
-        ...currentReels,
-        [reelId]: shuffledReel,
-      }
+      return { ...currentReels, [reelId]: [] }
     })
+  }
+
+  function updateShuffleOptions(options: Partial<ShuffleOptions>) {
+    setShuffleOptions((current) => ({ ...current, ...options }))
+    setShuffleError(null)
+  }
+
+  function handleShuffle(event: BaseUIEvent<React.MouseEvent<HTMLDivElement>>) {
+    const result = shuffleReel(reel, spaceBetweenSameSymbols ? spacing : 0)
+    if (!result.ok) {
+      setShuffleError(result.error)
+      event.preventBaseUIHandler()
+      return
+    }
+    setReels((current) => ({ ...current, [reelId]: result.reel }))
   }
 
   return (
@@ -98,7 +112,11 @@ export const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProp
           >
             <IconGripVertical />
           </div>
-          <Menu>
+          <Menu
+            onOpenChange={(open) => {
+              if (!open) setShuffleError(null)
+            }}
+          >
             <MenuTrigger
               title="More options..."
               render={<Button variant="ghost" isIconButton size="sm" />}
@@ -106,13 +124,61 @@ export const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProp
               <IconDots />
             </MenuTrigger>
             <MenuContent>
-              <MenuItem onClick={() => handleDialog(reelId)}>
+              <MenuItem onClick={() => handleDialog(reelId, "addSymbols")}>
                 <IconPlus />
                 Add Symbols
               </MenuItem>
-              <MenuItem onClick={() => shuffleReel(reelId)}>
-                <IconArrowsShuffle />
-                Shuffle Symbols
+              <MenuItem onClick={() => handleDialog(reelId, "removeSymbols")}>
+                <IconMinus />
+                Remove Symbols
+              </MenuItem>
+              <MenuSubmenu>
+                <MenuSubmenuTrigger>
+                  <IconArrowsShuffle />
+                  Shuffle Symbols
+                </MenuSubmenuTrigger>
+                <MenuContent className="w-64">
+                  <MenuCheckboxItem
+                    checked={spaceBetweenSameSymbols}
+                    onCheckedChange={(checked) =>
+                      updateShuffleOptions({ spaceBetweenSameSymbols: checked })
+                    }
+                  >
+                    Space between same symbols
+                  </MenuCheckboxItem>
+                  <div
+                    // Keeps the menu from treating typed digits as typeahead and arrows as navigation.
+                    onKeyDown={(event) => {
+                      if (event.key !== "Escape" && event.key !== "Tab") {
+                        event.stopPropagation()
+                      }
+                    }}
+                    className="px-2 py-1"
+                  >
+                    <NumberInput
+                      min={1}
+                      format={{ maximumFractionDigits: 0 }}
+                      value={spacing}
+                      onValueChange={(value) => {
+                        if (value !== null) updateShuffleOptions({ spacing: value })
+                      }}
+                      disabled={!spaceBetweenSameSymbols}
+                    />
+                  </div>
+                  <MenuSeparator />
+                  <MenuItem onClick={handleShuffle}>
+                    <IconArrowsShuffle />
+                    Shuffle
+                  </MenuItem>
+                  {shuffleError && (
+                    <div className="px-2 py-1 text-xs text-red-500">{shuffleError}</div>
+                  )}
+                </MenuContent>
+              </MenuSubmenu>
+              <MenuSeparator />
+              <MenuItem variant="destructive" onClick={() => clearReel(reelId)}>
+                <IconX />
+                Clear Reel
               </MenuItem>
               <MenuSeparator />
               <MenuItem variant="destructive" onClick={() => deleteReel(reelId)}>
@@ -126,7 +192,7 @@ export const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProp
       </div>
       <div
         ref={scrollRef}
-        className="w-28 p-4 pt-0 scrollbar-thin h-full overflow-x-hidden overflow-y-auto"
+        className="w-36 p-4 pt-0 scrollbar-thin h-full overflow-x-hidden overflow-y-auto"
       >
         {reel.length === 0 ? (
           <SymbolDropArea reelId={reelId} />

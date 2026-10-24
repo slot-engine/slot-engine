@@ -2,14 +2,24 @@ import { createContext, useContext, useState } from "react"
 import { useRseData } from "./DataContext"
 import type { State } from "@/lib/types"
 
+export interface ShuffleOptions {
+  spaceBetweenSameSymbols: boolean
+  spacing: number
+}
+
+export type RseDialog = "addSymbols" | "removeSymbols"
+
 interface RseUiContext {
-  dialogState: State<boolean>
+  dialogState: State<RseDialog | null>
   symbolCountsState: State<Record<string, number>>
+  symbolsToRemoveState: State<string[]>
   activeReelState: State<number | null>
   insertPosState: State<number | null>
-  handleDialog: (reelId: number) => void
+  shuffleOptionsState: State<ShuffleOptions>
+  handleDialog: (reelId: number, dialog: RseDialog) => void
   updateSymbolCount: (symbol: string, count: number) => void
   confirmSymbols: (mode: "prepend" | "append") => void
+  confirmRemoveSymbols: () => void
 }
 
 const RseUiContext = createContext<RseUiContext | null>(null)
@@ -28,14 +38,19 @@ export const RseUiProvider = ({ children }: React.PropsWithChildren) => {
   const { reelsState } = useRseData()
   const [reels, setReels] = reelsState
 
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialog, setDialog] = useState<RseDialog | null>(null)
   const [symbolCounts, setSymbolCounts] = useState<Record<string, number>>({})
+  const [symbolsToRemove, setSymbolsToRemove] = useState<string[]>([])
   const [activeReel, setActiveReel] = useState<number | null>(null)
   const [insertPos, setInsertPos] = useState<number | null>(null)
+  const [shuffleOptions, setShuffleOptions] = useState<ShuffleOptions>({
+    spaceBetweenSameSymbols: false,
+    spacing: 1,
+  })
 
-  function handleDialog(reelId: number) {
+  function handleDialog(reelId: number, dialog: RseDialog) {
     setActiveReel(reelId)
-    setDialogOpen(true)
+    setDialog(dialog)
   }
 
   function updateSymbolCount(symbol: string, count: number) {
@@ -87,17 +102,37 @@ export const RseUiProvider = ({ children }: React.PropsWithChildren) => {
     setActiveReel(null)
     setInsertPos(null)
     setSymbolCounts({})
-    setDialogOpen(false)
+    setDialog(null)
+  }
+
+  function confirmRemoveSymbols() {
+    const reelId = activeReel
+    if (reelId === null) return
+
+    setReels((current) => {
+      return {
+        ...current,
+        [reelId]: (current[reelId] || []).filter(
+          (item) => !symbolsToRemove.includes(item.symbol),
+        ),
+      }
+    })
+
+    setActiveReel(null)
+    setDialog(null)
   }
 
   const context: RseUiContext = {
-    dialogState: [dialogOpen, setDialogOpen],
+    dialogState: [dialog, setDialog],
     symbolCountsState: [symbolCounts, setSymbolCounts],
+    symbolsToRemoveState: [symbolsToRemove, setSymbolsToRemove],
     activeReelState: [activeReel, setActiveReel],
     insertPosState: [insertPos, setInsertPos],
+    shuffleOptionsState: [shuffleOptions, setShuffleOptions],
     handleDialog,
     updateSymbolCount,
     confirmSymbols,
+    confirmRemoveSymbols,
   }
 
   return <RseUiContext.Provider value={context}>{children}</RseUiContext.Provider>

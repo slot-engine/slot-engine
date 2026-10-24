@@ -5,6 +5,7 @@ import { useRseData, type ReelsetEditorReel } from "./context/DataContext"
 import { Button } from "../Button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "../Dialog"
 import { NumberInput } from "../NumberInput"
+import { Checkbox } from "../Checkbox"
 import { useRseUi } from "./context/UiContext"
 import { SortableReel } from "./components/Reel"
 
@@ -16,15 +17,20 @@ export const ReelSetDesigner = () => {
   const {
     dialogState,
     symbolCountsState,
+    symbolsToRemoveState,
     insertPosState,
     activeReelState,
     updateSymbolCount,
     confirmSymbols,
+    confirmRemoveSymbols,
   } = useRseUi()
-  const [dialogOpen, setDialogOpen] = dialogState
+  const [dialog, setDialog] = dialogState
   const [symbolCounts] = symbolCountsState
+  const [symbolsToRemove, setSymbolsToRemove] = symbolsToRemoveState
   const [insertPos, setInsertPos] = insertPosState
   const [activeReel] = activeReelState
+
+  const activeReelSymbols = activeReel !== null ? (reels[activeReel] ?? []) : []
 
   return (
     <>
@@ -77,7 +83,7 @@ export const ReelSetDesigner = () => {
           ))}
           <div
             onClick={() => addReel()}
-            className="min-w-28 min-h-content-height bg-ui-900 hover:bg-ui-800 flex flex-col justify-center items-center gap-2 border-2 border-ui-700 border-dashed cursor-pointer"
+            className="min-w-36 min-h-content-height bg-ui-900 hover:bg-ui-800 flex flex-col justify-center items-center gap-2 border-2 border-ui-700 border-dashed cursor-pointer"
           >
             <IconPlus />
             Add Reel
@@ -85,7 +91,10 @@ export const ReelSetDesigner = () => {
         </div>
       </DragDropProvider>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog
+        open={dialog === "addSymbols"}
+        onOpenChange={(open) => setDialog(open ? "addSymbols" : null)}
+      >
         <DialogContent>
           <DialogTitle>Add Reel Symbols</DialogTitle>
           <DialogDescription>
@@ -116,6 +125,45 @@ export const ReelSetDesigner = () => {
           <div className="text-sm mt-2 text-ui-500">
             If no symbol index is given, the symbols will be placed at the start or end of
             the reel.
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={dialog === "removeSymbols"}
+        onOpenChange={(open) => setDialog(open ? "removeSymbols" : null)}
+        onOpenChangeComplete={(open) => {
+          if (!open) setSymbolsToRemove([])
+        }}
+      >
+        <DialogContent>
+          <DialogTitle>Remove Reel Symbols</DialogTitle>
+          <DialogDescription>
+            All symbols of the checked types will be removed from reel{" "}
+            {(activeReel ?? 0) + 1}.
+          </DialogDescription>
+          <div className="mt-4 grid grid-cols-2 gap-x-8 gap-y-2">
+            {options.symbols.map((sym) => (
+              <Checkbox
+                key={sym}
+                label={`${sym} (${activeReelSymbols.filter((item) => item.symbol === sym).length})`}
+                checked={symbolsToRemove.includes(sym)}
+                onCheckedChange={(checked) =>
+                  setSymbolsToRemove((current) =>
+                    checked ? [...current, sym] : current.filter((s) => s !== sym),
+                  )
+                }
+              />
+            ))}
+          </div>
+          <div className="mt-4 flex">
+            <Button
+              variant="destructive"
+              disabled={symbolsToRemove.length === 0}
+              onClick={confirmRemoveSymbols}
+            >
+              Remove Symbols
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

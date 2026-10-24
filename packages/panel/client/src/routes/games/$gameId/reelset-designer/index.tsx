@@ -96,9 +96,6 @@ const Sidebar = () => {
 
   return (
     <div>
-      <div className="text-sm px-2 py-1 bg-yellow-950 rounded inline-block mb-2">
-        Experimental
-      </div>
       <h2 className="mb-2">Reel Set Designer</h2>
       <Select
         multiple={false}

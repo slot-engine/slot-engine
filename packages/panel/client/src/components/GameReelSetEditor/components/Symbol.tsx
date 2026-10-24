@@ -42,27 +42,27 @@ export const SortableSymbol = ({
       {...props}
       ref={ref}
       className={cn(
-        "cursor-grab w-20 h-12 bg-ui-800 rounded-sm border border-ui-700",
+        "cursor-grab w-28 bg-ui-800 rounded-sm border border-ui-700",
         "data-[dnd-dragging=true]:opacity-90 data-[dnd-dragging=true]:animate-wiggle",
         className,
       )}
     >
-      <div className="relative w-full h-full flex items-center justify-center">
-        <span className="text-xl pl-1">{symbolId}</span>
-        <span className="absolute text-xs top-0.5 left-1 text-ui-100">{index}</span>
-        <span
-          className="absolute w-1 h-[calc(100%-0.5rem)] top-1 right-1 rounded"
-          style={{ backgroundColor: colors[symbolId] }}
-        />
+      <div className="pl-2 pr-4 relative w-full h-full flex items-center gap-2">
+        <span className="text-xs text-ui-100">{index}</span>
+        <span className="text-md pl-1">{symbolId}</span>
         {!isDragging && (
           <span
-            className="cursor-pointer absolute bottom-1 left-1"
+            className="cursor-pointer ml-auto"
             title="Delete Symbol"
             onClick={handleDelete}
           >
             <IconTrash size={14} />
           </span>
         )}
+        <span
+          className="absolute w-1 h-[calc(100%-0.5rem)] top-1 right-1 rounded"
+          style={{ backgroundColor: colors[symbolId] }}
+        />
       </div>
     </div>
   )
