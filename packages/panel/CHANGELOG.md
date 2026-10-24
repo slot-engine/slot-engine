@@ -1,5 +1,11 @@
 # @slot-engine/panel
 
+## 0.2.3
+
+### Patch Changes
+
+- Improve reelset designer: add options; more compact styling - Thanks @nordowl
+
 ## 0.2.2
 
 ### Patch Changes
