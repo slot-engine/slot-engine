@@ -1,0 +1,9 @@
+{
+  "$schema": "https://raw.githubusercontent.com/rolldown/tsdown/main/schema.json",
+  "entry": "./server/index.ts",
+  "tsconfig": "./tsconfig.build.json",
+  "format": ["cjs", "esm"],
+  "dts": true,
+  "sourcemap": true,
+  "fixedExtension": false
+}

@@ -713,7 +713,7 @@ export class Simulation {
         }
       })
 
-      worker.on("error", (error) => {
+      worker.on("error", (error: any) => {
         this.tui?.log(error.message)
         resolve(error)
       })

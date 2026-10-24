@@ -8,7 +8,7 @@
   "homepage": "https://slot-engine.dev/docs/panel",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build-server": "tsup ./server/index.ts --dts --format cjs,esm --sourcemap",
+    "build-server": "tsdown",
     "build-client": "cd ./client && tsc -b && vite build",
     "build": "pnpm run build-server && pnpm run build-client",
     "dev-server": "tsx watch ./dev.ts",

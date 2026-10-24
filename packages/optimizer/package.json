@@ -10,8 +10,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "prebuild": "pnpm typecheck",
-    "build": "tsup ./index.ts --dts --format cjs,esm --sourcemap",
-    "dev": "tsup ./index.ts --dts --format cjs,esm --sourcemap --watch"
+    "build": "tsdown",
+    "dev": "tsdown --watch"
   },
   "files": [
     "dist"

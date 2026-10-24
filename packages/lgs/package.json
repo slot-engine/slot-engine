@@ -9,8 +9,8 @@
   "homepage": "https://slot-engine.dev/docs/lgs",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "tsup ./index.ts --dts --format cjs,esm --sourcemap",
-    "dev": "tsup ./index.ts --dts --format cjs,esm --sourcemap --watch"
+    "build": "tsdown",
+    "dev": "tsdown --watch"
   },
   "files": [
     "dist"

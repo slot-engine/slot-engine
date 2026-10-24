@@ -1,0 +1,8 @@
+{
+  "$schema": "https://raw.githubusercontent.com/rolldown/tsdown/main/schema.json",
+  "entry": "./index.ts",
+  "format": ["cjs", "esm"],
+  "dts": true,
+  "sourcemap": true,
+  "fixedExtension": false
+}
