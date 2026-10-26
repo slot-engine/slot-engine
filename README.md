@@ -1,7 +1,7 @@
 ![Banner](.github/media/banner.png)
 
 > [!NOTE]
-> Slot Engine is a community project and is not affiliated with Stake.
+> Slot Engine is a community project and is not affiliated with Stake or Engine.
 
 > [!TIP]
 > This project is **still maintained**, if you were wondering.
