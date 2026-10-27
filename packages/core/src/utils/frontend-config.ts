@@ -10,6 +10,8 @@ export function createFrontendConfig(config: GameConfig, meta: GameMetadata) {
     name: gm.name,
     cost: gm.cost,
     rtp: gm.rtp,
+    isBonusBuy: gm.isBonusBuy,
+    isFeature: gm.isFeature,
   }))
 
   const reelSets = new Map<string, string[][]>()

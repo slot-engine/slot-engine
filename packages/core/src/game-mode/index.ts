@@ -13,6 +13,7 @@ export class GameMode {
   readonly reelSets: ReelSet[]
   readonly resultSets: ResultSet<any>[]
   readonly isBonusBuy: boolean
+  readonly isFeature: boolean
 
   constructor(opts: GameModeOpts) {
     this.name = opts.name
@@ -24,7 +25,8 @@ export class GameMode {
     this.rtp = opts.rtp
     this.reelSets = opts.reelSets
     this.resultSets = opts.resultSets
-    this.isBonusBuy = opts.isBonusBuy
+    this.isBonusBuy = opts.isBonusBuy ?? false
+    this.isFeature = opts.isFeature ?? false
 
     assert(this.rtp >= 0.9 && this.rtp <= 0.99, "RTP must be between 0.9 and 0.99")
 
@@ -102,6 +104,14 @@ export interface GameModeOpts {
   resultSets: ResultSet<any>[]
   /**
    * Whether this game mode is a bonus buy.
+   *
+   * @default false
    */
-  isBonusBuy: boolean
+  isBonusBuy?: boolean
+  /**
+   * Whether this game mode is a feature that stays active, e.g. an ante bet.
+   *
+   * @default false
+   */
+  isFeature?: boolean
 }

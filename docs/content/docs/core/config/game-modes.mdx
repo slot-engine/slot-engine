@@ -37,7 +37,6 @@ export const gameModes = defineGameModes({
     rtp: 0.96,
     reelsAmount: 5,
     symbolsPerReel: [3, 3, 3, 3, 3],
-    isBonusBuy: false,
     reelSets: [
       /* list of reel sets */
     ],
@@ -50,7 +49,7 @@ export const gameModes = defineGameModes({
 
 ## GameMode Constructor Options [#options]
 
-All options are required.
+All options are required, except `isBonusBuy` and `isFeature`.
 
 | Property         | Type          | Description                                                            |
 | ---------------- | ------------- | ---------------------------------------------------------------------- |
@@ -61,4 +60,5 @@ All options are required.
 | `rtp`            | `number`      | The target RTP of the game mode, between 94 and 98.                    |
 | `reelSets`       | `ReelSet[]`   | See: [Game Modes: Reel Sets](/docs/core/config/reel-sets)              |
 | `resultSets`     | `ResultSet[]` | See: [Game Modes: Result Sets](/docs/core/config/result-sets)          |
-| `isBonusBuy`     | `boolean`     | Whether this game mode is a bonus buy.                                 |
+| `isBonusBuy`     | `boolean`     | Whether this game mode is a bonus buy. Default: `false`.               |
+| `isFeature`      | `boolean`     | Whether this game mode is a feature (e.g. ante bet). Default: `false`. |
