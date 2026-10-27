@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest"
 import {
   PayoutGroup,
+  createPayoutGroup,
   InfeasibleError,
   tiltedMean,
   tiltedDistribution,
@@ -9,7 +10,7 @@ import {
 } from "./solver"
 
 function makeGroup(xs: number[], ms: number[]): PayoutGroup {
-  return { xs: new Float64Array(xs), ms: new Float64Array(ms) }
+  return createPayoutGroup(xs, ms)
 }
 
 describe("tiltedMean", () => {
@@ -106,5 +107,18 @@ describe("tiltedDistribution", () => {
     expect(q[0]).toBeCloseTo(0.1, 12)
     expect(q[1]).toBeCloseTo(0.2, 12)
     expect(q[2]).toBeCloseTo(0.7, 12)
+  })
+
+  it("keeps far-tail payouts representable under a strong tilt", () => {
+    const n = 400
+    const xs = Array.from({ length: n }, (_, i) => 0.1 * 20_000 ** (i / (n - 1)))
+    const group = makeGroup(xs, new Array(n).fill(1))
+    const target = 0.6
+    const mu = solveTilt([{ group, p: 1 }], target)
+    const q = tiltedDistribution(group, mu, 0.25)
+
+    expect(Math.min(...q) * 2 ** 50).toBeGreaterThanOrEqual(1)
+    expect(q.reduce((sum, v, i) => sum + v * xs[i]!, 0) / 0.25).toBeCloseTo(target, 8)
+    expect(q.every((v, i) => i === 0 || v < q[i - 1]!)).toBe(true)
   })
 })

@@ -462,4 +462,43 @@ describe("optimize", () => {
       }),
     ).rejects.toThrow(/do not match any books.*"x"/)
   })
+
+  it("keeps every book reachable when a target's mean is far below the simulated mean", async () => {
+    const logSpaced = (n: number, lo: number, hi: number) =>
+      Array.from({ length: n }, (_, i) => lo * (hi / lo) ** (i / (n - 1)))
+    const books: Book[] = []
+    let id = 1
+    for (let i = 0; i < 50; i++) books.push({ id: id++, criteria: "0", payoutX: 0 })
+    for (const x of logSpaced(300, 0.1, 2000)) {
+      books.push({ id: id++, criteria: "win", payoutX: Math.round(x * 100) / 100 })
+    }
+    for (const x of logSpaced(100, 5, 5000)) {
+      books.push({ id: id++, criteria: "fs", payoutX: Math.round(x * 100) / 100 })
+    }
+    const { lutPath, segPath, outPath } = writeFixture(books)
+
+    const result = await optimize({
+      input: { lookupTable: lutPath, lookupTableSegmented: segPath },
+      output: { lookupTable: outPath },
+      cost: 1,
+      rtp: 0.96,
+      verbose: false,
+      // win must average 0.6x per hit while its simulated average is ~205x
+      targets: { "0": {}, win: { hitRate: 4, rtp: 0.15 }, fs: { hitRate: 250 } },
+    })
+
+    expect(result.rtp).toBeCloseTo(0.96, 6)
+    expect(result.criteria.win!.hitRate).toBeCloseTo(4, 4)
+    expect(result.criteria.win!.rtp).toBeCloseTo(0.15, 6)
+    expect(result.criteria.win!.zeroWeightBooks).toBe(0)
+    expect(result.criteria.fs!.zeroWeightBooks).toBe(0)
+
+    const weights = fs
+      .readFileSync(outPath, "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => Number(line.split(",")[1]))
+    expect(weights).toHaveLength(books.length)
+    expect(weights.every((w) => Number.isInteger(w) && w >= 1)).toBe(true)
+  })
 })

@@ -16,10 +16,12 @@ The optimizer is a **first-party, pure TypeScript** package: `@slot-engine/optim
 It assigns new weights to your lookup tables so the game pays out **exactly** the configured RTP,
 with the configured hit rates and payout distribution per criteria.
 
-Under the hood, it solves a convex optimization problem: it finds the weight distribution
-**closest to your simulated results** (minimum KL-divergence) that satisfies all hit rate
-and RTP constraints exactly. The solution is deterministic and runs in seconds, even for
-millions of simulations.
+Under the hood, it reshapes the simulated distribution of each target with a power-law tilt
+`(1 + x)^-μ`, where `x` is the payout multiplier, and solves for the tilt that satisfies all
+hit rate and RTP constraints exactly. The result stays as **close to your simulated results**
+as that tilt allows. Large wins stay reachable even when a target pays far less on average
+than its simulations, because their probability decays polynomially rather than exponentially.
+The solution is deterministic and runs in seconds, even for millions of simulations.
 
 After optimization is done, you can observe that the weights in your lookup tables have been redistributed.
 

@@ -129,7 +129,7 @@ importers:
   examples/panel:
     dependencies:
       '@slot-engine/panel':
-        specifier: 0.2.2
+        specifier: 0.2.3
         version: link:../../packages/panel
     devDependencies:
       tsx:

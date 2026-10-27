@@ -1,20 +1,26 @@
 /**
  * The mathematical core of the optimizer.
  *
- * The optimization problem solved here is:
+ * The constraints solved here are:
  *
- *   minimize    KL(w || w0)                       (stay as close as possible to the prior shape)
- *   subject to  sum(w[c]) = p_c   for each criteria c   (hit rate constraints)
- *               sum(x * w) = rtp * cost                 (payout constraints)
- *               w >= 0
+ *   sum(w[c]) = p_c   for each criteria c   (hit rate constraints)
+ *   sum(x * w) = rtp * cost                 (payout constraints)
+ *   w >= 0
  *
- * The closed-form solution of this convex problem is an "exponential tilt" of
- * the prior distribution: `w_i = w0_i * exp(-mu * x_i) / Z`, where `mu` is the
- * Lagrange multiplier of the payout constraint and `Z` normalizes each criteria
- * to its target probability.
+ * The solution is a "power-law tilt" of the prior distribution:
+ * `w_i = w0_i * (1 + x_i)^(-mu) / Z`, where `mu` is chosen so the payout
+ * constraint holds and `Z` normalizes each criteria to its target probability.
+ * It is still a minimum KL(w || w0) projection of the prior, with the tilt acting on
+ * `log(1 + x)` instead of `x`: among all distributions with the target hit rates and
+ * the same expected `log(1 + x)`, it is the one closest to the prior shape.
  *
- * This reduces the entire optimization to finding the root of a monotonically
- * decreasing 1-D function, which is solved deterministically via bracketed bisection.
+ * A tilt linear in `x` decays exponentially, so when the target mean is far from the
+ * simulated mean, large payouts underflow to an integer weight of 0. A power-law tilt
+ * decays polynomially, so every simulated result stays reachable.
+ *
+ * The mean payout is still strictly monotone in `mu`, which reduces the entire
+ * optimization to finding the root of a decreasing 1-D function, solved
+ * deterministically via bracketed bisection.
  */
 
 /**
@@ -29,6 +35,22 @@ export interface PayoutGroup {
    * Prior mass per unique payout (sum of prior weights of all books sharing the payout).
    */
   ms: Float64Array
+  /**
+   * Tilt statistic per unique payout, `log(1 + x)`.
+   */
+  ts: Float64Array
+}
+
+/**
+ * Creates a payout group from ascending unique payout multipliers `xs` (in base bet units)
+ * and their prior masses `ms`, deriving the tilt statistic `ts`.
+ */
+export function createPayoutGroup(
+  xs: ArrayLike<number>,
+  ms: ArrayLike<number>,
+): PayoutGroup {
+  const payouts = Float64Array.from(xs)
+  return { xs: payouts, ms: Float64Array.from(ms), ts: payouts.map(Math.log1p) }
 }
 
 export class InfeasibleError extends Error {
@@ -44,23 +66,23 @@ export class InfeasibleError extends Error {
 }
 
 /**
- * Computes the expected payout of a group under the exponential tilt `mu`,
+ * Computes the expected payout of a group under the power-law tilt `mu`,
  * using a numerically stable log-sum-exp formulation.
  */
 export function tiltedMean(group: PayoutGroup, mu: number): number {
-  const { xs, ms } = group
+  const { xs, ms, ts } = group
   const n = xs.length
 
   let maxExp = -Infinity
   for (let i = 0; i < n; i++) {
-    const e = Math.log(ms[i]!) - mu * xs[i]!
+    const e = Math.log(ms[i]!) - mu * ts[i]!
     if (e > maxExp) maxExp = e
   }
 
   let sumU = 0
   let sumUx = 0
   for (let i = 0; i < n; i++) {
-    const u = Math.exp(Math.log(ms[i]!) - mu * xs[i]! - maxExp)
+    const u = Math.exp(Math.log(ms[i]!) - mu * ts[i]! - maxExp)
     sumU += u
     sumUx += u * xs[i]!
   }
@@ -72,19 +94,19 @@ export function tiltedMean(group: PayoutGroup, mu: number): number {
  * Computes the tilted distribution of a group, normalized to sum to `p`.
  */
 export function tiltedDistribution(group: PayoutGroup, mu: number, p: number) {
-  const { xs, ms } = group
+  const { xs, ms, ts } = group
   const n = xs.length
   const out = new Float64Array(n)
 
   let maxExp = -Infinity
   for (let i = 0; i < n; i++) {
-    const e = Math.log(ms[i]!) - mu * xs[i]!
+    const e = Math.log(ms[i]!) - mu * ts[i]!
     if (e > maxExp) maxExp = e
   }
 
   let sumU = 0
   for (let i = 0; i < n; i++) {
-    const u = Math.exp(Math.log(ms[i]!) - mu * xs[i]! - maxExp)
+    const u = Math.exp(Math.log(ms[i]!) - mu * ts[i]! - maxExp)
     out[i] = u
     sumU += u
   }
@@ -157,12 +179,12 @@ export function solveTilt(
     )
   }
 
-  // Scale of mu: tilts act on exponents of size mu * x, so steps of ~1/xSpread are meaningful
-  let xSpread = 0
+  // Scale of mu: tilts act on exponents of size mu * t, so steps of ~1/tsSpread are meaningful
+  let tsSpread = 0
   for (const { group } of groups) {
-    xSpread = Math.max(xSpread, group.xs[group.xs.length - 1]! - group.xs[0]!)
+    tsSpread = Math.max(tsSpread, group.ts[group.ts.length - 1]! - group.ts[0]!)
   }
-  const step = 1 / xSpread
+  const step = 1 / tsSpread
 
   // f is decreasing: f(lo) >= 0 >= f(hi)
   let lo = 0

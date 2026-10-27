@@ -9,6 +9,7 @@ import {
 } from "./lut"
 import {
   PayoutGroup,
+  createPayoutGroup,
   InfeasibleError,
   solveTilt,
   tiltedDistribution,
@@ -76,6 +77,19 @@ export async function optimize(opts: OptimizeOptions): Promise<OptimizeResult> {
     console.log(
       `Optimization complete. Achieved RTP: ${result.rtp.toFixed(6)} (target: ${opts.rtp})`,
     )
+
+    const unreachable = Object.entries(result.criteria)
+      .filter(([, c]) => c.zeroWeightBooks > 0)
+      .map(([name, c]) => `"${name}" (${c.zeroWeightBooks} of ${c.books} books)`)
+    if (unreachable.length > 0) {
+      console.warn(
+        chalk.yellow(
+          `Some books got a weight of 0 and can never be drawn: ${unreachable.join(", ")}. ` +
+            `The required average win of these targets is too far from their simulated average. ` +
+            `Adjust their hitRate/rtp/avgWin, or simulate more fitting results.`,
+        ),
+      )
+    }
   }
 
   return result
@@ -292,7 +306,6 @@ function groupByTarget(
     const payoutToGroup = new Map<number, number>()
     uniquePayouts.forEach((x, j) => payoutToGroup.set(x, j))
 
-    const xs = new Float64Array(uniquePayouts)
     const ms = new Float64Array(uniquePayouts.length)
     const groupIndexes: number[] = []
 
@@ -307,7 +320,7 @@ function groupByTarget(
       bookIndexes: entry.bookIndexes,
       scaledPriors: entry.scaledPriors,
       groupIndexes,
-      group: { xs, ms },
+      group: createPayoutGroup(uniquePayouts, ms),
       probability: 0,
     })
   }
