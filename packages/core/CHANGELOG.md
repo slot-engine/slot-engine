@@ -1,5 +1,13 @@
 # @slot-engine/core
 
+## 0.3.3
+
+### Patch Changes
+
+- GameMode: `isBonusBuy` is now optional (default `false`); add optional `isFeature` flag (default `false`) - Thanks @nordowl
+- Updated dependencies [[`eba1b90`](https://github.com/slot-engine/slot-engine/commit/eba1b9074a3364806f20dc4987d87995486bac0c)]:
+  - @slot-engine/optimizer@0.2.0
+
 ## 0.3.2
 
 ### Patch Changes
