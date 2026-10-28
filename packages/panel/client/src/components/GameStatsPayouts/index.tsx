@@ -11,10 +11,12 @@ import {
   YAxis,
   Tooltip,
   type LabelProps,
+  type BarShapeProps,
+  Rectangle,
   ResponsiveContainer,
 } from "recharts"
 import { Accordion } from "@base-ui/react/accordion"
-import type { PayoutStatistics } from "@slot-engine/core"
+import type { PayoutRangeBreakdown } from "@slot-engine/core"
 import { useState } from "react"
 import { cn } from "../../lib/cn"
 
@@ -40,8 +42,6 @@ export const StatisticsPayouts = () => {
     )
   }
 
-  const frmt = new Intl.NumberFormat().format
-
   return (
     <div>
       <h3>Payout Statistics</h3>
@@ -59,12 +59,22 @@ export const StatisticsPayouts = () => {
               <ModeStatsEntry
                 id="payout-occurrences"
                 stats={s.allPayouts}
+                format={VALUE_FORMATS.count}
                 title="Payout Occurrences"
                 description="How often a payout range occurrs in the lookup table"
               />
               <ModeStatsEntry
+                id="payout-chances"
+                stats={s.payoutChances}
+                format={VALUE_FORMATS.chance}
+                title="Payout Chances"
+                className="mt-2"
+                description="Likelihood of hitting a payout range during play"
+              />
+              <ModeStatsEntry
                 id="unique-payouts"
                 stats={s.uniquePayouts}
+                format={VALUE_FORMATS.count}
                 title="Unique Payouts"
                 className="mt-2"
                 description="The amount of unique payouts per range"
@@ -77,9 +87,47 @@ export const StatisticsPayouts = () => {
   )
 }
 
+interface ValueFormat {
+  name: string
+  domain?: [number, number]
+  ticks?: number[]
+  tick?: (value: number) => string
+  label: (value: number) => string
+}
+
+const percent = new Intl.NumberFormat(undefined, {
+  style: "percent",
+  maximumSignificantDigits: 3,
+})
+const wholePercent = new Intl.NumberFormat(undefined, { style: "percent" })
+const fewSpins = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 })
+const manySpins = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 })
+
+function formatChance(chance: number) {
+  if (chance === 0) return `${percent.format(0)} (never hit)`
+  const spins = 1 / chance
+  const spinsText = (spins < 100 ? fewSpins : manySpins).format(spins)
+  return `${percent.format(chance)} (1 in ${spinsText} Spins)`
+}
+
+const VALUE_FORMATS = {
+  count: {
+    name: "Amount",
+    label: new Intl.NumberFormat().format,
+  },
+  chance: {
+    name: "Chance",
+    domain: [0, 1],
+    ticks: [0, 0.25, 0.5, 0.75, 1],
+    tick: wholePercent.format,
+    label: formatChance,
+  },
+} satisfies Record<string, ValueFormat>
+
 interface ModeStatsEntryProps extends Accordion.Item.Props {
   id: string
-  stats: PayoutStatistics["allPayouts"]
+  stats: PayoutRangeBreakdown
+  format: ValueFormat
   title: string
   description: string
 }
@@ -88,6 +136,7 @@ const ModeStatsEntry = ({
   id,
   description,
   stats,
+  format,
   title,
   ...props
 }: ModeStatsEntryProps) => {
@@ -120,7 +169,7 @@ const ModeStatsEntry = ({
           <div className="p-4">
             <h5>Overall</h5>
             <div className="mb-2 text-ui-100">Values combined across all result sets</div>
-            <PayoutDistribution stats={s.overall} />
+            <PayoutDistribution stats={s.overall} format={format} />
           </div>
           <div className="p-4 border-l border-ui-700">
             <h5>Result Sets Payouts</h5>
@@ -129,7 +178,7 @@ const ModeStatsEntry = ({
               {Object.keys(s.criteria).map((crit) => (
                 <div key={crit} className="p-4 rounded-lg bg-ui-900 min-w-lg">
                   <h6 className="mb-2">Result Set: {crit}</h6>
-                  <PayoutDistribution stats={s.criteria[crit]} />
+                  <PayoutDistribution stats={s.criteria[crit]} format={format} />
                 </div>
               ))}
             </div>
@@ -140,18 +189,32 @@ const ModeStatsEntry = ({
   )
 }
 
-const PayoutDistribution = ({ stats }: { stats: Record<string, number> }) => {
+const PayoutDistribution = ({
+  stats,
+  format,
+}: {
+  stats: Record<string, number>
+  format: ValueFormat
+}) => {
   const ENTRY_HEIGHT = 32
   const chartHeight = Object.keys(stats).length * ENTRY_HEIGHT + 32
-  const data = Object.keys(stats).map((key) => ({
+  const data = Object.entries(stats).map(([key, value]) => ({
     label: key.split("-").join(" - "),
-    value: stats[key],
+    value,
+    text: format.label(value),
   }))
 
   return (
     <ResponsiveContainer width="100%" height={chartHeight}>
       <BarChart data={data} layout="vertical">
-        <XAxis type="number" width={600} stroke="var(--color-ui-500)" />
+        <XAxis
+          type="number"
+          width={600}
+          stroke="var(--color-ui-500)"
+          domain={format.domain}
+          ticks={format.ticks}
+          tickFormatter={format.tick}
+        />
         <YAxis
           dataKey="label"
           type="category"
@@ -162,7 +225,10 @@ const PayoutDistribution = ({ stats }: { stats: Record<string, number> }) => {
         <Tooltip
           wrapperClassName="bg-ui-900! border-ui-700! rounded-lg"
           cursor={{ fill: "var(--color-ui-800)", radius: 4 }}
-          formatter={(value) => [value, "Amount"]}
+          formatter={(value) => [
+            typeof value === "number" ? format.label(value) : value,
+            format.name,
+          ]}
           animationDuration={50}
         />
         <Bar
@@ -171,51 +237,37 @@ const PayoutDistribution = ({ stats }: { stats: Record<string, number> }) => {
           radius={[0, 4, 4, 0]}
           background={false}
           activeBar={false}
-          label={renderBarLabel}
+          shape={BarShape}
+          label={{ dataKey: "text", content: renderBarLabel }}
         />
       </BarChart>
     </ResponsiveContainer>
   )
 }
 
+// Recharts drops zero-width bars and their labels unless the bar has a custom shape,
+// which would hide the label of a payout range that is never hit.
+const BarShape = (props: BarShapeProps) => <Rectangle {...props} />
+
+const LABEL_PLACEMENT = {
+  inside: { fill: "var(--color-ui-950)", textAnchor: "end", dx: -6 },
+  outside: { fill: "var(--color-ui-50)", textAnchor: "start", dx: 6 },
+} as const
+
 const renderBarLabel = ({ x, y, width, height, value }: LabelProps) => {
-  const xPos = (x as number) + (width as number)
-  const yPos = (y as number) + (height as number) / 2
-
-  const isSmallBar = (width as number) > 100
-
-  const frmt = new Intl.NumberFormat().format
-
-  if (isSmallBar) {
-    // inside the bar
-    return (
-      <text
-        x={xPos}
-        y={yPos}
-        fill="var(--color-ui-950)"
-        textAnchor="end"
-        dominantBaseline="middle"
-        dx={-6}
-        dy={1}
-        fontSize={14}
-      >
-        {typeof value === "number" ? frmt(value) : value}
-      </text>
-    )
-  }
+  const text = String(value)
+  const fitsInside = (width as number) > text.length * 8 + 16
 
   return (
     <text
-      x={xPos}
-      y={yPos}
-      fill="var(--color-ui-50)"
-      textAnchor="start"
+      x={(x as number) + (width as number)}
+      y={(y as number) + (height as number) / 2}
+      {...LABEL_PLACEMENT[fitsInside ? "inside" : "outside"]}
       dominantBaseline="middle"
-      dx={6}
       dy={1}
       fontSize={14}
     >
-      {typeof value === "number" ? frmt(value) : value}
+      {text}
     </text>
   )
 }

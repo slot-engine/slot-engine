@@ -37,7 +37,11 @@ export {
 } from "@slot-engine/optimizer"
 
 export { parseLookupTable, parseLookupTableSegmented } from "./src/analysis/utils"
-export { type PayoutStatistics, type Statistics } from "./src/analysis"
+export {
+  type PayoutRangeBreakdown,
+  type PayoutStatistics,
+  type Statistics,
+} from "./src/analysis"
 
 export { type TagItem } from "./src/tagger"
 

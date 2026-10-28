@@ -31,6 +31,7 @@ export const ReelSetDesigner = () => {
   const [activeReel] = activeReelState
 
   const activeReelSymbols = activeReel !== null ? (reels[activeReel] ?? []) : []
+  const activeReelNumber = activeReel !== null ? reelOrder.indexOf(activeReel) + 1 : 1
 
   return (
     <>
@@ -98,7 +99,7 @@ export const ReelSetDesigner = () => {
         <DialogContent>
           <DialogTitle>Add Reel Symbols</DialogTitle>
           <DialogDescription>
-            The selected symbols will be added to reel {(activeReel ?? 0) + 1}.
+            The selected symbols will be added to reel {activeReelNumber}.
           </DialogDescription>
           <div className="mt-4 grid grid-cols-2 gap-x-8">
             {options.symbols.map((sym) => (
@@ -139,8 +140,7 @@ export const ReelSetDesigner = () => {
         <DialogContent>
           <DialogTitle>Remove Reel Symbols</DialogTitle>
           <DialogDescription>
-            All symbols of the checked types will be removed from reel{" "}
-            {(activeReel ?? 0) + 1}.
+            All symbols of the checked types will be removed from reel {activeReelNumber}.
           </DialogDescription>
           <div className="mt-4 grid grid-cols-2 gap-x-8 gap-y-2">
             {options.symbols.map((sym) => (

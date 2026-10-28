@@ -130,15 +130,15 @@ const Sidebar = () => {
       <div>
         <div className="mb-2">Symbol Counts</div>
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-          {Object.entries(reels).map(([ridx, reel]) => {
+          {reelOrder.map((reelId, position) => {
             const counts: Record<string, number> = {}
             options.symbols.forEach((s) => (counts[s] = 0))
-            reel.forEach((s) => {
+            reels[reelId]?.forEach((s) => {
               counts[s.symbol] = (counts[s.symbol] || 0) + 1
             })
             return (
-              <div key={ridx} className="text-xs min-w-12">
-                <div>Reel {Number(ridx) + 1}:</div>
+              <div key={reelId} className="text-xs min-w-12">
+                <div>Reel {position + 1}:</div>
                 <div>
                   {Object.entries(counts).map(([symbol, count]) => (
                     <div key={symbol} className="font-mono">

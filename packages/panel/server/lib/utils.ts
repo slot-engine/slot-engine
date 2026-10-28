@@ -18,6 +18,7 @@ import {
 import { PANEL_GAME_CONFIG_FILE, SYMBOL_COLORS } from "./constants"
 import { PanelGameConfig } from "../types"
 import chalk from "chalk"
+import z from "zod"
 
 export function round(value: number, decimals: number) {
   return Number(value.toFixed(decimals))
@@ -149,18 +150,38 @@ export function loadStatsSummaryFile(game: SlotGame) {
   return data
 }
 
-export function loadStatsPayoutsFile(game: SlotGame) {
+const rangeValuesSchema = z.record(z.string(), z.number())
+
+const payoutRangeBreakdownSchema = z.object({
+  overall: rangeValuesSchema,
+  criteria: z.record(z.string(), rangeValuesSchema),
+})
+
+const payoutStatisticsSchema = z.array(
+  z.object({
+    gameMode: z.string(),
+    allPayouts: payoutRangeBreakdownSchema,
+    uniquePayouts: payoutRangeBreakdownSchema,
+    payoutChances: payoutRangeBreakdownSchema,
+  }),
+) satisfies z.ZodType<PayoutStatistics[]>
+
+export function loadStatsPayoutsFile(game: SlotGame): PayoutStatistics[] | undefined {
   const meta = game.getMetadata()
   const filePath = meta.paths.statsPayouts
   if (!fs.existsSync(filePath)) return
 
-  const data = JSON.parse(
-    fs.readFileSync(filePath, {
-      encoding: "utf-8",
-    }),
-  ) as PayoutStatistics[]
+  const parsed = payoutStatisticsSchema.safeParse(
+    JSON.parse(
+      fs.readFileSync(filePath, {
+        encoding: "utf-8",
+      }),
+    ),
+  )
 
-  return data
+  if (!parsed.success) return
+
+  return parsed.data
 }
 
 export async function exploreLookupTable(opts: {

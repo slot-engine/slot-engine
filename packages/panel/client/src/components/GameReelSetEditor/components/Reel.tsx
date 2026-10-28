@@ -9,6 +9,7 @@ import { CollisionPriority } from "@dnd-kit/abstract"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import {
   IconArrowsShuffle,
+  IconCopy,
   IconDots,
   IconGripVertical,
   IconMinus,
@@ -36,7 +37,7 @@ interface SortableReelProps extends React.ComponentPropsWithoutRef<"div"> {
 }
 
 export const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProps) => {
-  const { reelsState, reelOrderState } = useRseData()
+  const { reelsState, reelOrderState, duplicateReel } = useRseData()
   const [reels, setReels] = reelsState
   const [, setReelOrder] = reelOrderState
 
@@ -175,6 +176,11 @@ export const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProp
                   )}
                 </MenuContent>
               </MenuSubmenu>
+              <MenuSeparator />
+              <MenuItem onClick={() => duplicateReel(reelId)}>
+                <IconCopy />
+                Duplicate Reel
+              </MenuItem>
               <MenuSeparator />
               <MenuItem variant="destructive" onClick={() => clearReel(reelId)}>
                 <IconX />

@@ -6,6 +6,7 @@ import { ErrorDisplay } from "@/components/Error"
 import { Skeleton } from "@/components/Skeleton"
 import type { State } from "@/lib/types"
 import type { APIGameGetReelSetResponse } from "../../../../../server/types"
+import { cloneReel, insertAfter, nextReelId } from "../lib/reels"
 
 export type ReelsetEditorReel = Array<{ id: string; symbol: string }>
 
@@ -22,6 +23,7 @@ interface RseDataContext {
   reelOrderState: State<number[]>
   previousReels: React.RefObject<Record<number, ReelsetEditorReel>>
   addReel: () => void
+  duplicateReel: (reelId: number) => void
   options: APIGameGetReelSetResponse["options"]
 }
 
@@ -83,17 +85,21 @@ export function RseDataProvider({ reelSets, children }: ReelsetEditorProviderPro
     )
   }
 
+  function insertReel(symbols: ReelsetEditorReel, afterId: number | null) {
+    const id = nextReelId(reels)
+    setReels((current) => ({ ...current, [id]: symbols }))
+    setReelOrder((current) =>
+      afterId === null ? [...current, id] : insertAfter(current, afterId, id),
+    )
+  }
+
   function addReel() {
-    const newIndex = Object.keys(reels).length
-    setReels((r) => ({
-      ...r,
-      [newIndex]: [],
-    }))
-    setReelOrder((order) => [...order, newIndex])
-    previousReels.current = {
-      ...reels,
-      [newIndex]: [],
-    }
+    insertReel([], null)
+  }
+
+  function duplicateReel(reelId: number) {
+    const reel = reels[reelId]
+    if (reel) insertReel(cloneReel(reel), reelId)
   }
 
   const context: RseDataContext = {
@@ -104,6 +110,7 @@ export function RseDataProvider({ reelSets, children }: ReelsetEditorProviderPro
     previousReels,
     reelsState: [reels, setReels],
     addReel,
+    duplicateReel,
     options: data.options,
   }
 
