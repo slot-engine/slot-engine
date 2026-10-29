@@ -352,7 +352,7 @@ const Actions = ({ onJumpToEntry }: ActionsProps) => {
   const [cursor, setCursor] = useState(0)
 
   function handleJump() {
-    onJumpToEntry(Math.max(0, cursor - 1))
+    onJumpToEntry(cursor)
   }
 
   return (
