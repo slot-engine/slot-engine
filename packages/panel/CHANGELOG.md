@@ -1,5 +1,27 @@
 # @slot-engine/panel
 
+## 0.3.0
+
+### Minor Changes
+
+- Compatibility with `@slot-engine/lgs` - Thanks @nordowl
+
+- Complete UI redesign - Thanks @nordowl
+
+- Add a "Play Game" tab to launch your game connected to the Slot Engine LGS - Thanks @nordowl
+
+- Add a replay mode to the Play Game tab - Thanks @nordowl
+
+### Patch Changes
+
+- Reelset designer: add option to duplicate a reel - Thanks @nordowl
+
+- Explorer: "Jump to Book ID" jumps to 0-based book IDs - Thanks @nordowl
+
+- Add payout chances (chance of hitting a payout range during play). Visible in Panel or in `stats_payouts.json` - Thanks @nordowl
+- Updated dependencies [[`5db7385`](https://github.com/slot-engine/slot-engine/commit/5db7385436143a6aac22120839d266947aa9cd17), [`a8c46c8`](https://github.com/slot-engine/slot-engine/commit/a8c46c8c6816f96d029eb85ce00753e485267df3), [`55e419a`](https://github.com/slot-engine/slot-engine/commit/55e419a5cda1547c633c96e3883959f11816f339), [`1dc5942`](https://github.com/slot-engine/slot-engine/commit/1dc59422837103304323081810ed23d795e8b69f), [`c8efb2c`](https://github.com/slot-engine/slot-engine/commit/c8efb2cf3b1ce54728d8c668fd749e629168b369)]:
+  - @slot-engine/core@0.4.0
+
 ## 0.2.4
 
 ### Patch Changes
