@@ -1,7 +1,8 @@
 import fs from "fs"
+import fsAsync from "fs/promises"
 import os from "os"
 import path from "path"
-import { afterAll, describe, expect, it } from "vitest"
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest"
 import { LgsError } from "../errors"
 import { PublishedMath, type BookSource } from "./PublishedMath"
 
@@ -89,6 +90,55 @@ describe("PublishedMath.read", () => {
       kind: "missing-book",
       message: 'Book 4 of mode "lost" not found',
     })
+  })
+})
+
+describe("PublishedMath after a new simulation", () => {
+  function writeTable(mode: string, row: string, mtimeSeconds: number) {
+    const filePath = path.join(dir, `lookUpTable_${mode}_0.csv`)
+    fs.writeFileSync(filePath, row + "\n")
+    fs.utimesSync(filePath, mtimeSeconds, mtimeSeconds)
+    return filePath
+  }
+
+  function readsOf(filePath: string) {
+    const readFile = vi.spyOn(fsAsync, "readFile")
+    return () => readFile.mock.calls.filter(([read]) => read === filePath).length
+  }
+
+  afterEach(() => vi.restoreAllMocks())
+
+  it("reloads the lookup table when the file changes", async () => {
+    writeTable("resim", "1,10,100", 1_000_000)
+    const resim = math(() => 0)
+    expect(await resim.pick("resim")).toMatchObject({ bookId: 1, payoutCents: 100 })
+
+    writeTable("resim", "7,10,250", 1_000_010)
+    expect(await resim.pick("resim")).toMatchObject({ bookId: 7, payoutCents: 250 })
+  })
+
+  it("keeps the lookup table when a rewrite leaves size and mtime unchanged", async () => {
+    const filePath = writeTable("same", "1,10,100", 1_000_000)
+    const reads = readsOf(filePath)
+    const same = math(() => 0)
+    await same.pick("same")
+
+    writeTable("same", "1,10,100", 1_000_000)
+    expect(await same.pick("same")).toMatchObject({ bookId: 1, payoutCents: 100 })
+    expect(reads()).toBe(1)
+  })
+
+  it("loads a changed lookup table once for concurrent plays", async () => {
+    writeTable("burst", "1,10,100", 1_000_000)
+    const burst = math(() => 0)
+    await burst.pick("burst")
+
+    const reads = readsOf(writeTable("burst", "7,10,250", 1_000_010))
+    const outcomes = await Promise.all(
+      Array.from({ length: 5 }, () => burst.pick("burst")),
+    )
+    expect(outcomes.map(({ bookId }) => bookId)).toEqual([7, 7, 7, 7, 7])
+    expect(reads()).toBe(1)
   })
 })
 

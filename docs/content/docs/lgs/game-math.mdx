@@ -12,7 +12,7 @@ The LGS does not run your game logic. It replays the books that the [simulation]
 
 When you register a `SlotGame`, through the `games` option or through the panel, the LGS wraps it in a `PublishedMath`. On every play:
 
-1. It loads `__build__/publish_files/lookUpTable_<mode>_0.csv` of the mode, once per mode.
+1. It loads `__build__/publish_files/lookUpTable_<mode>_0.csv` of the mode.
 2. It draws a row by weight with the `random` function of the [configuration](/docs/lgs/config#options). If the session forces an outcome, it picks the row by the rules of [Forced outcomes](#forced-outcomes) instead.
 3. It reads the drawn book from the published books of the mode with `BookReader` from `@slot-engine/core`. The reader keeps the last four decompressed chunks in memory.
 4. It returns the events of the book as `round.state` and computes the payout from the row.
@@ -20,10 +20,7 @@ When you register a `SlotGame`, through the `games` option or through the panel,
 Because the draw uses the published weights, the RTP of play equals the RTP of the lookup table.
 [Optimize](/docs/core/game-tasks/optimization) the game before you judge its feel in a front end.
 
-<Callout title="Restart after a simulation">
-  The LGS caches lookup tables and book chunks after the first read. Restart the LGS after
-  you simulate or optimize the game again.
-</Callout>
+After you simulate or optimize the game again, the next play uses the new math without a restart.
 
 ## Payouts
 

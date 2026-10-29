@@ -20,10 +20,20 @@ interface ChunkLocation {
 
 type ChunkBooks = Map<number, WrittenBook>
 
+interface FileStamp {
+  mtimeMs: number
+  size: number
+}
+
+interface CachedChunk {
+  stamp: FileStamp
+  books: ChunkBooks
+}
+
 export class BookReader {
   private readonly paths: PermanentFilePaths
   private readonly maxCachedChunks: number
-  private readonly chunks = new Map<string, ChunkBooks>()
+  private readonly chunks = new Map<string, CachedChunk>()
 
   constructor(game: SlotGame, opts: { maxCachedChunks?: number } = {}) {
     this.paths = game.getMetadata().paths
@@ -56,21 +66,22 @@ export class BookReader {
   }
 
   private async loadChunk(mode: string, { worker, chunk }: ChunkLocation) {
+    const chunkPath = this.paths.booksChunk(mode, worker, chunk)
+    const stamp = await fileStamp(chunkPath)
+    if (!stamp) return
+
     const key = `${mode}/${worker}/${chunk}`
     const cached = this.chunks.get(key)
-    if (cached) return cached
-
-    const chunkPath = this.paths.booksChunk(mode, worker, chunk)
-    if (!fs.existsSync(chunkPath)) return
+    if (cached && sameStamp(cached.stamp, stamp)) return cached.books
 
     const books = parseChunk(zlib.zstdDecompressSync(await fsAsync.readFile(chunkPath)))
-    this.remember(key, books)
+    this.remember(key, { stamp, books })
     return books
   }
 
-  private remember(key: string, books: ChunkBooks) {
+  private remember(key: string, cached: CachedChunk) {
     if (this.maxCachedChunks <= 0) return
-    this.chunks.set(key, books)
+    this.chunks.set(key, cached)
     for (const oldest of this.chunks.keys()) {
       if (this.chunks.size <= this.maxCachedChunks) break
       this.chunks.delete(oldest)
@@ -90,6 +101,15 @@ async function findChunk(indexPath: string, bookId: number) {
   } finally {
     stream.destroy()
   }
+}
+
+async function fileStamp(filePath: string): Promise<FileStamp | undefined> {
+  const stats = await fsAsync.stat(filePath).catch(() => undefined)
+  return stats && { mtimeMs: stats.mtimeMs, size: stats.size }
+}
+
+function sameStamp(a: FileStamp, b: FileStamp) {
+  return a.mtimeMs === b.mtimeMs && a.size === b.size
 }
 
 function parseChunk(data: Buffer): ChunkBooks {

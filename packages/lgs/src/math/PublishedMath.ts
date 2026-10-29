@@ -27,12 +27,22 @@ interface ModeTable {
   booksByPayout: Array<{ payoutCents: number; bookIds: [number, ...number[]] }>
 }
 
+interface FileStamp {
+  mtimeMs: number
+  size: number
+}
+
+interface CachedTable {
+  stamp: FileStamp
+  table: Promise<ModeTable>
+}
+
 /**
  * Picks outcomes the way the RGS does: a weighted draw over the published lookup
  * table, then the drawn book's events. A forced outcome replaces the draw.
  */
 export class PublishedMath implements GameMath {
-  private readonly tables = new Map<string, Promise<ModeTable>>()
+  private readonly tables = new Map<string, CachedTable>()
 
   constructor(private readonly opts: PublishedMathOptions) {}
 
@@ -64,21 +74,34 @@ export class PublishedMath implements GameMath {
     return { bookId, payoutCents, events: book.events }
   }
 
-  private table(mode: string) {
+  private async table(mode: string): Promise<ModeTable> {
+    const filePath = this.opts.lookupTablePath(mode)
+    const stamp = await fileStamp(filePath)
     const cached = this.tables.get(mode)
-    if (cached) return cached
+    if (cached && sameStamp(cached.stamp, stamp)) return cached.table
 
-    const loading = loadTable(this.opts.lookupTablePath(mode))
+    const loading: CachedTable = { stamp, table: loadTable(filePath) }
     this.tables.set(mode, loading)
-    loading.catch(() => this.tables.delete(mode))
-    return loading
+    loading.table.catch(() => {
+      if (this.tables.get(mode) === loading) this.tables.delete(mode)
+    })
+    return loading.table
   }
 }
 
-async function loadTable(filePath: string): Promise<ModeTable> {
-  const content = await fs.readFile(filePath, "utf-8").catch(() => {
+async function fileStamp(filePath: string): Promise<FileStamp> {
+  const stats = await fs.stat(filePath).catch(() => {
     throw new LgsError("missing-math", `Lookup table not found at ${filePath}`)
   })
+  return { mtimeMs: stats.mtimeMs, size: stats.size }
+}
+
+function sameStamp(a: FileStamp, b: FileStamp) {
+  return a.mtimeMs === b.mtimeMs && a.size === b.size
+}
+
+async function loadTable(filePath: string): Promise<ModeTable> {
+  const content = await fs.readFile(filePath, "utf-8")
 
   const table: ModeTable = {
     weighted: { rows: [], cumulativeWeights: [], totalWeight: 0 },
