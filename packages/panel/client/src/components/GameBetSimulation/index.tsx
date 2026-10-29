@@ -100,9 +100,9 @@ export const GameBetSimulation = () => {
   if (!data || isFetching) {
     return (
       <div>
-        <Skeleton className="h-64" />
-        <Skeleton className="h-64 mt-4" />
-        <Skeleton className="h-64 mt-4" />
+        <Skeleton className="h-64 rounded-2xl" />
+        <Skeleton className="h-64 mt-4 rounded-2xl" />
+        <Skeleton className="h-64 mt-4 rounded-2xl" />
       </div>
     )
   }
@@ -135,20 +135,20 @@ export const GameBetSimulation = () => {
           />
         ))
       ) : (
-        <div className="p-8 rounded-lg border border-ui-700 bg-ui-900 flex flex-col items-center">
-          <div className="text-xl mb-2">No simulation configured</div>
-          <div className="mb-4 text-ui-100">
+        <div className="p-8 rounded-2xl bg-ui-900 shadow-card flex flex-col items-center text-center">
+          <h4>No simulation configured</h4>
+          <p className="mt-1 mb-4 text-ui-500">
             See how your game might perform with your current results
-          </div>
+          </p>
           <Button onClick={() => addBetSimConfig()}>
-            <IconSettings />
+            <IconSettings size={20} stroke={1.5} aria-hidden />
             Configure
           </Button>
         </div>
       )}
       {betConfigs.length > 0 && (
-        <Button className="mt-4" onClick={() => addBetSimConfig()}>
-          <IconPlus />
+        <Button variant="secondary" onClick={() => addBetSimConfig()}>
+          <IconPlus size={20} stroke={1.5} aria-hidden />
           Add another Simulation
         </Button>
       )}
@@ -274,49 +274,48 @@ const BetSimulation = ({
   const isBusy = isSaving || simulationMutation.isPending
 
   return (
-    <div className="mb-4 rounded-lg overflow-clip bg-ui-900 border border-ui-700">
+    <div className="mb-4 p-4 rounded-2xl bg-ui-900 shadow-card">
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="config" className="rounded-none">
-            <IconSettings />
-            Configuration
-          </TabsTrigger>
-          <TabsTrigger value="results" className="rounded-none">
-            <IconReportAnalytics />
-            Results
-          </TabsTrigger>
-          <div className="ml-auto flex items-center">
-            <Button
-              variant="ghost"
-              className="rounded-none"
-              disabled={canNotSimulate}
-              onClick={() => simulationMutation.mutate()}
-            >
-              {isBusy ? <IconLoader2 className="animate-spin" /> : <IconPlayerPlay />}
-              Start Simulation
-            </Button>
-            <Button
-              variant="ghost-destructive"
-              className="rounded-none"
-              onClick={() => removeSimulation(config.id)}
-            >
-              <IconTrash />
-              Remove Simulation
-            </Button>
-          </div>
-        </TabsList>
-        <TabsContent value="config" className="p-6 relative">
+        <div className="flex items-center gap-2">
+          <TabsList>
+            <TabsTrigger value="config">
+              <IconSettings size={20} stroke={1.5} aria-hidden />
+              Configuration
+            </TabsTrigger>
+            <TabsTrigger value="results">
+              <IconReportAnalytics size={20} stroke={1.5} aria-hidden />
+              Results
+            </TabsTrigger>
+          </TabsList>
+          <Button
+            className="ml-auto"
+            disabled={canNotSimulate}
+            onClick={() => simulationMutation.mutate()}
+          >
+            {isBusy ? (
+              <IconLoader2 size={20} stroke={1.5} className="animate-spin" aria-hidden />
+            ) : (
+              <IconPlayerPlay size={20} stroke={1.5} aria-hidden />
+            )}
+            Start Simulation
+          </Button>
+          <Button variant="ghost-destructive" onClick={() => removeSimulation(config.id)}>
+            <IconTrash size={20} stroke={1.5} aria-hidden />
+            Remove Simulation
+          </Button>
+        </div>
+        <TabsContent value="config" className="relative pt-6">
           {simulationMutation.isPending && (
-            <div className="absolute z-1 w-full h-full top-0 left-0 bg-ui-800/75 backdrop-blur-sm flex items-center justify-center">
+            <div className="absolute z-1 inset-0 rounded-xl bg-ui-900/75 backdrop-blur-sm flex items-center justify-center">
               <SimulationLoading isLoading={true} />
             </div>
           )}
 
-          <h5 className="flex items-center gap-2">
-            <IconUsers />
+          <h4 className="flex items-center gap-2">
+            <IconUsers size={20} stroke={1.5} className="text-ui-500" aria-hidden />
             Virtual Players
-          </h5>
-          <div className="flex gap-4 mt-2 mb-6">
+          </h4>
+          <div className="flex gap-4 mt-3 mb-8">
             <NumberInput
               label="Player Count"
               step={1}
@@ -339,26 +338,27 @@ const BetSimulation = ({
             />
           </div>
           <div className="flex items-center gap-4">
-            <h5 className="flex items-center gap-2">
-              <IconBusinessplan />
-              Bet Groups ({config.betGroups.length})
-            </h5>
+            <h4 className="flex items-center gap-2">
+              <IconBusinessplan
+                size={20}
+                stroke={1.5}
+                className="text-ui-500"
+                aria-hidden
+              />
+              Bet Groups <span className="tabular">({config.betGroups.length})</span>
+            </h4>
             <Button variant="secondary" size="sm" onClick={addBetGroup}>
-              <IconPlus />
+              <IconPlus size={20} stroke={1.5} aria-hidden />
               Add Bet Group
             </Button>
           </div>
-          <div className="mt-2 mb-4 text-ui-100">
+          <p className="mt-1 mb-4 text-ui-500">
             Bet groups are played sequentially for each player, reflecting a virtual
             betting session.
-          </div>
+          </p>
           <div className="grid grid-cols-2 gap-4 max-h-96 pr-2 scrollbar-thin overflow-y-auto">
             {config.betGroups.map((bg, index) => (
-              <div
-                key={index}
-                className="relative p-4 rounded-lg bg-ui-950 flex flex-col gap-2"
-              >
-                <div className="text-xs text-ui-500 absolute top-2 right-2">{bg.id}</div>
+              <div key={index} className="p-4 rounded-xl bg-ui-950 flex flex-col gap-4">
                 <Select
                   label="Mode"
                   value={bg.mode}
@@ -397,22 +397,22 @@ const BetSimulation = ({
                     onValueChange={(v) => updateGroupBetAmnt(bg.id, v)}
                   />
                 </div>
-                <div className="mt-2 flex gap-4 justify-between items-end">
-                  <div className="text-sm">
-                    <div>Estimated Balance Loss:</div>
-                    <div className="flex gap-2">
-                      <span className="font-bold">0% RTP:</span>
-                      <span>{frmt(bg.betAmount * bg.spins * getModeCost(bg.mode))}</span>
+                <div>
+                  <div className="mb-2 text-ui-100">Estimated Balance Loss:</div>
+                  <dl className="tabular">
+                    <div className="flex justify-between gap-4 py-1">
+                      <dt className="text-ui-500">0% RTP:</dt>
+                      <dd>{frmt(bg.betAmount * bg.spins * getModeCost(bg.mode))}</dd>
                     </div>
-                    <div className="flex gap-2">
-                      <span className="font-bold">50% RTP:</span>
-                      <span>
+                    <div className="flex justify-between gap-4 py-1">
+                      <dt className="text-ui-500">50% RTP:</dt>
+                      <dd>
                         {frmt((bg.betAmount * bg.spins * getModeCost(bg.mode)) / 2)}
-                      </span>
+                      </dd>
                     </div>
-                    <div className="flex gap-2">
-                      <span className="font-bold">{getModeRtp(bg.mode)}% RTP:</span>
-                      <span>
+                    <div className="flex justify-between gap-4 py-1">
+                      <dt className="text-ui-500">{getModeRtp(bg.mode)}% RTP:</dt>
+                      <dd>
                         {frmt(
                           (bg.betAmount *
                             bg.spins *
@@ -420,51 +420,69 @@ const BetSimulation = ({
                             (100 - getModeRtp(bg.mode))) /
                             100,
                         )}
-                      </span>
+                      </dd>
                     </div>
+                  </dl>
+                </div>
+                <div className="-mb-2 pt-2 flex gap-4 justify-between items-center border-t border-ui-700">
+                  <div className="min-w-0 truncate text-xs text-ui-500" title={bg.id}>
+                    {bg.id}
                   </div>
                   <Button
                     variant="ghost-destructive"
                     isIconButton
+                    aria-label="Remove bet group"
                     onClick={() => removeBetGroup(bg.id)}
                   >
-                    <IconTrash />
+                    <IconTrash size={20} stroke={1.5} aria-hidden />
                   </Button>
                 </div>
               </div>
             ))}
           </div>
         </TabsContent>
-        <TabsContent value="results" className="relative p-6">
+        <TabsContent value="results" className="relative pt-6">
           {simulationMutation.isPending && (
-            <div className="absolute z-1 w-full h-full top-0 left-0 bg-ui-800/75 backdrop-blur-sm flex items-center justify-center">
+            <div className="absolute z-1 inset-0 rounded-xl bg-ui-900/75 backdrop-blur-sm flex items-center justify-center">
               <SimulationLoading isLoading={true} />
             </div>
           )}
 
           {!results && (
-            <div className="flex flex-col justify-center items-center">
-              <IconMoodPuzzled size={64} stroke={1} />
-              <h5>No Results available</h5>
-              <div className="text-ui-100">Start the simulation to see results</div>
+            <div className="py-8 flex flex-col justify-center items-center text-center">
+              <div className="size-14 mb-4 flex items-center justify-center rounded-xl bg-ui-800">
+                <IconMoodPuzzled size={32} stroke={1.5} aria-hidden />
+              </div>
+              <h4>No Results available</h4>
+              <p className="mt-1 text-ui-500">Start the simulation to see results</p>
             </div>
           )}
           {results && (
-            <div className="max-h-124 overflow-y-auto pr-2">
+            <div className="max-h-124 overflow-y-auto scrollbar-thin pr-2">
               {results.warnings.map((w, i) => (
                 <div
                   key={i}
-                  className="pl-2 pr-4 py-2 rounded-lg border border-orange-500 bg-orange-950 mb-4 flex gap-2"
+                  className="px-3 py-2 rounded-xl bg-warning-950 mb-4 flex gap-2"
                 >
-                  <IconAlertCircle className="text-orange-500" />
+                  <IconAlertCircle
+                    size={20}
+                    stroke={1.5}
+                    className="shrink-0 text-warning-500"
+                    aria-hidden
+                  />
                   {w}
                 </div>
               ))}
 
-              <h5 className="flex items-center gap-2 mb-4">
-                <IconReportAnalytics />
+              <h4 className="flex items-center gap-2 mb-3">
+                <IconReportAnalytics
+                  size={20}
+                  stroke={1.5}
+                  className="text-ui-500"
+                  aria-hidden
+                />
                 Bet Results
-              </h5>
+              </h4>
               <div className="grid grid-cols-3 gap-2">
                 <Statistics label="Total Bets" value={frmt(results.totalBets)} />
                 <Statistics label="Average Bets" value={frmt(results.avgBets)} />
@@ -475,10 +493,15 @@ const BetSimulation = ({
                 <Statistics label="P80 Bets" value={frmt(results.high20PercentileBets)} />
               </div>
 
-              <h5 className="flex items-center gap-2 mt-6 mb-4">
-                <IconReportMoney />
+              <h4 className="flex items-center gap-2 mt-8 mb-3">
+                <IconReportMoney
+                  size={20}
+                  stroke={1.5}
+                  className="text-ui-500"
+                  aria-hidden
+                />
                 Profit Results
-              </h5>
+              </h4>
               <div className="grid grid-cols-2 gap-2">
                 <Statistics label="Total Wager" value={frmt(results.totalWager)} />
                 <Statistics
@@ -532,10 +555,15 @@ const BetSimulation = ({
                 />
               </div>
 
-              <h5 className="flex items-center gap-2 mt-6 mb-4">
-                <IconReportMoney />
+              <h4 className="flex items-center gap-2 mt-8 mb-3">
+                <IconReportMoney
+                  size={20}
+                  stroke={1.5}
+                  className="text-ui-500"
+                  aria-hidden
+                />
                 Miscellaneous
-              </h5>
+              </h4>
               <div className="grid grid-cols-3 gap-2">
                 <Statistics
                   label="Longest Win Streak"
@@ -582,10 +610,10 @@ const BetSimulation = ({
                 />
               </div>
 
-              <h5 className="flex items-center gap-2 mt-6 mb-4">
-                <IconReport />
+              <h4 className="flex items-center gap-2 mt-8 mb-3">
+                <IconReport size={20} stroke={1.5} className="text-ui-500" aria-hidden />
                 RTP Results
-              </h5>
+              </h4>
               <div className="grid grid-cols-2 gap-2">
                 <Statistics
                   label="Average RTP"
@@ -609,15 +637,17 @@ const BetSimulation = ({
                 <Statistics label="Lowest RTP" value={frmt(results.lowestRtp)} />
               </div>
 
-              <h5 className="flex items-center gap-2 mt-6 mb-4">
-                <IconReport />
+              <h4 className="flex items-center gap-2 mt-8 mb-3">
+                <IconReport size={20} stroke={1.5} className="text-ui-500" aria-hidden />
                 ResultSet Criteria
-              </h5>
+              </h4>
               <div>
                 {Object.entries(results.visualization.criteriaPerGroup).map(
                   ([groupId, criteria]) => (
                     <div key={groupId} className="mt-4">
-                      <h6 className="font-bold mb-2">Group {groupId}</h6>
+                      <h6 className="mb-2">
+                        Group <span translate="no">{groupId}</span>
+                      </h6>
                       <div className="grid grid-cols-4 gap-2">
                         {Object.entries(criteria).map(([crit, count]) => (
                           <Statistics key={crit} label={crit} value={frmt(count)} />

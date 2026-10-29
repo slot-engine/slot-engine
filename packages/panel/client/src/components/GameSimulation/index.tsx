@@ -157,14 +157,14 @@ export const GameSimulation = () => {
 
   if (!data || isFetching) {
     return (
-      <div className="grid grid-cols-[2fr_1fr] gap-4 items-start">
-        <div>
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32 mt-4" />
-          <Skeleton className="h-32 mt-4" />
-          <Skeleton className="h-32 mt-4" />
+      <div className="contents">
+        <div className="col-start-1 row-start-1">
+          <Skeleton className="h-32 rounded-2xl" />
+          <Skeleton className="h-32 mt-4 rounded-2xl" />
+          <Skeleton className="h-32 mt-4 rounded-2xl" />
+          <Skeleton className="h-32 mt-4 rounded-2xl" />
         </div>
-        <Skeleton className="h-140" />
+        <Skeleton className="col-start-2 row-start-1 row-span-2 h-140 rounded-2xl" />
       </div>
     )
   }
@@ -221,21 +221,22 @@ export const GameSimulation = () => {
   const isBusy = updateConfMutation.isPending || simulationMutation.isPending
 
   return (
-    <div className="grid grid-cols-[2fr_1fr] gap-4 items-start">
-      <div className="max-h-162 overflow-y-auto pr-2">
+    // The simulation route places these columns and the summary in one grid.
+    <div className="contents">
+      <div className="col-start-1 row-start-1 max-h-162 overflow-y-auto scrollbar-thin">
         {modesToSimulate.length === 0 && (
-          <div className="p-8 rounded-lg border border-ui-700 bg-ui-900 flex flex-col items-center">
-            <div className="text-xl mb-2">No simulation configured</div>
-            <div className="mb-4 text-ui-100">
+          <div className="p-8 rounded-2xl bg-ui-900 shadow-card flex flex-col items-center text-center">
+            <h4>No simulation configured</h4>
+            <p className="mt-1 mb-4 text-ui-500">
               See how your game will perform with your current implementation
-            </div>
+            </p>
             {availableModes.length > 0 ? (
               <Button onClick={() => addModeToSimulate(availableModes[0])}>
-                <IconSettings />
+                <IconSettings size={20} stroke={1.5} aria-hidden />
                 Configure
               </Button>
             ) : (
-              <div className="text-red-600">
+              <div className="text-danger-500">
                 Your game has no game modes available to simulate.
               </div>
             )}
@@ -244,7 +245,7 @@ export const GameSimulation = () => {
         {modesToSimulate.map((mode, i) => (
           <div
             key={i}
-            className="relative overflow-clip p-4 pb-5 mb-4 flex gap-8 rounded-lg border border-ui-700 bg-ui-900"
+            className="relative overflow-clip p-4 pb-5 mb-4 flex items-end gap-4 rounded-2xl bg-ui-900 shadow-card"
           >
             {availableModes.length > 0 ? (
               <div>
@@ -266,10 +267,15 @@ export const GameSimulation = () => {
               </div>
             ) : (
               <div>
-                <div className="mb-1">Mode</div>
-                <div className="pl-3 pr-2 py-2 bg-ui-950 rounded-lg w-64 truncate flex gap-4 justify-between items-center">
-                  {mode.name}
-                  <IconLock className="text-ui-700" />
+                <div className="mb-1.5 text-ui-100">Mode</div>
+                <div className="h-10 pl-3 pr-2 rounded-lg bg-ui-950 w-64 flex gap-4 justify-between items-center">
+                  <span className="truncate">{mode.name}</span>
+                  <IconLock
+                    size={20}
+                    stroke={1.5}
+                    className="shrink-0 text-ui-500"
+                    aria-hidden
+                  />
                 </div>
               </div>
             )}
@@ -285,22 +291,22 @@ export const GameSimulation = () => {
             </div>
             <div className="flex grow items-center justify-end">
               <Button
-                variant="ghost"
-                className="text-red-500"
+                variant="ghost-destructive"
                 isIconButton
+                aria-label="Remove mode"
                 onClick={() => removeModeToSimulate(mode.name)}
               >
-                <IconTrash />
+                <IconTrash size={20} stroke={1.5} aria-hidden />
               </Button>
             </div>
             <div className="absolute bottom-0 left-0 w-full h-1 bg-ui-800">
               <div
-                className="absolute top-0 left-0 w-full h-full bg-linear-to-r from-cyan-500 to-emerald-500 duration-1000"
+                className="absolute top-0 left-0 w-full h-full bg-accent-500 transition-[clip-path] duration-1000"
                 style={{ clipPath: `inset(0 ${100 - mode.progress}% 0 0)` }}
               />
             </div>
             {mode.isSimulating && (
-              <div className="absolute bottom-2 right-2 text-xs text-ui-500 flex gap-2 items-center">
+              <div className="absolute top-3 right-4 text-xs text-ui-500 tabular flex gap-2 items-center">
                 <span>
                   {new Date(mode.timeRemaining * 1000).toISOString().slice(11, 19)}
                 </span>
@@ -312,27 +318,30 @@ export const GameSimulation = () => {
         ))}
         {modesToSimulate.length > 0 && availableModes.length > 0 && (
           <div className="flex gap-2">
-            <Button onClick={() => addModeToSimulate(availableModes[0])}>
-              <IconPlus />
+            <Button
+              variant="secondary"
+              onClick={() => addModeToSimulate(availableModes[0])}
+            >
+              <IconPlus size={20} stroke={1.5} aria-hidden />
               Add another Mode
             </Button>
-            <Button variant="secondary" onClick={() => addAllModesToSimulate()}>
-              <IconPlus />
+            <Button variant="ghost" onClick={() => addAllModesToSimulate()}>
+              <IconPlus size={20} stroke={1.5} aria-hidden />
               Add all Modes
             </Button>
           </div>
         )}
       </div>
       {simSettings && (
-        <div className="sticky top-0 p-6 bg-ui-900 border border-ui-700 rounded-lg">
-          <div className="text-xl mb-2">Simulation Control Panel</div>
+        <div className="col-start-2 row-start-1 row-span-2 sticky top-20 p-4 rounded-2xl bg-ui-900 shadow-card">
+          <h4 className="mb-1">Simulation Control Panel</h4>
           <a
             className="link"
             href="https://slot-engine.dev/docs/core/game-tasks/simulation#options"
             target="_blank"
           >
             Configuration Options Reference
-            <IconExternalLink size={20} />
+            <IconExternalLink size={20} stroke={1.5} aria-hidden />
           </a>
           <NumberInput
             label="Concurrency (Threads)"
@@ -379,43 +388,48 @@ export const GameSimulation = () => {
               }))
             }}
           />
-          <div className="mt-6">
+          <div className="mt-6 pt-4 border-t border-ui-700">
             {simulationMutation.isPending ? (
-              <div className="h-22 bg-ui-800 rounded-lg flex flex-col gap-2 items-center justify-center">
+              <div className="h-22 bg-ui-800 rounded-xl flex flex-col gap-2 items-center justify-center">
                 <SimulationLoading isLoading={true} />
-                {status && <div className="text-xs">{status}</div>}
+                {status && <div className="text-xs text-ui-100">{status}</div>}
               </div>
             ) : (
               <Button
                 disabled={canNotSimulate}
                 onClick={() => simulationMutation.mutate()}
-                className="w-full flex-col py-3"
+                className="w-full"
               >
-                <div className="flex gap-2 items-center">
-                  {isBusy ? <IconLoader2 className="animate-spin" /> : <IconPlayerPlay />}
-                  Start Simulation
-                </div>
-                <div className="text-xs text-ui-700 text-balance">
-                  Simulation will override the output files in your game directory.
-                  Proceed only if you are aware of this.
-                </div>
+                {isBusy ? (
+                  <IconLoader2
+                    size={20}
+                    stroke={1.5}
+                    className="animate-spin"
+                    aria-hidden
+                  />
+                ) : (
+                  <IconPlayerPlay size={20} stroke={1.5} aria-hidden />
+                )}
+                Start Simulation
               </Button>
             )}
+            <p className="mt-2 text-xs text-ui-500">
+              Simulation will override the output files in your game directory. Proceed
+              only if you are aware of this.
+            </p>
             <Button
-              variant="destructive"
+              variant="secondary"
               disabled={!simulationMutation.isPending}
               onClick={() => stopMutation.mutate()}
-              className="w-full flex-col py-3 mt-2"
+              className="w-full mt-4 text-danger-500"
             >
-              <div className="flex gap-2 items-center">
-                <IconPlayerStop />
-                Force Stop
-              </div>
-              <div className="text-xs text-balance">
-                Cancels the simulation as soon as possible. May take a few seconds to
-                process.
-              </div>
+              <IconPlayerStop size={20} stroke={1.5} aria-hidden />
+              Force Stop
             </Button>
+            <p className="mt-2 text-xs text-ui-500">
+              Cancels the simulation as soon as possible. May take a few seconds to
+              process.
+            </p>
           </div>
         </div>
       )}

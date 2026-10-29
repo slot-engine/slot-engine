@@ -3,7 +3,7 @@ import { useGameContext } from "../../context/GameContext"
 import { query } from "../../lib/queries"
 import { ErrorDisplay } from "../Error"
 import { Skeleton } from "../Skeleton"
-import { IconChartBar, IconInfoCircle, IconMinus, IconPlus } from "@tabler/icons-react"
+import { IconChartBar, IconInfoCircle } from "@tabler/icons-react"
 import {
   BarChart,
   Bar,
@@ -15,10 +15,14 @@ import {
   Rectangle,
   ResponsiveContainer,
 } from "recharts"
-import { Accordion } from "@base-ui/react/accordion"
 import type { PayoutRangeBreakdown } from "@slot-engine/core"
-import { useState } from "react"
-import { cn } from "../../lib/cn"
+import { Button } from "../Button"
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "../Dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../Tabs"
+
+type ModePayouts = Awaited<
+  ReturnType<typeof query.gameStatsPayouts>
+>["statistics"][number]
 
 export const StatisticsPayouts = () => {
   const { gameId } = useGameContext()
@@ -32,56 +36,99 @@ export const StatisticsPayouts = () => {
 
   if (error) return <ErrorDisplay error={error} />
 
-  if (!data || isLoading) {
-    return (
-      <div className="flex flex-col gap-4">
-        <Skeleton className="h-64" />
-        <Skeleton className="h-64" />
-        <Skeleton className="h-64" />
-      </div>
-    )
-  }
-
   return (
     <div>
       <h3>Payout Statistics</h3>
-      <div className="mb-4">
+      <p className="mt-1 mb-4 text-ui-500">
         Information about payout ranges is available after simulation.
-      </div>
-      <div className="grid gap-4">
-        {data.statistics.map((s) => (
-          <div key={s.gameMode} className="p-4 bg-ui-900 border border-ui-700 rounded-lg">
-            <h4 className="flex items-center gap-2 mb-2">
-              <IconInfoCircle />
-              {s.gameMode}
-            </h4>
-            <Accordion.Root multiple={true}>
-              <ModeStatsEntry
-                id="payout-occurrences"
-                stats={s.allPayouts}
-                format={VALUE_FORMATS.count}
-                title="Payout Occurrences"
-                description="How often a payout range occurrs in the lookup table"
-              />
-              <ModeStatsEntry
-                id="payout-chances"
-                stats={s.payoutChances}
-                format={VALUE_FORMATS.chance}
-                title="Payout Chances"
-                className="mt-2"
-                description="Likelihood of hitting a payout range during play"
-              />
-              <ModeStatsEntry
-                id="unique-payouts"
-                stats={s.uniquePayouts}
-                format={VALUE_FORMATS.count}
-                title="Unique Payouts"
-                className="mt-2"
-                description="The amount of unique payouts per range"
-              />
-            </Accordion.Root>
-          </div>
-        ))}
+      </p>
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+        {!data || isLoading
+          ? Array.from({ length: 4 }, (_, i) => (
+              <Skeleton key={i} className="h-28 rounded-2xl" />
+            ))
+          : data.statistics.map((s) => (
+              <div key={s.gameMode} className="p-4 rounded-2xl bg-ui-900 shadow-card">
+                <h4 className="flex items-center gap-2 mb-4">
+                  <IconInfoCircle
+                    size={20}
+                    stroke={1.5}
+                    className="shrink-0 text-ui-500"
+                    aria-hidden
+                  />
+                  <span className="min-w-0 truncate" title={s.gameMode}>
+                    {s.gameMode}
+                  </span>
+                </h4>
+                <Dialog>
+                  <DialogTrigger
+                    render={<Button variant="secondary" className="w-full" />}
+                  >
+                    <IconChartBar size={20} stroke={1.5} aria-hidden />
+                    Open Statistics
+                  </DialogTrigger>
+                  <DialogContent width="xl">
+                    <DialogTitle>{s.gameMode} payout statistics</DialogTitle>
+                    <Tabs
+                      defaultValue={PAYOUT_TABS[0].value}
+                      className="flex min-h-0 flex-col"
+                    >
+                      <TabsList className="mt-3 self-start">
+                        {PAYOUT_TABS.map((tab) => (
+                          <TabsTrigger key={tab.value} value={tab.value}>
+                            {tab.title}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                      {PAYOUT_TABS.map((tab) => {
+                        const breakdown = tab.select(s)
+                        return (
+                          <TabsContent
+                            key={tab.value}
+                            value={tab.value}
+                            className="mt-4 min-h-0 overflow-y-auto overscroll-contain scrollbar-thin"
+                          >
+                            <p className="text-ui-500">{tab.description}</p>
+                            <div className="mt-4 grid grid-cols-2 gap-2 p-2 rounded-xl bg-ui-950">
+                              <div className="p-2">
+                                <h5>Overall</h5>
+                                <div className="mb-4 text-ui-500">
+                                  Values combined across all result sets
+                                </div>
+                                <PayoutDistribution
+                                  stats={breakdown.overall}
+                                  format={tab.format}
+                                />
+                              </div>
+                              <div className="min-w-0 p-2">
+                                <h5>Result Sets Payouts</h5>
+                                <div className="mb-4 text-ui-500">
+                                  Values divided into result sets
+                                </div>
+                                <div className="flex items-start gap-2 overflow-x-auto scrollbar-thin pb-2">
+                                  {Object.keys(breakdown.criteria).map((crit) => (
+                                    <div
+                                      key={crit}
+                                      className="p-4 rounded-xl bg-ui-900 min-w-lg"
+                                    >
+                                      <h6 className="mb-2">Result Set: {crit}</h6>
+                                      <PayoutDistribution
+                                        stats={breakdown.criteria[crit]}
+                                        format={tab.format}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </TabsContent>
+                        )
+                      })}
+                    </Tabs>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            ))}
       </div>
     </div>
   )
@@ -124,70 +171,37 @@ const VALUE_FORMATS = {
   },
 } satisfies Record<string, ValueFormat>
 
-interface ModeStatsEntryProps extends Accordion.Item.Props {
-  id: string
-  stats: PayoutRangeBreakdown
-  format: ValueFormat
+interface PayoutTab {
+  value: string
   title: string
   description: string
+  select: (stats: ModePayouts) => PayoutRangeBreakdown
+  format: ValueFormat
 }
 
-const ModeStatsEntry = ({
-  id,
-  description,
-  stats,
-  format,
-  title,
-  ...props
-}: ModeStatsEntryProps) => {
-  const s = stats
-
-  const [open, setOpen] = useState(false)
-
-  return (
-    <Accordion.Item
-      onOpenChange={setOpen}
-      value={id}
-      {...props}
-      className={cn(
-        "bg-ui-950 rounded-lg border border-ui-700 overflow-clip",
-        props.className,
-      )}
-    >
-      <Accordion.Trigger className="p-4 flex gap-8 justify-between items-center w-full cursor-pointer hover:bg-ui-800 data-panel-open:bg-ui-800">
-        <div className="flex items-center gap-4">
-          <IconChartBar />
-          <div className="text-left">
-            <div className="text-xl">{title}</div>
-            <div className="text-sm text-ui-100">{description}</div>
-          </div>
-        </div>
-        {open ? <IconMinus /> : <IconPlus />}
-      </Accordion.Trigger>
-      <Accordion.Panel className="border-t border-ui-700 h-(--accordion-panel-height) data-starting-style:h-0 data-ending-style:h-0 duration-200">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="p-4">
-            <h5>Overall</h5>
-            <div className="mb-2 text-ui-100">Values combined across all result sets</div>
-            <PayoutDistribution stats={s.overall} format={format} />
-          </div>
-          <div className="p-4 border-l border-ui-700">
-            <h5>Result Sets Payouts</h5>
-            <div className="mb-2 text-ui-100">Values divided into result sets</div>
-            <div className="flex items-start gap-4 overflow-x-auto">
-              {Object.keys(s.criteria).map((crit) => (
-                <div key={crit} className="p-4 rounded-lg bg-ui-900 min-w-lg">
-                  <h6 className="mb-2">Result Set: {crit}</h6>
-                  <PayoutDistribution stats={s.criteria[crit]} format={format} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Accordion.Panel>
-    </Accordion.Item>
-  )
-}
+const PAYOUT_TABS: PayoutTab[] = [
+  {
+    value: "payout-occurrences",
+    title: "Payout Occurrences",
+    description: "How often a payout range occurs in the lookup table",
+    select: (stats) => stats.allPayouts,
+    format: VALUE_FORMATS.count,
+  },
+  {
+    value: "payout-chances",
+    title: "Payout Chances",
+    description: "Likelihood of hitting a payout range during play",
+    select: (stats) => stats.payoutChances,
+    format: VALUE_FORMATS.chance,
+  },
+  {
+    value: "unique-payouts",
+    title: "Unique Payouts",
+    description: "The amount of unique payouts per range",
+    select: (stats) => stats.uniquePayouts,
+    format: VALUE_FORMATS.count,
+  },
+]
 
 const PayoutDistribution = ({
   stats,
@@ -210,7 +224,9 @@ const PayoutDistribution = ({
         <XAxis
           type="number"
           width={600}
-          stroke="var(--color-ui-500)"
+          stroke="var(--color-ui-700)"
+          tick={{ fill: "var(--color-ui-500)" }}
+          fontSize={12}
           domain={format.domain}
           ticks={format.ticks}
           tickFormatter={format.tick}
@@ -219,11 +235,14 @@ const PayoutDistribution = ({
           dataKey="label"
           type="category"
           width={128}
-          fontSize={14}
-          stroke="var(--color-ui-500)"
+          fontSize={12}
+          stroke="var(--color-ui-700)"
+          tick={{ fill: "var(--color-ui-500)" }}
         />
         <Tooltip
-          wrapperClassName="bg-ui-900! border-ui-700! rounded-lg"
+          contentStyle={TOOLTIP_STYLE}
+          labelStyle={{ color: "var(--color-ui-50)" }}
+          itemStyle={{ color: "var(--color-ui-100)" }}
           cursor={{ fill: "var(--color-ui-800)", radius: 4 }}
           formatter={(value) => [
             typeof value === "number" ? format.label(value) : value,
@@ -233,7 +252,7 @@ const PayoutDistribution = ({
         />
         <Bar
           dataKey="value"
-          fill="var(--color-ui-50)"
+          fill="var(--color-accent-500)"
           radius={[0, 4, 4, 0]}
           background={false}
           activeBar={false}
@@ -243,6 +262,14 @@ const PayoutDistribution = ({
       </BarChart>
     </ResponsiveContainer>
   )
+}
+
+const TOOLTIP_STYLE = {
+  backgroundColor: "var(--color-ui-900)",
+  border: "none",
+  borderRadius: 12,
+  boxShadow: "var(--shadow-popup)",
+  fontSize: 14,
 }
 
 // Recharts drops zero-width bars and their labels unless the bar has a custom shape,

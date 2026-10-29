@@ -1,6 +1,9 @@
 import { cn } from "../../lib/cn"
 import { Tabs as Primitive } from "@base-ui/react/tabs"
 
+export const tabPillStyles =
+  "flex items-center gap-2 h-9 px-3 rounded-lg whitespace-nowrap cursor-pointer text-ui-100 transition-colors duration-150 hover:bg-ui-900 hover:text-ui-50"
+
 export const Tabs = Primitive.Root
 
 interface TabsListProps extends Primitive.List.Props {
@@ -11,7 +14,10 @@ export const TabsList = ({ unstyled, ...props }: TabsListProps) => {
   return (
     <Primitive.List
       {...props}
-      className={cn(!unstyled && "border-b border-ui-700 flex", props.className)}
+      className={cn(
+        !unstyled && "inline-flex items-center gap-1 p-1 rounded-xl bg-ui-950",
+        props.className,
+      )}
     />
   )
 }
@@ -25,8 +31,7 @@ export const TabsTrigger = ({ unstyled, ...props }: TabsTriggerProps) => {
     <Primitive.Tab
       {...props}
       className={cn(
-        !unstyled &&
-          "px-4 py-2 flex items-center gap-2 rounded-t-lg hover:bg-ui-800 data-active:bg-ui-700",
+        !unstyled && cn(tabPillStyles, "data-active:bg-ui-800 data-active:text-ui-50"),
         props.className,
       )}
     />

@@ -10,7 +10,7 @@ export const SessionInfo = ({ sessionId }: { sessionId: string }) => {
     refetchInterval: 2000,
   })
 
-  if (error) return <div className="text-sm text-red-500">{error.message}</div>
+  if (error) return <div className="text-danger-500">{error.message}</div>
   if (!data) return <Skeleton className="h-32" />
 
   const { wallet, lastBet } = data
@@ -29,22 +29,27 @@ export const SessionInfo = ({ sessionId }: { sessionId: string }) => {
   return (
     <div>
       <Rows rows={rows} />
-      <div className="mt-4 mb-1 text-ui-500">Last round</div>
+      <div className="mt-6 mb-2 text-ui-500">Last round</div>
       {lastBet ? (
         <Rows rows={lastRound} />
       ) : (
-        <div className="text-sm text-ui-500">No round played yet</div>
+        <div className="text-ui-500">No round played yet</div>
       )}
     </div>
   )
 }
 
 const Rows = ({ rows }: { rows: Array<[label: string, value: string]> }) => (
-  <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+  <dl>
     {rows.map(([label, value]) => (
-      <div key={label} className="contents">
-        <dt className="text-ui-500">{label}</dt>
-        <dd className="text-right font-mono">{value}</dd>
+      <div
+        key={label}
+        className="flex items-baseline justify-between gap-4 py-2 border-b border-ui-700 first:pt-0 last:pb-0 last:border-b-0"
+      >
+        <dt className="shrink-0 text-ui-500">{label}</dt>
+        <dd className="min-w-0 truncate text-right tabular" title={value}>
+          {value}
+        </dd>
       </div>
     ))}
   </dl>

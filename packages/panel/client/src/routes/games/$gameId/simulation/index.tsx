@@ -9,9 +9,11 @@ export const Route = createFileRoute("/games/$gameId/simulation/")({
 
 function RouteComponent() {
   return (
-    <PageContent>
+    <PageContent className="grid grid-cols-[minmax(0,1fr)_26rem] gap-x-4 items-start">
       <GameSimulation />
-      <GameSimulationSummary />
+      <div className="col-start-1 row-start-2 min-w-0">
+        <GameSimulationSummary />
+      </div>
     </PageContent>
   )
 }

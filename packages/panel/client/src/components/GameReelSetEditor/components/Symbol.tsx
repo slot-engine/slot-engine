@@ -42,27 +42,30 @@ export const SortableSymbol = ({
       {...props}
       ref={ref}
       className={cn(
-        "cursor-grab w-28 bg-ui-800 rounded-sm border border-ui-700",
+        "cursor-grab w-full rounded-lg bg-ui-800",
         "data-[dnd-dragging=true]:opacity-90 data-[dnd-dragging=true]:animate-wiggle",
         className,
       )}
     >
-      <div className="pl-2 pr-4 relative w-full h-full flex items-center gap-2">
-        <span className="text-xs text-ui-100">{index}</span>
-        <span className="text-md pl-1">{symbolId}</span>
+      <div className="w-full h-full pl-2 flex items-center gap-1.5">
+        <span
+          className="w-1 h-5 shrink-0 rounded-full"
+          style={{ backgroundColor: colors[symbolId] }}
+          aria-hidden
+        />
+        <span className="min-w-5 text-xs text-ui-500 tabular">{index}</span>
+        <span className="shrink-0 font-medium" translate="no">
+          {symbolId}
+        </span>
         {!isDragging && (
           <span
-            className="cursor-pointer ml-auto"
+            className="ml-auto size-10 shrink-0 flex items-center justify-center rounded-lg cursor-pointer text-ui-500 transition-colors duration-150 hover:bg-danger-950 hover:text-danger-500"
             title="Delete Symbol"
             onClick={handleDelete}
           >
-            <IconTrash size={14} />
+            <IconTrash size={20} stroke={1.5} aria-hidden />
           </span>
         )}
-        <span
-          className="absolute w-1 h-[calc(100%-0.5rem)] top-1 right-1 rounded"
-          style={{ backgroundColor: colors[symbolId] }}
-        />
       </div>
     </div>
   )
@@ -84,9 +87,9 @@ export const SymbolDropArea = ({ reelId }: SymbolDropAreaProps) => {
   return (
     <div
       ref={ref}
-      className="py-8 h-128 flex flex-col justify-center items-center gap-2 text-center border border-ui-700 border-dashed rounded-sm"
+      className="py-8 h-128 flex flex-col justify-center items-center gap-2 text-center text-ui-500 rounded-lg border border-dashed border-ui-700"
     >
-      <IconDragDrop />
+      <IconDragDrop size={20} stroke={1.5} aria-hidden />
       Drop Symbols here
     </div>
   )

@@ -77,9 +77,9 @@ export const GameExplorer = () => {
   }
 
   return (
-    <div className="grid grid-cols-[1fr_3fr] gap-8">
-      <div>
-        <h5 className="pb-2 mb-2 border-b border-ui-700">Filter</h5>
+    <div className="grid grid-cols-[1fr_3fr] gap-6 items-start">
+      <div className="p-4 rounded-2xl bg-ui-900 shadow-card">
+        <h4 className="mb-3">Filter</h4>
         <Select
           label="Mode"
           value={mode}
@@ -95,7 +95,7 @@ export const GameExplorer = () => {
             ))}
           </SelectContent>
         </Select>
-        <div className="flex gap-2 mt-2">
+        <div className="flex flex-col gap-4 mt-4">
           <NumberInput
             label="Min. Payout Multiplier"
             defaultValue={payoutRange.min}
@@ -125,14 +125,14 @@ export const GameExplorer = () => {
             mode={mode}
           />
         </div>
-        <div className="mt-4">
+        <div className="mt-6 pt-6 border-t border-ui-700">
           <Actions onJumpToEntry={handleJumpToEntry} />
         </div>
       </div>
       <div>
         {isLoading &&
           Array.from({ length: 7 }).map((_, i) => (
-            <Skeleton key={i} className="h-14 mb-2" />
+            <Skeleton key={i} className="h-14 mb-2 rounded-xl" />
           ))}
 
         {error && (
@@ -143,21 +143,23 @@ export const GameExplorer = () => {
               switch (error.code) {
                 case 404:
                   return (
-                    <div className="flex justify-center gap-4">
-                      <div>
-                        <IconMoodPuzzled size={64} stroke={1} />
+                    <div className="py-8 flex justify-center gap-4">
+                      <div className="size-14 shrink-0 flex items-center justify-center rounded-xl bg-ui-800">
+                        <IconMoodPuzzled size={32} stroke={1.5} aria-hidden />
                       </div>
                       <div>
-                        <h4 className="text-2xl">Lookup Table not found</h4>
-                        <p>Try running simulations to regenerate files.</p>
+                        <h4>Lookup Table not found</h4>
+                        <p className="mt-1 text-ui-500">
+                          Try running simulations to regenerate files.
+                        </p>
                       </div>
                     </div>
                   )
                 default:
                   return (
                     <div className="text-center">
-                      <h2>{error.code}</h2>
-                      <div>{error.message}</div>
+                      <h2 className="tabular">{error.code}</h2>
+                      <div className="text-ui-500">{error.message}</div>
                     </div>
                   )
               }
@@ -167,8 +169,8 @@ export const GameExplorer = () => {
 
         {luts.length > 0 && !isLoading && (
           <div>
-            <div className="mb-1 text-ui-500">Loaded {luts.length} rows</div>
-            <div className="h-192 overflow-y-auto pr-2" ref={scrollRef}>
+            <div className="mb-2 text-ui-500 tabular">Loaded {luts.length} rows</div>
+            <div className="h-192 overflow-y-auto scrollbar-thin pr-2" ref={scrollRef}>
               <Accordion.Root
                 multiple
                 style={{
@@ -193,8 +195,13 @@ export const GameExplorer = () => {
 
                     if (isLoader) {
                       return hasNextPage ? (
-                        <div className="p-6 flex justify-center items-center gap-2">
-                          <IconLoader2 className="animate-spin" />
+                        <div className="p-6 flex justify-center items-center gap-2 text-ui-500">
+                          <IconLoader2
+                            size={20}
+                            stroke={1.5}
+                            className="animate-spin"
+                            aria-hidden
+                          />
                           Loading more
                         </div>
                       ) : null
@@ -327,16 +334,17 @@ const Filters = ({ mode, filters, onValueChange }: FiltersProps) => {
           <Button
             variant="ghost-destructive"
             isIconButton
+            aria-label="Remove filter"
             onClick={() => removeFilter(name)}
           >
-            <IconTrash />
+            <IconTrash size={20} stroke={1.5} aria-hidden />
           </Button>
         </div>
       ))}
 
       {availableFilters.length > 0 && (
-        <Button variant="secondary" className="w-full mt-4" onClick={() => addFilter()}>
-          <IconFilter />
+        <Button variant="secondary" className="w-full mt-2" onClick={() => addFilter()}>
+          <IconFilter size={20} stroke={1.5} aria-hidden />
           Add Filter
         </Button>
       )}
@@ -357,7 +365,7 @@ const Actions = ({ onJumpToEntry }: ActionsProps) => {
 
   return (
     <div>
-      <h5 className="pb-2 mb-2 border-b border-ui-700">Actions</h5>
+      <h4 className="mb-3">Actions</h4>
       <div className="flex gap-2 items-end">
         <NumberInput
           label="Jump to Book ID"
@@ -366,9 +374,9 @@ const Actions = ({ onJumpToEntry }: ActionsProps) => {
           onValueChange={(v) => setCursor(v || 0)}
           min={0}
         />
-        <Button variant="secondary" onClick={handleJump}>
+        <Button variant="secondary" className="pr-3.5" onClick={handleJump}>
           Jump
-          <IconArrowRight />
+          <IconArrowRight size={20} stroke={1.5} aria-hidden />
         </Button>
       </div>
     </div>

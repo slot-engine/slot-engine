@@ -11,45 +11,53 @@ export const Navigation = () => {
     {
       label: "Games",
       href: "/games",
-      icon: <IconDeviceGamepad2 />,
+      icon: <IconDeviceGamepad2 size={20} stroke={1.5} aria-hidden />,
     },
     {
       label: "Docs",
       href: "https://slot-engine.dev",
-      icon: <IconBook />,
+      icon: <IconBook size={20} stroke={1.5} aria-hidden />,
       target: "blank",
     },
   ]
 
   return (
-    <div className="border-r border-ui-700 h-screen sticky top-0">
-      <Link to="/" className="flex items-center gap-2 px-4 h-14 border-b border-ui-700">
-        <div className="flex items-center gap-2">
-          <img src={SlotEngineIcon} alt="" width={24} height={24} />
-          <span className="font-bold">Slot Engine</span>
-        </div>
-        <div className="h-6 w-0.5 bg-ui-500"></div>
-        <span>Panel</span>
+    <nav className="h-screen sticky top-0 px-3 bg-ui-950">
+      <Link
+        to="/"
+        className="flex items-center gap-2 h-14 px-3 rounded-lg"
+        translate="no"
+      >
+        <img src={SlotEngineIcon} alt="" width={24} height={24} />
+        <span className="font-semibold">Slot Engine</span>
+        <span className="h-4 w-px bg-ui-700" aria-hidden />
+        <span className="text-ui-500">Panel</span>
       </Link>
-      <div className="mt-8">
+      <div className="mt-4 flex flex-col gap-1">
         {navLinks.map((link) => (
           <Link
             to={link.href}
             key={link.href}
             target={link.target}
             className={cn(
-              "flex items-center gap-2 hover:bg-ui-800 px-3 py-2",
-              location.pathname.includes(link.href) && "bg-ui-700  hover:bg-ui-700",
+              "flex items-center gap-2 h-9 px-3 rounded-lg text-ui-100 transition-colors duration-150 hover:bg-ui-900 hover:text-ui-50",
+              location.pathname.includes(link.href) &&
+                "bg-ui-800 text-ui-50 hover:bg-ui-800",
             )}
           >
             {link.icon}
             {link.label}
             {link.target?.includes("blank") && (
-              <IconExternalLink className="ml-auto text-ui-500" />
+              <IconExternalLink
+                size={20}
+                stroke={1.5}
+                className="ml-auto text-ui-500"
+                aria-hidden
+              />
             )}
           </Link>
         ))}
       </div>
-    </div>
+    </nav>
   )
 }

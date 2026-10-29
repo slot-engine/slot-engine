@@ -8,11 +8,19 @@ interface TableRowProps extends React.ComponentPropsWithoutRef<"div"> {
 export const TableRow = ({ label, value, className, ...props }: TableRowProps) => {
   return (
     <div
-      className={cn("flex gap-2 py-2 border-b border-ui-700 hover:bg-ui-800", className)}
+      className={cn(
+        "flex items-baseline justify-between gap-4 py-2 border-b border-ui-700 first:pt-0 last:pb-0 last:border-b-0",
+        className,
+      )}
       {...props}
     >
-      <div className="basis-sm font-bold">{label}</div>
-      <div>{value}</div>
+      <div className="shrink-0 text-ui-500">{label}</div>
+      <div
+        className="min-w-0 truncate text-right tabular"
+        title={typeof value === "string" ? value : undefined}
+      >
+        {value}
+      </div>
     </div>
   )
 }

@@ -62,18 +62,22 @@ export const ReplayBook = ({
         value={fields.amount}
         onValueChange={(amount) => onChange({ ...fields, amount })}
       />
-      <div className="text-xs text-ui-500 mt-1">
+      <p className="text-xs text-ui-500 mt-2">
         The front end loads the book in replay mode, without a session.
-      </div>
+      </p>
       <Button
         className="w-full mt-4"
         disabled={!request || pending}
         onClick={() => request && onReplay(request)}
       >
-        <IconPlayerTrackNext />
+        <IconPlayerTrackNext size={20} stroke={1.5} aria-hidden />
         Replay
       </Button>
-      {error && <div className="text-xs text-red-500 mt-2">{error.message}</div>}
+      {error && (
+        <div className="text-xs text-danger-500 mt-2" role="alert">
+          {error.message}
+        </div>
+      )}
     </div>
   )
 }

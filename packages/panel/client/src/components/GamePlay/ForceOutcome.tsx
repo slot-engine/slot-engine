@@ -29,18 +29,22 @@ export const ForceOutcome = ({ fields, error, onChange }: ForceOutcomeProps) => 
         value={fields.payoutMultiplier}
         onValueChange={(payoutMultiplier) => onChange({ ...fields, payoutMultiplier })}
       />
-      <div className="text-xs text-ui-500 mt-1">
+      <p className="text-xs text-ui-500 mt-2">
         Without an exact match, the closest payout is played. A book ID wins when both are
         set.
-      </div>
+      </p>
       <div className="flex items-center justify-between gap-2 mt-4">
-        <div>{describeForce(toForce(fields))}</div>
+        <div className="text-ui-100">{describeForce(toForce(fields))}</div>
         <Button variant="secondary" size="sm" onClick={() => onChange(NO_FORCE)}>
-          <IconX size={16} />
+          <IconX size={20} stroke={1.5} aria-hidden />
           Clear
         </Button>
       </div>
-      {error && <div className="text-xs text-red-500 mt-2">{error.message}</div>}
+      {error && (
+        <div className="text-xs text-danger-500 mt-2" role="alert">
+          {error.message}
+        </div>
+      )}
     </div>
   )
 }

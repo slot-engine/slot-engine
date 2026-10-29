@@ -3,30 +3,29 @@
 
 @theme {
   --color-*: initial;
-  --color-ui-50: #e8f1f6;
-  --color-ui-100: #ced7db;
-  --color-ui-500: #808d96;
-  --color-ui-700: #434c53;
-  --color-ui-800: #2f3236;
-  --color-ui-900: #1b1d20;
-  --color-ui-950: #131619;
+  --color-ui-950: #121417;
+  --color-ui-900: #191c20;
+  --color-ui-800: #22262b;
+  --color-ui-700: #2f353b;
+  --color-ui-500: #7d8793;
+  --color-ui-100: #c9d0d6;
+  --color-ui-50: #eef2f5;
 
-  --color-red-500: #f55d42;
-  --color-red-600: #bd4833;
-  --color-red-700: #8f3627;
-  --color-red-900: #361a15;
-  --color-red-950: #1f1311;
+  --color-accent-500: #3fd6c0;
+  --color-accent-950: #10302b;
 
-  --color-orange-500: #f09c1f;
-  --color-orange-950: #211a10;
+  --color-danger-500: #f26b57;
+  --color-danger-950: #2a1613;
 
-  --color-cyan-500: #86e9ff;
+  --color-warning-500: #f0a93a;
+  --color-warning-950: #2a2113;
 
-  --color-emerald-500: #1fe39e;
-  --color-emerald-950: #152b24;
-
-  --color-yellow-500: #ebde28;
-  --color-yellow-950: #2e2c19;
+  --shadow-card:
+    0 1px 0 0 rgb(255 255 255 / 0.04) inset, 0 1px 2px rgb(0 0 0 / 0.4),
+    0 12px 32px -12px rgb(0 0 0 / 0.5);
+  --shadow-popup:
+    0 1px 0 0 rgb(255 255 255 / 0.06) inset, 0 0 0 1px rgb(255 255 255 / 0.06),
+    0 2px 4px rgb(0 0 0 / 0.4), 0 24px 48px -12px rgb(0 0 0 / 0.7);
 
   --spacing-page-width: 1400px;
   --spacing-nav-height: 56px;
@@ -36,11 +35,32 @@
 }
 
 @layer base {
+  html {
+    color-scheme: dark;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   html,
   body {
     font-family: "Archivo Variable", sans-serif;
     background-color: var(--color-ui-950);
     color: var(--color-ui-50);
+  }
+
+  body {
+    font-size: var(--text-sm);
+    line-height: var(--text-sm--line-height);
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--color-accent-500) 35%, transparent);
+    color: var(--color-ui-50);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-500);
+    outline-offset: 2px;
   }
 
   /* Required by base-ui */
@@ -49,35 +69,56 @@
     position: relative;
   }
 
-  h1 {
-    font-size: var(--text-2xl);
-  }
-
+  h1,
   h2 {
     font-size: var(--text-2xl);
+    line-height: var(--text-2xl--line-height);
+    font-weight: 600;
   }
 
   h3 {
-    font-size: var(--text-2xl);
-  }
-
-  h4 {
-    font-size: var(--text-2xl);
-  }
-
-  h5 {
     font-size: var(--text-xl);
+    line-height: var(--text-xl--line-height);
+    font-weight: 600;
+  }
+
+  h4,
+  h5 {
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    font-weight: 500;
+  }
+
+  h6 {
+    font-weight: 500;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
   }
 
   p + p {
     margin-top: 1rem;
   }
 
+  b,
+  strong {
+    font-weight: 600;
+  }
+
   code {
-    padding: 0.1rem 0.25rem;
-    background-color: var(--color-ui-900);
-    border: 1px solid var(--color-ui-700);
-    border-radius: var(--radius-sm);
+    padding: 0.125rem 0.375rem;
+    background-color: var(--color-ui-800);
+    border-radius: var(--radius-md);
     color: var(--color-ui-100);
   }
 
@@ -91,12 +132,12 @@
   }
 
   a.link {
-    @apply flex items-center gap-1 mb-4 text-sm text-ui-500 hover:text-ui-100 underline;
+    @apply flex items-center gap-1 mb-4 rounded-sm text-ui-500 underline decoration-ui-700 underline-offset-4 transition-colors duration-150 hover:text-accent-500 hover:decoration-accent-500;
   }
 
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-ui-700) var(--color-ui-900);
+    scrollbar-color: var(--color-ui-700) transparent;
   }
 
   @keyframes wiggle {
@@ -111,6 +152,13 @@
 }
 
 @layer components {
+  /* The color picker's hex input sets a light theme inline, so only !important variables can re-theme it. */
+  .w-color-editable-input {
+    --editable-input-label-color: var(--color-ui-500) !important;
+    --editable-input-box-shadow: inset 0 0 0 1px var(--color-ui-700) !important;
+    --editable-input-color: var(--color-ui-50) !important;
+  }
+
   .text-slot-letter {
     transform: translateY(-3rem);
     display: block;
@@ -127,5 +175,34 @@
     100% {
       transform: translateY(0rem);
     }
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Press feedback for buttons and clickable cards; it also owns the color transitions so the two never fight over transition-property. */
+@utility press {
+  transition-property: color, background-color, box-shadow, scale;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+
+  &:active:not(:disabled) {
+    scale: 0.96;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .press:active,
+  .press:active:not(:disabled) {
+    scale: none;
+  }
+
+  .text-slot-letter,
+  .animate-pulse,
+  .animate-wiggle {
+    animation: none;
+    transform: none;
   }
 }

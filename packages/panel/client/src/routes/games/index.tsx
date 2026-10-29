@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { query, type APIResponse } from "../../lib/queries"
-import { cva } from "../../lib/cn"
+import { cn, cva } from "../../lib/cn"
 import { IconArrowRight, IconCheck, IconX } from "@tabler/icons-react"
 import { ErrorDisplay } from "@/components/Error"
 import { Loading } from "@/components/Loading"
 import { GameNotConfigured } from "@/components/Error/GameNotConfigured"
 import { PageContent, PageHeader } from "@/components/Page"
-import { GridBackground } from "@/components/GridBackground"
+import { ShaderBackground } from "@/components/ShaderBackground"
 
 export const Route = createFileRoute("/games/")({
   component: GamesPage,
@@ -29,10 +29,12 @@ function GamesPage() {
       <PageHeader title="Games" />
       <PageContent>
         {data.games.length === 0 && (
-          <div className="flex flex-col justify-center items-center">
-            <h2>No Games configured</h2>
-            <p>Add games to Panel by editing your Panel configuration:</p>
-            <pre className="p-4 rounded-lg bg-ui-900 mt-4">
+          <div className="flex flex-col justify-center items-center gap-1">
+            <h2 className="text-xl">No Games configured</h2>
+            <p className="text-ui-500">
+              Add games to Panel by editing your Panel configuration:
+            </p>
+            <pre className="p-4 rounded-2xl bg-ui-900 shadow-card mt-4 overflow-x-auto">
               {`import { createPanel } from "./server"
 import { game as MyGame } from "../path/to/my_game"
 
@@ -52,11 +54,11 @@ panel.start()`}
 
 function GamesList(data: APIResponse<"games">) {
   const boxStyles = cva({
-    base: "relative overflow-clip p-6 border rounded-lg gap-8 flex flex-col",
+    base: "relative isolate overflow-clip min-h-40 p-4 flex flex-col gap-4 rounded-2xl bg-ui-900 shadow-card",
     variants: {
       isValid: {
-        true: "border-ui-700",
-        false: "border-red-500",
+        true: "group press",
+        false: "ring-1 ring-danger-500",
       },
     },
   })
@@ -71,38 +73,49 @@ function GamesList(data: APIResponse<"games">) {
             className={boxStyles({ isValid: game.isValid })}
             key={game.id}
           >
-            <div>
-              <div className="text-ui-500">{game.id}</div>
-              <h2>{game.name}</h2>
-              <div className="text-sm text-ui-500 flex items-center gap-1">
-                <IconCheck size={16} className="shrink-0" />
-                <abbr className="truncate" title={game.path}>
-                  {game.path}
-                </abbr>
-              </div>
-            </div>
-            <div className="mt-auto pt-8">
-              <IconArrowRight size={64} stroke={1} />
-            </div>
-            <GridBackground />
+            <GameCardTitle game={game} />
+            <IconArrowRight
+              size={20}
+              stroke={1.5}
+              className="mt-auto self-end text-ui-500 transition-[translate,color] duration-150 group-hover:translate-x-0.5 group-hover:text-accent-500"
+              aria-hidden
+            />
+            <ShaderBackground />
           </Link>
         ) : (
           <div className={boxStyles({ isValid: game.isValid })} key={game.id}>
-            <div>
-              <div className="text-ui-500">{game.id}</div>
-              <h2>{game.name}</h2>
-              <div className="text-sm text-red-600 flex items-center gap-1">
-                <IconX size={16} className="shrink-0" />
-                <abbr className="truncate" title={game.path}>
-                  {game.path}
-                </abbr>
-              </div>
-            </div>
+            <GameCardTitle game={game} />
             <GameNotConfigured />
-            <GridBackground variant="danger" />
+            <ShaderBackground variant="danger" />
           </div>
         ),
       )}
+    </div>
+  )
+}
+
+const GameCardTitle = ({ game }: { game: APIResponse<"games">["games"][number] }) => {
+  const StatusIcon = game.isValid ? IconCheck : IconX
+
+  return (
+    <div className="min-w-0">
+      <h2 className="text-base font-medium truncate" title={game.name}>
+        {game.name}
+      </h2>
+      <div className="mt-1 text-ui-500 truncate" title={game.id} translate="no">
+        {game.id}
+      </div>
+      <div
+        className={cn(
+          "flex items-center gap-1 text-ui-500",
+          !game.isValid && "text-danger-500",
+        )}
+      >
+        <StatusIcon size={20} stroke={1.5} className="shrink-0" aria-hidden />
+        <span className="truncate" title={game.path}>
+          {game.path}
+        </span>
+      </div>
     </div>
   )
 }

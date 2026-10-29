@@ -11,16 +11,18 @@ interface CheckboxProps extends Primitive.Root.Props {
 export const Checkbox = ({ label, description, className, ...props }: CheckboxProps) => {
   return (
     <Field.Root className={cn("", className)}>
-      <Field.Label className="flex items-center gap-2">
+      <Field.Label className="flex items-center gap-2 cursor-pointer">
         <Primitive.Root
           {...props}
-          className="size-6 p-0.5 flex items-center justify-center bg-ui-800 border border-ui-700 rounded-lg shrink-0"
+          className="size-5 flex items-center justify-center shrink-0 rounded-md bg-ui-800 inset-ring inset-ring-ui-500 text-ui-950 transition-colors duration-150 hover:bg-ui-700 data-checked:bg-accent-500 data-checked:inset-ring-0 data-checked:hover:bg-accent-500/90"
         >
-          <Primitive.Indicator render={<IconCheck />} />
+          <Primitive.Indicator
+            render={<IconCheck size={20} stroke={1.5} aria-hidden />}
+          />
         </Primitive.Root>
-        {label && <span className="block leading-5">{label}</span>}
+        {label && <span>{label}</span>}
       </Field.Label>
-      {description && <div className="text-xs text-ui-500 mt-1">{description}</div>}
+      {description && <div className="text-xs text-ui-500 mt-1.5">{description}</div>}
     </Field.Root>
   )
 }

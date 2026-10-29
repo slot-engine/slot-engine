@@ -14,11 +14,16 @@ export const GameInformation = () => {
   ]
 
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       {!game.isValid && <GameNotConfigured />}
-      <div>
+      <div className="p-4 rounded-2xl bg-ui-900 shadow-card">
         {basicInfo.map((info, i) => (
-          <TableRow key={i} label={info.label} value={info.value} />
+          <TableRow
+            key={i}
+            label={info.label}
+            value={info.value}
+            className="grid grid-cols-[10rem_minmax(0,1fr)] justify-items-start"
+          />
         ))}
       </div>
     </div>

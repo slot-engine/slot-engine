@@ -2,6 +2,22 @@ import { cn, cva } from "@/lib/cn"
 import { Menu as Primitive } from "@base-ui/react/menu"
 import { IconCheck, IconChevronRight } from "@tabler/icons-react"
 
+export const menuPopupStyles =
+  "min-w-48 p-1 rounded-xl bg-ui-900 shadow-popup outline-none transition-opacity duration-150 data-starting-style:opacity-0 data-ending-style:opacity-0"
+
+export const menuItemStyles = cva({
+  base: "flex h-9 gap-2 items-center px-2 rounded-lg cursor-pointer select-none outline-none transition-colors duration-150",
+  variants: {
+    variant: {
+      default: "text-ui-100 data-highlighted:bg-ui-800 data-highlighted:text-ui-50",
+      destructive: "text-danger-500 data-highlighted:bg-danger-950",
+    },
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+})
+
 export const Menu = Primitive.Root
 
 interface MenuTriggerProps extends Primitive.Trigger.Props {}
@@ -19,11 +35,8 @@ interface MenuContentProps extends Primitive.Popup.Props {}
 export const MenuContent = ({ className, children, ...props }: MenuContentProps) => {
   return (
     <Primitive.Portal>
-      <Primitive.Positioner sideOffset={2}>
-        <Primitive.Popup
-          {...props}
-          className={cn("bg-ui-900 border border-ui-700 rounded-lg p-1", className)}
-        >
+      <Primitive.Positioner sideOffset={4}>
+        <Primitive.Popup {...props} className={cn(menuPopupStyles, className)}>
           {children}
         </Primitive.Popup>
       </Primitive.Positioner>
@@ -43,13 +56,14 @@ export const MenuSubmenuTrigger = ({
   return (
     <Primitive.SubmenuTrigger
       className={cn(
-        "flex gap-2 items-center px-2 py-1 rounded-sm cursor-pointer hover:bg-ui-800 data-popup-open:bg-ui-800",
+        menuItemStyles(),
+        "data-popup-open:bg-ui-800 data-popup-open:text-ui-50",
         className,
       )}
       {...props}
     >
       {children}
-      <IconChevronRight className="ml-auto" />
+      <IconChevronRight size={20} stroke={1.5} className="ml-auto" aria-hidden />
     </Primitive.SubmenuTrigger>
   )
 }
@@ -64,18 +78,8 @@ export const MenuItem = ({
   variant = "default",
   ...props
 }: MenuItemProps) => {
-  const itemStyles = cva({
-    base: ["flex gap-2 items-center px-2 py-1 rounded-sm cursor-pointer", className],
-    variants: {
-      variant: {
-        default: "hover:bg-ui-800",
-        destructive: "text-red-500 hover:bg-red-900",
-      },
-    },
-  })
-
   return (
-    <Primitive.Item {...props} className={itemStyles({ variant })}>
+    <Primitive.Item {...props} className={menuItemStyles({ variant, className })}>
       {children}
     </Primitive.Item>
   )
@@ -89,15 +93,11 @@ export const MenuCheckboxItem = ({
   ...props
 }: MenuCheckboxItemProps) => {
   return (
-    <Primitive.CheckboxItem
-      {...props}
-      className={cn(
-        "flex gap-2 items-center px-2 py-1 rounded-sm cursor-pointer hover:bg-ui-800",
-        className,
-      )}
-    >
-      <span className="size-6 p-0.5 flex items-center justify-center bg-ui-800 border border-ui-700 rounded-lg shrink-0">
-        <Primitive.CheckboxItemIndicator render={<IconCheck />} />
+    <Primitive.CheckboxItem {...props} className={menuItemStyles({ className })}>
+      <span className="size-5 flex items-center justify-center shrink-0 rounded-md bg-ui-800 inset-ring inset-ring-ui-500 text-ui-950 in-data-checked:bg-accent-500 in-data-checked:inset-ring-0">
+        <Primitive.CheckboxItemIndicator
+          render={<IconCheck size={20} stroke={1.5} aria-hidden />}
+        />
       </span>
       {children}
     </Primitive.CheckboxItem>
@@ -105,5 +105,5 @@ export const MenuCheckboxItem = ({
 }
 
 export const MenuSeparator = (props: Primitive.Separator.Props) => {
-  return <Primitive.Separator className="h-px bg-ui-700 my-1" {...props} />
+  return <Primitive.Separator className="h-px bg-ui-700 my-1 mx-2" {...props} />
 }

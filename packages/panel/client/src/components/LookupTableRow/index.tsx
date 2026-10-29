@@ -9,8 +9,41 @@ import { useQuery } from "@tanstack/react-query"
 import { ErrorDisplay } from "../Error"
 import { Loading } from "../Loading"
 import JsonView from "@uiw/react-json-view"
-import { vscodeTheme } from "@uiw/react-json-view/vscode"
 import { useVirtualizer } from "@tanstack/react-virtual"
+
+// Every variable the viewer reads is set, because an unset one falls back to the library's blue, green or orange.
+const JSON_THEME = {
+  "--w-rjv-font-family": "monospace",
+  "--w-rjv-background-color": "var(--color-ui-950)",
+  "--w-rjv-color": "var(--color-ui-100)",
+  "--w-rjv-key-string": "var(--color-ui-100)",
+  "--w-rjv-key-number": "var(--color-ui-100)",
+  "--w-rjv-edit-color": "var(--color-ui-100)",
+  "--w-rjv-type-string-color": "var(--color-accent-500)",
+  "--w-rjv-quotes-string-color": "var(--color-accent-500)",
+  "--w-rjv-type-url-color": "var(--color-accent-500)",
+  "--w-rjv-type-int-color": "var(--color-ui-50)",
+  "--w-rjv-type-float-color": "var(--color-ui-50)",
+  "--w-rjv-type-bigint-color": "var(--color-ui-50)",
+  "--w-rjv-type-date-color": "var(--color-ui-50)",
+  "--w-rjv-type-boolean-color": "var(--color-ui-50)",
+  "--w-rjv-type-null-color": "var(--color-ui-500)",
+  "--w-rjv-type-nan-color": "var(--color-ui-500)",
+  "--w-rjv-type-undefined-color": "var(--color-ui-500)",
+  "--w-rjv-type-set-color": "var(--color-ui-500)",
+  "--w-rjv-type-map-color": "var(--color-ui-500)",
+  "--w-rjv-quotes-color": "var(--color-ui-500)",
+  "--w-rjv-colon-color": "var(--color-ui-500)",
+  "--w-rjv-curlybraces-color": "var(--color-ui-500)",
+  "--w-rjv-brackets-color": "var(--color-ui-500)",
+  "--w-rjv-arrow-color": "var(--color-ui-500)",
+  "--w-rjv-info-color": "var(--color-ui-500)",
+  "--w-rjv-ellipsis-color": "var(--color-ui-500)",
+  "--w-rjv-line-color": "var(--color-ui-700)",
+  "--w-rjv-update-color": "var(--color-accent-950)",
+  "--w-rjv-copied-color": "var(--color-accent-500)",
+  "--w-rjv-copied-success-color": "var(--color-accent-500)",
+} as React.CSSProperties
 
 interface LookupTableRowProps {
   mode: string
@@ -37,43 +70,57 @@ export const LookupTableRow = ({
   return (
     <Accordion.Item
       className={cn(
-        "mb-2 bg-ui-900 hover:bg-ui-800 border border-ui-700 rounded-lg overflow-clip",
-        isOpen && "bg-ui-800",
+        "mb-2 rounded-xl bg-ui-900 transition-colors duration-150",
+        !isOpen && "hover:bg-ui-800",
       )}
       onOpenChange={(v) => {
         setIsOpen(v)
         onOpenChange?.(v)
       }}
     >
-      <Accordion.Trigger className="cursor-pointer p-4 w-full flex justify-between items-center gap-8">
-        <div className="flex">
-          <div className="w-26 text-left">
-            <span className="font-bold">ID:</span>
+      <Accordion.Trigger className="w-full py-2 pl-4 pr-2 flex justify-between items-center gap-8 rounded-xl text-left cursor-pointer">
+        <div className="min-w-0 flex items-baseline gap-8 tabular">
+          <div className="w-24 shrink-0 truncate">
+            <span className="text-ui-500">ID:</span>
             <span className="ml-2">{id}</span>
           </div>
-          <div className="w-64 flex items-center text-left ml-4 pl-4 border-l border-ui-700">
-            <span className="font-bold">Criteria:</span>
-            <span className="ml-2 truncate">{criteria}</span>
+          <div className="w-60 shrink-0 flex">
+            <span className="text-ui-500">Criteria:</span>
+            <span className="ml-2 truncate" title={String(criteria)}>
+              {criteria}
+            </span>
           </div>
-          <div className="w-40 text-left ml-4 pl-4 border-l border-ui-700">
-            <span className="font-bold">Payout:</span>
+          <div className="w-40 shrink-0 truncate">
+            <span className="text-ui-500">Payout:</span>
             <span className="ml-2">{formattedPayout}x</span>
           </div>
-          <div className="ml-4 pl-4 border-l border-ui-700">
-            <span className="font-bold">Weight:</span>
+          <div className="min-w-0 truncate">
+            <span className="text-ui-500">Weight:</span>
             <span className="ml-2">{weight}</span>
           </div>
         </div>
-        {isOpen ? <IconMinus /> : <IconPlus />}
+        <span className="size-10 shrink-0 flex items-center justify-center rounded-lg text-ui-500">
+          {isOpen ? (
+            <IconMinus size={20} stroke={1.5} aria-hidden />
+          ) : (
+            <IconPlus size={20} stroke={1.5} aria-hidden />
+          )}
+        </span>
       </Accordion.Trigger>
-      <Accordion.Panel className="bg-ui-900 border-t border-ui-700 h-(--accordion-panel-height) data-starting-style:h-0 data-ending-style:h-0 duration-200">
-        <div className="p-4">
-          <div className="pb-2 mb-4 border-b border-ui-700 flex gap-8 items-center">
-            <div className="font-bold">Win Composition:</div>
-            <div>Basegame: {formattedBsWins}x</div>
-            <div>Freespins: {formattedFsWins}x</div>
+      <Accordion.Panel className="overflow-hidden h-(--accordion-panel-height) transition-[height] duration-200 ease-out data-starting-style:h-0 data-ending-style:h-0">
+        <div className="px-2 pb-2">
+          <div className="p-4 rounded-xl bg-ui-950">
+            <div className="pb-3 mb-4 border-b border-ui-700 flex gap-8 items-center tabular">
+              <div className="text-ui-100">Win Composition:</div>
+              <div>
+                <span className="text-ui-500">Basegame:</span> {formattedBsWins}x
+              </div>
+              <div>
+                <span className="text-ui-500">Freespins:</span> {formattedFsWins}x
+              </div>
+            </div>
+            <BookDetails bookId={id} mode={mode} />
           </div>
-          <BookDetails bookId={id} mode={mode} />
         </div>
       </Accordion.Panel>
     </Accordion.Item>
@@ -111,13 +158,13 @@ const BookDetails = ({ bookId, mode }: { bookId: number; mode: string }) => {
           switch (error.code) {
             case 404:
               return (
-                <div className="flex justify-center gap-4">
-                  <div>
-                    <IconMoodPuzzled size={64} stroke={1} />
+                <div className="py-4 flex justify-center gap-4">
+                  <div className="size-14 shrink-0 flex items-center justify-center rounded-xl bg-ui-800">
+                    <IconMoodPuzzled size={32} stroke={1.5} aria-hidden />
                   </div>
-                  <div>
-                    <h4 className="text-2xl">Book not found</h4>
-                    <p>
+                  <div className="max-w-2xl">
+                    <h4>Book not found</h4>
+                    <p className="mt-1 text-ui-500">
                       Your book details could not be loaded. The uncompressed book file
                       for this game mode doesn't exist. Panel works with uncompressed
                       books, so make sure those exist by running simulations again.
@@ -128,8 +175,8 @@ const BookDetails = ({ bookId, mode }: { bookId: number; mode: string }) => {
             default:
               return (
                 <div className="text-center">
-                  <h2>{error.code}</h2>
-                  <div>{error.message}</div>
+                  <h2 className="tabular">{error.code}</h2>
+                  <div className="text-ui-500">{error.message}</div>
                 </div>
               )
           }
@@ -144,7 +191,9 @@ const BookDetails = ({ bookId, mode }: { bookId: number; mode: string }) => {
 
   return (
     <div>
-      <div className="text-lg mb-2">Book Events ({events.length})</div>
+      <h5 className="mb-3">
+        Book Events <span className="tabular">({events.length})</span>
+      </h5>
       <div ref={scrollRef} className="overflow-x-auto h-98">
         <div
           style={{
@@ -167,18 +216,20 @@ const BookDetails = ({ bookId, mode }: { bookId: number; mode: string }) => {
                   transform: `translateX(${virtualCol.start}px)`,
                 }}
               >
-                <div className="min-w-80 bg-ui-950 rounded-lg p-4">
-                  <div className="flex gap-2 items-center mb-4">
-                    <div className="px-1 py-1 text-sm text-center min-w-8 rounded-sm bg-ui-900 border border-ui-700">
+                <div className="min-w-80 p-4 rounded-xl bg-ui-900">
+                  <div className="flex gap-2 items-center mb-3">
+                    <div className="h-6 min-w-6 px-1.5 flex items-center justify-center rounded-md bg-ui-800 text-xs text-ui-100 tabular">
                       {event.index}
                     </div>
-                    <div className="font-bold truncate">{event.type}</div>
+                    <div className="font-medium truncate" title={event.type}>
+                      {event.type}
+                    </div>
                   </div>
                   <div className="max-h-72 rounded-lg overflow-auto scrollbar-thin">
                     <JsonView
                       className="p-2"
                       value={event.data}
-                      style={vscodeTheme}
+                      style={JSON_THEME}
                       displayDataTypes={false}
                       enableClipboard={false}
                     />

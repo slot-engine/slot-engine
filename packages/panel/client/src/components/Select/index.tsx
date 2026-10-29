@@ -16,7 +16,7 @@ export const Select = <Value, Multiple extends boolean | undefined>({
   return (
     <Primitive.Root {...props}>
       <div className={className}>
-        {label && <div className="block mb-1">{label}</div>}
+        {label && <div className="block mb-1.5 text-ui-100">{label}</div>}
         {props.children}
       </div>
     </Primitive.Root>
@@ -36,14 +36,14 @@ export const SelectTrigger = ({
   return (
     <Primitive.Trigger
       className={cn(
-        "w-full px-4 py-2 border border-ui-700 hover:bg-ui-800 rounded-lg flex gap-2 items-center justify-between",
+        "w-full h-10 pl-3 pr-2 flex gap-2 items-center justify-between rounded-lg bg-ui-800 cursor-pointer transition-colors duration-150 hover:bg-ui-700 data-popup-open:bg-ui-700",
         className,
       )}
       {...props}
     >
       <Primitive.Value className="truncate" />
-      <Primitive.Icon className="shrink-0">
-        <IconChevronDown />
+      <Primitive.Icon className="shrink-0 text-ui-500">
+        <IconChevronDown size={20} stroke={1.5} aria-hidden />
       </Primitive.Icon>
     </Primitive.Trigger>
   )
@@ -54,9 +54,10 @@ export const SelectContent = (props: Primitive.List.Props) => {
     <Primitive.Portal>
       <Primitive.Positioner
         alignItemWithTrigger={false}
+        sideOffset={4}
         className="min-w-(--anchor-width)"
       >
-        <Primitive.Popup className="p-1 border border-ui-700 rounded-lg shadow-lg bg-ui-900 max-h-72 overflow-y-auto">
+        <Primitive.Popup className="p-1 rounded-xl bg-ui-900 shadow-popup max-h-72 overflow-y-auto scrollbar-thin outline-none transition-opacity duration-150 data-starting-style:opacity-0 data-ending-style:opacity-0">
           <Primitive.List {...props} className={cn("w-full", props.className)} />
         </Primitive.Popup>
       </Primitive.Positioner>
@@ -69,14 +70,14 @@ export const SelectItem = ({ children, className, ...props }: Primitive.Item.Pro
     <Primitive.Item
       {...props}
       className={cn(
-        "px-2 py-1 flex items-center gap-2 rounded-sm hover:bg-ui-800",
+        "h-9 px-2 grid grid-cols-[0.5rem_minmax(0,1fr)] items-center gap-2 rounded-lg cursor-pointer select-none text-ui-100 outline-none transition-colors duration-150 data-highlighted:bg-ui-800 data-highlighted:text-ui-50 data-selected:text-ui-50",
         className,
       )}
     >
       <Primitive.ItemIndicator
-        render={(p) => <span className="size-2 inline-block rounded-full bg-emerald-500" />}
+        render={() => <span className="size-2 rounded-full bg-accent-500" />}
       />
-      {children}
+      <span className="col-start-2 truncate">{children}</span>
     </Primitive.Item>
   )
 }

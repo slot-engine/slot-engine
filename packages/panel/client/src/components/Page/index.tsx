@@ -8,12 +8,12 @@ interface PageHeaderProps {
 
 export const PageHeader = ({ title, children }: PageHeaderProps) => {
   return (
-    <div className="px-4 h-14 border-b border-ui-700 flex items-center sticky top-0 bg-ui-950 z-10">
-      <div className="text-xl h-14 flex items-center border-r border-ui-700 pr-4 w-80">
+    <header className="sticky top-0 z-10 h-14 px-6 flex items-center gap-6 bg-ui-950 border-b border-ui-800">
+      <h1 className="text-xl font-semibold truncate min-w-0 shrink" title={title}>
         {title}
-      </div>
+      </h1>
       {children}
-    </div>
+    </header>
   )
 }
 
@@ -36,36 +36,36 @@ export const PageContent = ({
     return (
       <div
         {...props}
-        className={cn("grid grid-cols-[auto_24rem] items-start", className)}
+        className={cn("grid grid-cols-[minmax(0,1fr)_24rem] items-start", className)}
       >
         <ScrollArea.Root className="overflow-hidden">
           <ScrollArea.Viewport>
-            <ScrollArea.Content className={cn("px-4 py-8", classNames?.content)}>
+            <ScrollArea.Content className={cn("px-6 py-6", classNames?.content)}>
               {children}
             </ScrollArea.Content>
           </ScrollArea.Viewport>
           <ScrollArea.Scrollbar
             orientation="horizontal"
-            className="h-6 px-4 bg-ui-800 flex items-center"
+            className="h-3 px-6 pb-1 flex items-end"
           >
-            <ScrollArea.Thumb className="h-2 bg-ui-500 rounded hover:bg-ui-100 cursor-grab" />
+            <ScrollArea.Thumb className="h-1.5 rounded-full bg-ui-700 transition-colors duration-150 hover:bg-ui-500 cursor-grab" />
           </ScrollArea.Scrollbar>
           <ScrollArea.Corner />
         </ScrollArea.Root>
-        <div
+        <aside
           className={cn(
-            "px-4 py-8 border-l border-ui-700 h-content-height sticky top-nav-height overflow-y-auto",
+            "h-content-height sticky top-nav-height overflow-y-auto scrollbar-thin py-6 pr-6",
             classNames?.sidebar,
           )}
         >
-          {sidebar}
-        </div>
+          <div className="p-4 rounded-2xl bg-ui-900 shadow-card">{sidebar}</div>
+        </aside>
       </div>
     )
   }
 
   return (
-    <div {...props} className={cn("px-4 py-8", className, classNames?.content)}>
+    <div {...props} className={cn("px-6 py-6", className, classNames?.content)}>
       {children}
     </div>
   )

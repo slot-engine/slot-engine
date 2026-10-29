@@ -18,7 +18,7 @@ export const SettingsBar = ({
   onBalanceChange,
 }: SettingsBarProps) => {
   return (
-    <div className="flex items-end gap-4 px-4 py-3 border-t border-ui-700">
+    <div className="flex items-end gap-4 px-6 py-4">
       <Select
         label="Currency"
         className="w-36"

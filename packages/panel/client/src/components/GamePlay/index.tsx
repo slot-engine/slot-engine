@@ -192,7 +192,7 @@ const Player = ({ gameId, info }: PlayerProps) => {
   return (
     <div className="h-content-height grid grid-cols-[minmax(0,1fr)_24rem] grid-rows-[auto_minmax(0,1fr)_auto]">
       <form
-        className="flex items-center gap-2 px-4 py-3 border-b border-ui-700"
+        className="flex items-center gap-2 px-6 py-3 bg-ui-900 border-b border-ui-800"
         onSubmit={(event) => {
           event.preventDefault()
           launchFromUrl()
@@ -200,32 +200,38 @@ const Player = ({ gameId, info }: PlayerProps) => {
       >
         <input
           aria-label="Game URL"
-          className="grow px-4 py-2 border border-ui-700 rounded-lg"
+          inputMode="url"
+          spellCheck={false}
+          className="grow min-w-0 h-10 px-3 rounded-lg bg-ui-800 outline-1 -outline-offset-1 outline-transparent transition-[outline-color] duration-150 focus:outline-accent-500 placeholder:text-ui-500"
           placeholder="http://localhost:3000"
           value={url}
           onChange={(event) => setUrl(event.target.value)}
         />
         <Button type="submit" disabled={play.status === "launching"}>
-          {play.status === "playing" ? <IconRefresh /> : <IconPlayerPlay />}
+          {play.status === "playing" ? (
+            <IconRefresh size={20} stroke={1.5} aria-hidden />
+          ) : (
+            <IconPlayerPlay size={20} stroke={1.5} aria-hidden />
+          )}
           {play.status === "playing" ? "Reload" : "Launch"}
         </Button>
         {"src" in play && (
           <a
-            className="flex items-center gap-1 px-2 text-sm text-ui-500 hover:text-ui-100 underline"
+            className="link mb-0 shrink-0 px-2 whitespace-nowrap"
             href={play.src}
             target="_blank"
           >
             Open in new tab
-            <IconExternalLink size={18} />
+            <IconExternalLink size={20} stroke={1.5} aria-hidden />
           </a>
         )}
       </form>
 
-      <div className="row-start-2 bg-ui-900">
+      <div className="row-start-2 bg-ui-950">
         <Stage play={play} />
       </div>
 
-      <div className="row-start-3">
+      <div className="row-start-3 bg-ui-900 border-t border-ui-800">
         <SettingsBar
           info={info}
           settings={settings}
@@ -234,20 +240,20 @@ const Player = ({ gameId, info }: PlayerProps) => {
         />
       </div>
 
-      <aside className="col-start-2 row-span-3 row-start-1 px-4 py-8 border-l border-ui-700 overflow-y-auto">
+      <aside className="col-start-2 row-span-3 row-start-1 p-6 bg-ui-900 border-l border-ui-800 overflow-y-auto scrollbar-thin">
         <Tabs defaultValue="force">
           <TabsList>
             <TabsTrigger value="force">Force outcome</TabsTrigger>
             <TabsTrigger value="replay">Replay</TabsTrigger>
           </TabsList>
-          <TabsContent value="force" className="pt-4">
+          <TabsContent value="force" className="pt-6">
             <ForceOutcome
               fields={forceFields}
               error={forceMutation.error}
               onChange={changeForce}
             />
           </TabsContent>
-          <TabsContent value="replay" className="pt-4">
+          <TabsContent value="replay" className="pt-6">
             <ReplayBook
               info={info}
               fields={replayFields}
@@ -258,7 +264,7 @@ const Player = ({ gameId, info }: PlayerProps) => {
             />
           </TabsContent>
         </Tabs>
-        <h5 className="pb-2 mt-8 mb-2 border-b border-ui-700">Session</h5>
+        <h4 className="mt-8 mb-3">Session</h4>
         <SessionDetails play={play} />
       </aside>
     </div>
@@ -288,7 +294,7 @@ const Stage = ({ play }: { play: PlayState }) => {
       )
     case "error":
       return (
-        <div className="h-full flex items-center justify-center p-8 text-center text-red-500">
+        <div className="h-full flex items-center justify-center p-8 text-center text-danger-500">
           {play.message}
         </div>
       )

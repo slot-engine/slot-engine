@@ -78,17 +78,18 @@ export const ReelSetDesigner = () => {
           }
         }}
       >
-        <div className="flex gap-0.5 overflow-x-auto">
+        <div className="flex gap-2 overflow-x-auto h-[calc(var(--spacing-content-height)-3rem)]">
           {reelOrder.map((reel, i) => (
             <SortableReel key={reel} reelId={reel} index={i} reel={reels[reel]} />
           ))}
-          <div
+          <button
+            type="button"
             onClick={() => addReel()}
-            className="min-w-36 min-h-content-height bg-ui-900 hover:bg-ui-800 flex flex-col justify-center items-center gap-2 border-2 border-ui-700 border-dashed cursor-pointer"
+            className="press w-36 shrink-0 h-full flex flex-col justify-center items-center gap-2 rounded-2xl border border-dashed border-ui-700 text-ui-500 cursor-pointer hover:bg-ui-900 hover:text-ui-50"
           >
-            <IconPlus />
+            <IconPlus size={20} stroke={1.5} aria-hidden />
             Add Reel
-          </div>
+          </button>
         </div>
       </DragDropProvider>
 
@@ -104,7 +105,9 @@ export const ReelSetDesigner = () => {
           <div className="mt-4 grid grid-cols-2 gap-x-8">
             {options.symbols.map((sym) => (
               <div className="flex gap-3 items-center mb-2" key={sym}>
-                <div className="text-lg w-16">{sym}</div>
+                <div className="w-12 shrink-0 text-base font-medium" translate="no">
+                  {sym}
+                </div>
                 <NumberInput
                   defaultValue={0}
                   value={symbolCounts[sym]}
@@ -113,7 +116,7 @@ export const ReelSetDesigner = () => {
               </div>
             ))}
           </div>
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 pt-4 flex gap-2 border-t border-ui-700">
             <Button onClick={() => confirmSymbols("prepend")}>Add Before</Button>
             <NumberInput
               placeholder="Symbol Index"
@@ -123,10 +126,10 @@ export const ReelSetDesigner = () => {
             />
             <Button onClick={() => confirmSymbols("append")}>Add After</Button>
           </div>
-          <div className="text-sm mt-2 text-ui-500">
+          <p className="text-xs mt-2 text-ui-500">
             If no symbol index is given, the symbols will be placed at the start or end of
             the reel.
-          </div>
+          </p>
         </DialogContent>
       </Dialog>
 
@@ -156,7 +159,7 @@ export const ReelSetDesigner = () => {
               />
             ))}
           </div>
-          <div className="mt-4 flex">
+          <div className="mt-4 pt-4 flex border-t border-ui-700">
             <Button
               variant="destructive"
               disabled={symbolsToRemove.length === 0}

@@ -13,10 +13,10 @@ function RouteComponent() {
     <PageContent>
       <GameInformation />
 
-      <div className="mt-8">
+      <div className="mt-10">
         <StatisticsSummary />
       </div>
-      <div className="mt-8">
+      <div className="mt-10">
         <StatisticsPayouts />
       </div>
     </PageContent>

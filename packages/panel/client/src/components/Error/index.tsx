@@ -6,7 +6,7 @@ interface ErrorDisplayProps {
 }
 
 export const ErrorDisplay = ({ error, render }: ErrorDisplayProps) => {
-  const styles = "p-8 flex flex-col items-center justify-center"
+  const styles = "p-8 flex flex-col items-center justify-center gap-1 text-center"
 
   if (!error) return null
 
@@ -17,8 +17,8 @@ export const ErrorDisplay = ({ error, render }: ErrorDisplayProps) => {
 
     return (
       <div className={styles}>
-        <h2>{error.code}</h2>
-        <div>{error.message}</div>
+        <h2 className="tabular">{error.code}</h2>
+        <div className="text-ui-500">{error.message}</div>
       </div>
     )
   }

@@ -20,9 +20,9 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <WebsocketProvider>
-        <div className="root grid grid-cols-[16rem_auto] min-h-screen">
+        <div className="root grid grid-cols-[15rem_minmax(0,1fr)] min-h-screen">
           <Navigation />
-          <main>
+          <main className="min-w-0">
             <Outlet />
           </main>
         </div>

@@ -14,9 +14,12 @@ export const PopoverContent = ({
 }: PopoverContentProps) => {
   return (
     <Primitive.Portal>
-      <Primitive.Positioner alignOffset={2} sideOffset={2}>
+      <Primitive.Positioner sideOffset={4}>
         <Primitive.Popup
-          className={cn("p-4 rounded-lg bg-ui-900 border border-ui-700", className)}
+          className={cn(
+            "p-4 rounded-2xl bg-ui-900 shadow-popup outline-none transition-opacity duration-150 data-starting-style:opacity-0 data-ending-style:opacity-0",
+            className,
+          )}
           {...props}
         >
           {children}

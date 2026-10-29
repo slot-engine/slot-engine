@@ -17,19 +17,19 @@ function RouteComponent() {
 
 const Sidebar = () => {
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-2">
-        <IconInfoCircle />
-        <h4>How does this work?</h4>
-      </div>
+    <div className="text-ui-100">
+      <h4 className="flex items-center gap-2 mb-3 text-ui-50">
+        <IconInfoCircle size={20} stroke={1.5} className="text-ui-500" aria-hidden />
+        How does this work?
+      </h4>
       <p>
         This module simulates game behavior with multiple players betting on the game
-        under equal circumstances. For each "spin" a virtual player does, a random
+        under equal circumstances. For each “spin” a virtual player does, a random
         weighted result from the lookup table is chosen, similar to real Stake RGS
         functionality.
       </p>
       <p>
-        After simulation you'll be presented with the results and how your game performs
+        After simulation you’ll be presented with the results and how your game performs
         on average.
       </p>
       <p>

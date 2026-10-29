@@ -20,6 +20,14 @@ interface StatisticsProps extends React.ComponentPropsWithoutRef<"div"> {
   }
 }
 
+const TONES = {
+  success: { tile: "bg-accent-950", text: "text-accent-500", dot: "bg-accent-500" },
+  warning: { tile: "bg-warning-950", text: "text-warning-500", dot: "bg-warning-500" },
+  danger: { tile: "bg-danger-950", text: "text-danger-500", dot: "bg-danger-500" },
+}
+
+type Tone = keyof typeof TONES
+
 export const Statistics = ({
   label,
   value,
@@ -36,42 +44,46 @@ export const Statistics = ({
   classNames,
   ...props
 }: StatisticsProps) => {
+  const statuses: Array<{ tone: Tone; text: string }> = []
+  if (isSuccess)
+    statuses.push({ tone: "success", text: successText || "This value seems correct" })
+  if (isWarning)
+    statuses.push({ tone: "warning", text: warningText || "This value seems unusual" })
+  if (isDanger)
+    statuses.push({ tone: "danger", text: dangerText || "This value seems incorrect" })
+  const tileTone = statuses[0]?.tone
+
   return (
     <div
       {...props}
       className={cn(
-        "px-4 py-3 rounded-r-lg bg-ui-950 border-l-4 border-ui-500",
-        isDanger && "border-red-500 bg-red-950",
-        isWarning && "border-orange-500 bg-orange-950",
-        isSuccess && "border-emerald-500 bg-emerald-950",
+        "p-4 rounded-xl bg-ui-800",
+        tileTone && TONES[tileTone].tile,
         classNames?.container,
       )}
     >
-      <div>{label}</div>
-      {description && (
-        <div className="text-xs mt-1 mb-1 leading-4 text-ui-100">{description}</div>
-      )}
-      <div className={cn("flex items-baseline gap-2", classNames?.valueContainer)}>
+      <div className="text-ui-100">{label}</div>
+      {description && <div className="text-xs mt-1 text-ui-100">{description}</div>}
+      <div className={cn("flex items-baseline gap-2 mt-2", classNames?.valueContainer)}>
         {valuePrefix}
-        <div className={cn("font-bold text-2xl", classNames?.value)}>{value}</div>
+        <div className={cn("text-2xl font-semibold tabular", classNames?.value)}>
+          {value}
+        </div>
         {valueSuffix}
       </div>
-      {info && <div className="text-xs mt-1 leading-4 text-ui-500">{info}</div>}
-      {isSuccess && (
-        <div className="mt-1 text-xs text-emerald-500">
-          {successText || "This value seems correct"}
+      {info && <div className="text-xs mt-1 text-ui-100">{info}</div>}
+      {statuses.map(({ tone, text }) => (
+        <div
+          key={tone}
+          className={cn("mt-2 flex items-center gap-2 text-xs", TONES[tone].text)}
+        >
+          <span
+            className={cn("size-2 shrink-0 rounded-full", TONES[tone].dot)}
+            aria-hidden
+          />
+          {text}
         </div>
-      )}
-      {isWarning && (
-        <div className="mt-1 text-xs text-orange-500">
-          {warningText || "This value seems unusual"}
-        </div>
-      )}
-      {isDanger && (
-        <div className="mt-1 text-xs text-red-500">
-          {dangerText || "This value seems incorrect"}
-        </div>
-      )}
+      ))}
     </div>
   )
 }

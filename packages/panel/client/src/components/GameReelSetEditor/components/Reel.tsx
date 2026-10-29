@@ -61,7 +61,7 @@ export const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProp
   const virtualizer = useVirtualizer({
     count: reel.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 32,
+    estimateSize: () => 40,
     overscan: 10,
     gap: 8,
     getItemKey: (itemIdx) => reels[reelId]?.[itemIdx]?.id,
@@ -102,16 +102,16 @@ export const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProp
     <div
       {...props}
       ref={ref}
-      className="bg-ui-900 overflow-clip h-content-height flex flex-col"
+      className="w-36 shrink-0 h-full flex flex-col overflow-clip rounded-2xl bg-ui-900 shadow-card"
     >
-      <div className="px-4 py-2">
-        <div className="flex gap-4 items-center justify-between">
+      <div className="p-2">
+        <div className="flex items-center justify-between">
           <div
             ref={handleRef}
-            className="py-2 flex justify-center cursor-grab bg-ui-900"
+            className="size-10 flex items-center justify-center rounded-lg cursor-grab text-ui-500 transition-colors duration-150 hover:bg-ui-800 hover:text-ui-50"
             title="Click and drag to move"
           >
-            <IconGripVertical />
+            <IconGripVertical size={20} stroke={1.5} aria-hidden />
           </div>
           <Menu
             onOpenChange={(open) => {
@@ -119,23 +119,24 @@ export const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProp
             }}
           >
             <MenuTrigger
-              title="More options..."
-              render={<Button variant="ghost" isIconButton size="sm" />}
+              title="More options…"
+              aria-label="More options"
+              render={<Button variant="ghost" isIconButton className="text-ui-500" />}
             >
-              <IconDots />
+              <IconDots size={20} stroke={1.5} aria-hidden />
             </MenuTrigger>
             <MenuContent>
               <MenuItem onClick={() => handleDialog(reelId, "addSymbols")}>
-                <IconPlus />
+                <IconPlus size={20} stroke={1.5} aria-hidden />
                 Add Symbols
               </MenuItem>
               <MenuItem onClick={() => handleDialog(reelId, "removeSymbols")}>
-                <IconMinus />
+                <IconMinus size={20} stroke={1.5} aria-hidden />
                 Remove Symbols
               </MenuItem>
               <MenuSubmenu>
                 <MenuSubmenuTrigger>
-                  <IconArrowsShuffle />
+                  <IconArrowsShuffle size={20} stroke={1.5} aria-hidden />
                   Shuffle Symbols
                 </MenuSubmenuTrigger>
                 <MenuContent className="w-64">
@@ -168,37 +169,41 @@ export const SortableReel = ({ reelId, index, reel, ...props }: SortableReelProp
                   </div>
                   <MenuSeparator />
                   <MenuItem onClick={handleShuffle}>
-                    <IconArrowsShuffle />
+                    <IconArrowsShuffle size={20} stroke={1.5} aria-hidden />
                     Shuffle
                   </MenuItem>
                   {shuffleError && (
-                    <div className="px-2 py-1 text-xs text-red-500">{shuffleError}</div>
+                    <div className="px-2 py-1 text-xs text-danger-500" role="alert">
+                      {shuffleError}
+                    </div>
                   )}
                 </MenuContent>
               </MenuSubmenu>
               <MenuSeparator />
               <MenuItem onClick={() => duplicateReel(reelId)}>
-                <IconCopy />
+                <IconCopy size={20} stroke={1.5} aria-hidden />
                 Duplicate Reel
               </MenuItem>
               <MenuSeparator />
               <MenuItem variant="destructive" onClick={() => clearReel(reelId)}>
-                <IconX />
+                <IconX size={20} stroke={1.5} aria-hidden />
                 Clear Reel
               </MenuItem>
               <MenuSeparator />
               <MenuItem variant="destructive" onClick={() => deleteReel(reelId)}>
-                <IconTrash />
+                <IconTrash size={20} stroke={1.5} aria-hidden />
                 Delete Reel
               </MenuItem>
             </MenuContent>
           </Menu>
         </div>
-        <div className="text-xs text-center">Symbols: {reel.length}</div>
+        <div className="text-xs text-center text-ui-500 tabular">
+          Symbols: {reel.length}
+        </div>
       </div>
       <div
         ref={scrollRef}
-        className="w-36 p-4 pt-0 scrollbar-thin h-full overflow-x-hidden overflow-y-auto"
+        className="px-2 pb-2 scrollbar-thin h-full overflow-x-hidden overflow-y-auto"
       >
         {reel.length === 0 ? (
           <SymbolDropArea reelId={reelId} />

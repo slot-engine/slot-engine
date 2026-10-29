@@ -35,10 +35,10 @@ function RouteComponent() {
 
   if (!data || isLoading) {
     return (
-      <div className="pt-8">
-        <Skeleton className="h-32" />
-        <Skeleton className="h-32 mt-4" />
-        <Skeleton className="h-32 mt-4" />
+      <div className="px-6 py-6">
+        <Skeleton className="h-32 rounded-2xl" />
+        <Skeleton className="h-32 mt-4 rounded-2xl" />
+        <Skeleton className="h-32 mt-4 rounded-2xl" />
       </div>
     )
   }
@@ -46,8 +46,8 @@ function RouteComponent() {
   if (data.reelSets.length === 0) {
     return (
       <PageContent>
-        <div className="p-8 text-center text-ui-400">
-          No reel sets found in this game. Ensure they are named starting with "reels_".
+        <div className="p-8 text-center text-ui-500">
+          No reel sets found in this game. Ensure they are named starting with “reels_”.
         </div>
       </PageContent>
     )
@@ -56,7 +56,7 @@ function RouteComponent() {
   return (
     <RseDataProvider reelSets={data.reelSets}>
       <RseUiProvider>
-        <PageContent sidebar={<Sidebar />} classNames={{ content: "py-0 pl-0" }}>
+        <PageContent sidebar={<Sidebar />}>
           <ReelSetDesigner />
         </PageContent>
       </RseUiProvider>
@@ -96,7 +96,7 @@ const Sidebar = () => {
 
   return (
     <div>
-      <h2 className="mb-2">Reel Set Designer</h2>
+      <h3 className="mb-4">Reel Set Designer</h3>
       <Select
         multiple={false}
         value={activeReelset}
@@ -112,24 +112,28 @@ const Sidebar = () => {
           ))}
         </SelectContent>
       </Select>
-      <div className="mt-4 mb-2">Color Settings</div>
+      <div className="mt-6 mb-1.5 text-ui-100">Color Settings</div>
       <div className="grid grid-cols-4 gap-2">
         {Object.entries(colors).map(([key, color]) => (
           <SymbolColor key={key} symbol={key} color={color} />
         ))}
       </div>
       <Button
-        className="mt-8"
+        className="mt-6 w-full"
         disabled={isLoading}
         onClick={() => updateMutation.mutate()}
       >
-        {isLoading ? <IconLoader2 className="animate-spin" /> : <IconDeviceFloppy />}
+        {isLoading ? (
+          <IconLoader2 size={20} stroke={1.5} className="animate-spin" aria-hidden />
+        ) : (
+          <IconDeviceFloppy size={20} stroke={1.5} aria-hidden />
+        )}
         Save Reels & Settings
       </Button>
-      <h3 className="mb-2 mt-8">Advanced Information</h3>
-      <div>
-        <div className="mb-2">Symbol Counts</div>
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+      <div className="mt-6 pt-6 border-t border-ui-700">
+        <h4 className="mb-1">Advanced Information</h4>
+        <div className="mb-3 text-ui-500">Symbol Counts</div>
+        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin">
           {reelOrder.map((reelId, position) => {
             const counts: Record<string, number> = {}
             options.symbols.forEach((s) => (counts[s] = 0))
@@ -138,7 +142,9 @@ const Sidebar = () => {
             })
             return (
               <div key={reelId} className="text-xs min-w-12">
-                <div>Reel {position + 1}:</div>
+                <div className="mb-1 text-ui-100 whitespace-nowrap">
+                  Reel {position + 1}:
+                </div>
                 <div>
                   {Object.entries(counts).map(([symbol, count]) => (
                     <div key={symbol} className="font-mono">
@@ -161,9 +167,14 @@ const SymbolColor = ({ symbol, color }: { symbol: string; color: string }) => {
 
   return (
     <Popover>
-      <PopoverTrigger className="cursor-pointer flex gap-2 items-center justify-between p-1 pl-2 bg-ui-900 hover:bg-ui-800 border border-ui-700 rounded-lg">
-        <div>{symbol}</div>
-        <div className="size-6 rounded-sm" style={{ backgroundColor: color }}></div>
+      <PopoverTrigger className="h-10 pl-3 pr-2 flex gap-2 items-center justify-between rounded-lg bg-ui-800 cursor-pointer transition-colors duration-150 hover:bg-ui-700 data-popup-open:bg-ui-700">
+        <span className="truncate" translate="no">
+          {symbol}
+        </span>
+        <span
+          className="size-6 shrink-0 rounded-md outline-1 -outline-offset-1 outline-[rgb(255_255_255/0.1)]"
+          style={{ backgroundColor: color }}
+        />
       </PopoverTrigger>
       <PopoverContent>
         <ColorPicker

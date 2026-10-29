@@ -1,6 +1,7 @@
 import { cn } from "@/lib/cn"
 import { ContextMenu as Primitive } from "@base-ui/react/context-menu"
 import { IconChevronRight } from "@tabler/icons-react"
+import { menuItemStyles, menuPopupStyles } from "../Menu"
 
 export const ContextMenu = Primitive.Root
 
@@ -28,7 +29,7 @@ export const ContextMenuContent = ({
   return (
     <Primitive.Portal>
       <Primitive.Positioner>
-        <Primitive.Popup className={className} {...props}>
+        <Primitive.Popup className={cn(menuPopupStyles, className)} {...props}>
           {children}
         </Primitive.Popup>
       </Primitive.Positioner>
@@ -47,11 +48,15 @@ export const ContextMenuSubmenuTrigger = ({
 }: ContextMenuSubmenuTriggerProps) => {
   return (
     <Primitive.SubmenuTrigger
-      className={cn("flex gap-2 items-center", className)}
+      className={cn(
+        menuItemStyles(),
+        "data-popup-open:bg-ui-800 data-popup-open:text-ui-50",
+        className,
+      )}
       {...props}
     >
       {children}
-      <IconChevronRight className="ml-auto" />
+      <IconChevronRight size={20} stroke={1.5} className="ml-auto" aria-hidden />
     </Primitive.SubmenuTrigger>
   )
 }
@@ -64,7 +69,7 @@ export const ContextMenuItem = ({
   ...props
 }: ContextMenuItemProps) => {
   return (
-    <Primitive.Item className={className} {...props}>
+    <Primitive.Item className={menuItemStyles({ className })} {...props}>
       {children}
     </Primitive.Item>
   )
