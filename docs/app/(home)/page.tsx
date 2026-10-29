@@ -9,7 +9,10 @@ import Image from "next/image"
 import Link from "next/link"
 import Logo from "@/assets/slot-engine-icon.png"
 import { CopyCommand } from "@/components/CopyCommand"
+import { Faq } from "@/components/Faq"
+import { JsonLd } from "@/components/JsonLd"
 import { ShaderBackground } from "@/components/ShaderBackground"
+import { softwareGraph } from "@/lib/structured-data"
 
 const features = [
   {
@@ -38,6 +41,7 @@ const features = [
 export default function HomePage() {
   return (
     <main className="flex flex-col">
+      <JsonLd data={softwareGraph} />
       {/* Hero with animated shader background */}
       <section className="relative isolate flex min-h-[88vh] flex-col items-center justify-center overflow-hidden px-4 py-24 text-center">
         <ShaderBackground className="absolute inset-0 -z-20 h-full w-full" />
@@ -195,6 +199,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <Faq />
     </main>
   )
 }
