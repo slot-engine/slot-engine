@@ -1,6 +1,6 @@
 {
   "name": "@slot-engine/lgs",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/slot-engine/slot-engine"
@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@hono/node-server": "2.1.5",
-    "@slot-engine/core": "0.3.3",
+    "@slot-engine/core": "0.4.0",
     "chalk": "6.0.1",
     "hono": "4.13.13",
     "zod": "4.6.7"
