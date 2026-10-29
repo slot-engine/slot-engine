@@ -6,7 +6,7 @@ icon: "Rocket"
 
 ## Upgrade from 0.3.x to 0.4.x
 
-### Book IDs start at 0
+### Book IDs start at 0 [!toc]
 
 Book IDs now start at 0 instead of 1. The first line of `books_<mode>.jsonl.zst` and the first row of `lookUpTable_<mode>_0.csv` belong to book 0.
 You will need to **re-run simulations** to regenerate your files.
@@ -14,7 +14,7 @@ You will need to **re-run simulations** to regenerate your files.
 The books themselves stay the same and are only renumbered. Book `k` was book `k + 1` before.
 If your code maps a book ID to a lookup table row with `id - 1`, drop the offset.
 
-### Define scatter rules in your game
+### Define scatter rules in your game [!toc]
 
 `scatterToFreespins`, `ctx.config.anticipationTriggers`, `ctx.services.game.getFreeSpinsForScatters()`
 and `ctx.services.game.verifyScatterCount()` were removed. Games are now responsible to handle scatter counts.
@@ -48,7 +48,7 @@ freespinsForScatters(ctx.state.currentSpinType, scatters) // [!code ++]
 
 ## Upgrade from 0.2.x to 0.3.x
 
-### Replace `record` API with `tag` API
+### Replace `record` API with `tag` API [!toc]
 
 For clarity, the old "force record" system was renamed to "tagging".
 You will need to **replace method calls** and **re-run simulations, because output file names have changed**.
@@ -70,7 +70,7 @@ game.runTasks({
 })
 ```
 
-### Update optimization configuration
+### Update optimization configuration [!toc]
 
 The old and slow Rust optimizer was replaced with a Typescript optimizer, resulting in noticably faster optimization.
 The API has also changed. [Learn how to use the new optimizer](/docs/core/game-tasks/optimization)
