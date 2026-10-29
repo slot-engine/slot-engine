@@ -11,7 +11,7 @@ export class RandomNumberGenerator {
   AM: number
   RNMX: number
 
-  protected _currentSeed: number = 0
+  protected _currentSeed: number | null = null
 
   constructor() {
     this.mIdum = 0
@@ -41,7 +41,8 @@ export class RandomNumberGenerator {
     this.setCurrentSeed(seed)
 
     if (seed >= 0) {
-      this.mIdum = -seed
+      // ran1 treats mIdum 0 like -1, so without the + 1 seeds 0 and 1 share a stream.
+      this.mIdum = -(seed + 1)
     }
 
     this.mIy = 0
@@ -179,5 +180,5 @@ export interface RngStateSnapshot {
   mIdum: number
   mIy: number
   mIv: number[]
-  currentSeed: number
+  currentSeed: number | null
 }

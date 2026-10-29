@@ -99,6 +99,23 @@ export function splitCountsAcrossChunks(
   return perChunk
 }
 
+export function getSimRangesForChunks(total: number, chunks: number): [number, number][] {
+  const realChunks = Math.min(chunks, Math.max(total, 1))
+  const base = Math.floor(total / realChunks)
+  const remainder = total % realChunks
+  const result: [number, number][] = []
+
+  let current = 0
+  for (let i = 0; i < realChunks; i++) {
+    const size = base + (i < remainder ? 1 : 0)
+    const start = current
+    const end = current + size - 1
+    result.push([start, end])
+    current = end + 1
+  }
+  return result
+}
+
 export function createCriteriaSampler(counts: Record<string, number>, seed: number) {
   const rng = new RandomNumberGenerator()
   rng.setSeed(seed)

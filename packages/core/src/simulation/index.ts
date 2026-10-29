@@ -19,7 +19,12 @@ import { Tagger, TagItem } from "../tagger"
 import { Wallet } from "../wallet"
 import { ResultSet } from "../result-set"
 import { pipeline } from "stream/promises"
-import { createCriteriaSampler, hashStringToInt, splitCountsAcrossChunks } from "./utils"
+import {
+  createCriteriaSampler,
+  getSimRangesForChunks,
+  hashStringToInt,
+  splitCountsAcrossChunks,
+} from "./utils"
 import { io, Socket } from "socket.io-client"
 import chalk from "chalk"
 import {
@@ -226,7 +231,7 @@ export class Simulation {
           `Criteria mismatch for mode "${mode}". Expected ${runs}, got ${totalSims}`,
         )
 
-        const chunks = this.getSimRangesForChunks(totalSims, this.concurrency!)
+        const chunks = getSimRangesForChunks(totalSims, this.concurrency!)
         const chunkSizes = chunks.map(([s, e]) => Math.max(0, e - s + 1))
         const chunkCriteriaCounts = splitCountsAcrossChunks(criteriaCounts, chunkSizes)
 
@@ -388,7 +393,8 @@ export class Simulation {
       }
 
       const seed = (hashStringToInt(mode) + index) >>> 0
-      const nextCriteria = createCriteriaSampler(criteriaCounts, seed)
+      // setSeed(s) plays the pre-0.4 stream of s + 1; - 1 keeps the old criteria order.
+      const nextCriteria = createCriteriaSampler(criteriaCounts, seed - 1)
 
       // Run each simulation until the criteria is met.
       for (let simId = simStart; simId <= simEnd; simId++) {
@@ -1053,23 +1059,6 @@ export class Simulation {
       ),
       external: ["esbuild", "yargs"],
     })
-  }
-
-  private getSimRangesForChunks(total: number, chunks: number): [number, number][] {
-    const realChunks = Math.min(chunks, Math.max(total, 1))
-    const base = Math.floor(total / realChunks)
-    const remainder = total % realChunks
-    const result: [number, number][] = []
-
-    let current = 1
-    for (let i = 0; i < realChunks; i++) {
-      const size = base + (i < remainder ? 1 : 0)
-      const start = current
-      const end = current + size - 1
-      result.push([start, end])
-      current = end + 1
-    }
-    return result
   }
 
   /**

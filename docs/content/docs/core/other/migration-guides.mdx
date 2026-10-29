@@ -4,6 +4,16 @@ description: Learn how to upgrade your games to a newer version of Core.
 icon: "Rocket"
 ---
 
+## Upgrade from 0.3.x to 0.4.x
+
+### Book IDs start at 0
+
+Book IDs now start at 0 instead of 1. The first line of `books_<mode>.jsonl.zst` and the first row of `lookUpTable_<mode>_0.csv` belong to book 0.
+You will need to **re-run simulations** to regenerate your files.
+
+The books themselves stay the same and are only renumbered. Book `k` was book `k + 1` before.
+If your code maps a book ID to a lookup table row with `id - 1`, drop the offset.
+
 ## Upgrade from 0.2.x to 0.3.x
 
 ### Replace `record` API with `tag` API

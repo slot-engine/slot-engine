@@ -97,9 +97,9 @@ For each game mode a books file is generated which contains a list of all books 
 That file is compressed using Zstandard compression, because book files tend to get quite large the more events you have.
 
 ```jsonl
-{"id":1,"payoutMultiplier":780,"events":[{"index":1,"type":"test","data":{"test":123}}]}
-{"id":2,"payoutMultiplier":1000,"events":[{"index":1,"type":"test","data":{"test":123}}]}
-{"id":3,"payoutMultiplier":0,"events":[{"index":1,"type":"test","data":{"test":123}}]}
+{"id":0,"payoutMultiplier":780,"events":[{"index":1,"type":"test","data":{"test":123}}]}
+{"id":1,"payoutMultiplier":1000,"events":[{"index":1,"type":"test","data":{"test":123}}]}
+{"id":2,"payoutMultiplier":0,"events":[{"index":1,"type":"test","data":{"test":123}}]}
 ...
 ```
 
@@ -110,6 +110,7 @@ An overview of all simulated game modes and their corresponding file names.
 ### lookUpTable\_\<gameMode>\_0.csv [!toc]
 
 The lookup table contains a list of all book IDs, a weight, and the payout multiplier (scaled by 100).
+Book IDs start at 0 and equal the simulation index.
 
 A book's weight determines the probability of that outcome being selected by the Stake RGS when resolving a bet.
 
@@ -117,9 +118,9 @@ A book's weight determines the probability of that outcome being selected by the
 
 ```csv
 ID, weight, payout
-1,1,780
-2,1,1000
-3,1,0
+0,1,780
+1,1,1000
+2,1,0
 ...
 ```
 
