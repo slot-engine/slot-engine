@@ -8,6 +8,7 @@ import {
   IconColumns3,
   IconFileSearch,
   IconInfoCircle,
+  IconPlayerPlay,
   IconRepeat,
 } from "@tabler/icons-react"
 import { GameProvider } from "@/context/GameContext"
@@ -49,6 +50,14 @@ function RouteComponent() {
           >
             <IconInfoCircle />
             Game Information
+          </Link>
+          <Link
+            to="/games/$gameId/play"
+            params={params}
+            className={cn(linkStyles, isActivePath("play") && "bg-ui-700")}
+          >
+            <IconPlayerPlay />
+            Play Game
           </Link>
           <Link
             to="/games/$gameId/simulation"

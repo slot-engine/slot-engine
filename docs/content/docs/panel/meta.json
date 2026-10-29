@@ -8,6 +8,7 @@
     "config/index",
     "---Modules---",
     "modules/information",
+    "modules/play",
     "modules/simulation",
     "modules/bet-simulation",
     "modules/reelset-designer",

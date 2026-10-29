@@ -1,0 +1,82 @@
+---
+title: Play Game
+description: Play your game's front end against the LGS and force outcomes.
+icon: Play
+---
+
+---
+
+## Overview
+
+The Play Game module opens your game's front end inside the panel and connects it to the [LGS](/docs/lgs) that is attached to the panel.
+It creates a session, opens the front end in an iframe with the launch parameters of the session, and shows the balance and the last round next to the game.
+To see how the front end shows a specific book or win, force the outcome instead of spinning until it comes up.
+
+## Requirements
+
+- An LGS attached to the panel. See [Attach an LGS](/docs/panel/config#lgs). Without an LGS, the tab shows the code that attaches one.
+- A [simulation](/docs/core/game-tasks/simulation) of every mode that you want to play. The LGS plays the books in `__build__/publish_files`.
+- Your front end running on its own port, for example a Vite dev server on `http://localhost:3000`.
+
+The LGS serves plain HTTP. The official Engine client defaults to HTTPS, so create it with `protocol: "http"`:
+
+```ts
+const client = RGSClient({ url: window.location.href, protocol: "http" })
+```
+
+## Launch the game
+
+1. Open the **Play Game** tab of your game.
+2. Enter the URL of your front end, for example `http://localhost:3000`.
+3. Click **Launch**.
+
+The panel creates a session with the settings from the bottom bar and opens the URL with the `launchQuery` of the session appended.
+The query sets `rgs_url` to the host of the panel, so the front end plays against the LGS on the panel's port.
+
+While the game runs, **Launch** becomes **Reload**. **Reload** creates a new session, with a new wallet at the starting balance, and loads the game again.
+The link next to the button opens the same launch URL in a new browser tab.
+
+## Settings
+
+The bar below the game holds the settings of the session.
+The panel saves the URL and the settings per game in the localStorage of your browser.
+
+| Setting          | Description                                                                                                           |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Currency         | Currency of the wallet. Lists the [enabled currencies](/docs/lgs/config#languages-and-currencies) of the LGS.         |
+| Language         | Language of the session, passed to the front end as `lang`.                                                           |
+| Starting balance | Balance of the new wallet, in major units: `100` is 100.00.                                                           |
+| Social           | Sets `social=true` in the launch query and `socialCasino` in the [jurisdiction flags](/docs/lgs/config#jurisdiction). |
+
+Until you change them, the settings show the defaults of the LGS configuration: `defaultCurrency`, `defaultLanguage` and `balance.starting`.
+
+If you change a setting while the game runs, the panel creates a new session with the new settings and reloads the game.
+
+## Force outcomes
+
+The **Force outcome** sidebar makes the LGS play an outcome that you choose instead of a weighted draw.
+
+| Field             | Effect                                                                                              |
+| ----------------- | --------------------------------------------------------------------------------------------------- |
+| Book ID           | Every play returns this book of the played mode, with its events and its payout.                    |
+| Payout multiplier | Every play returns a book with this payout multiplier, or with the closest one in the lookup table. |
+
+- If both fields have a value, the book ID wins.
+- **Clear** empties both fields and stops the force.
+- The status line below the fields shows the active force.
+
+The force applies to every following play, in every mode, until you clear it. It does not change a round that is already open.
+The force also carries over to every new session, so a settings change or **Reload** keeps it.
+
+Book IDs belong to one mode. If the lookup table of the mode that you play has no row for the forced book, the bet fails with `ERR_VAL` and the message `unknown forced book`.
+The LGS also plays books with a weight of 0, so you can force a book that a weighted draw never picks.
+For the rules that find the closest payout, see [Forced outcomes](/docs/lgs/game-math#forced-outcomes).
+
+## Session
+
+The **Session** box shows the current session and refreshes every 2 seconds:
+
+- The balance and the currency of the wallet.
+- The last round: its book ID, its payout multiplier and its payout.
+
+The panel reads both from [`GET /lgs/sessions/:id`](/docs/lgs/sessions#get-lgssessionsid).

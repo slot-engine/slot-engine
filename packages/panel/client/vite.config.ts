@@ -20,6 +20,18 @@ export default defineConfig({
         target: "http://localhost:7770",
         changeOrigin: true,
       },
+      "/lgs": {
+        target: "http://localhost:7770",
+        changeOrigin: true,
+      },
+      "/wallet": {
+        target: "http://localhost:7770",
+        changeOrigin: true,
+      },
+      "/bet": {
+        target: "http://localhost:7770",
+        changeOrigin: true,
+      },
       "/ws": {
         target: "ws://localhost:7770",
         ws: true,
