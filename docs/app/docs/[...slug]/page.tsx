@@ -30,9 +30,7 @@ export default async function Page(props: PageProps<"/docs/[...slug]">) {
       </DocsBody>
       <div className="mt-8 py-6 border-y">
         <p className="text-sm text-fd-muted-foreground">
-          Use of AI on this page: All texts were initially written by hand and many were later
-          revised by AI for improved flow. All AI generated revisions were carefully
-          reviewed and edited as needed.
+          Use of AI on this page: Some texts were improved with or written by AI.
         </p>
       </div>
     </DocsPage>

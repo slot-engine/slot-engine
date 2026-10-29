@@ -11,7 +11,7 @@ const archivo = Archivo({
 export const metadata: Metadata = {
   title: "Slot Engine - Build highly customizable slot games using TypeScript",
   description:
-    "Build slot games with TypeScript. Compatible with Stake Engine and Stakes Math SDK. Highly customizable.",
+    "Build slot games with TypeScript. Compatible with Engine (formerly Stake Engine) and Stakes Math SDK. Highly customizable.",
 }
 
 export default function Layout({ children }: LayoutProps<"/">) {

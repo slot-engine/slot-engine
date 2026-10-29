@@ -1,5 +1,5 @@
 # Slot Engine Core
 
-Library for configuring and simulating slot games. Produces output compatible with Stake Engine / Stake RGS.
+Library for configuring and simulating slot games. Produces output compatible with Engine.
 
 [📖 Documentation](https://slot-engine.dev/docs/core)  

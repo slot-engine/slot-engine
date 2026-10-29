@@ -16,7 +16,7 @@ const features = [
     icon: CircuitBoard,
     title: "Slot Engine Core",
     description:
-      "Configure and simulate slot games. Produces output compatible with Stake Engine / Stake RGS.",
+      "Configure and simulate slot games. Produces output compatible with Engine.",
     href: "/docs/core",
   },
   {
@@ -30,7 +30,7 @@ const features = [
     icon: Server,
     title: "Slot Engine LGS",
     description:
-      "Local gaming server. Test your game locally without uploading to Stake Engine and save time.",
+      "Local gaming server. Test your game locally without uploading to Engine and save time.",
     href: "/docs/lgs",
   },
 ]
