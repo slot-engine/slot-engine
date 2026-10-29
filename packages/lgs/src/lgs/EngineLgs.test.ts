@@ -7,6 +7,7 @@ import type { GameMath, Outcome } from "../math"
 import { PublishedMath } from "../math/PublishedMath"
 import type { Bet } from "../storage"
 import { InMemoryStorage } from "../storage/InMemoryStorage"
+import type { LgsCreateReplayResponse } from "."
 import { EngineLgs, type EngineLgsOptions } from "./EngineLgs"
 
 const START = 10_000_000_000
@@ -50,6 +51,9 @@ function setup(opts: Partial<EngineLgsOptions> = {}) {
       const next = queue.shift()
       if (!next) throw new Error("no scripted outcome left")
       return next
+    },
+    async read(_, bookId) {
+      return outcome(0, bookId)
     },
   }
 
@@ -124,6 +128,35 @@ function setup(opts: Partial<EngineLgsOptions> = {}) {
     balance,
     event,
   }
+}
+
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lgs-published-"))
+const lookupTable = path.join(dir, "lookUpTable_base_0.csv")
+fs.writeFileSync(lookupTable, ["1,10,0", "2,10,250", "3,0,800", "4,10,100"].join("\n"))
+afterAll(() => fs.rmSync(dir, { recursive: true, force: true }))
+
+function published() {
+  const t = setup()
+  t.lgs.registerGame({
+    id: "published",
+    name: "Published",
+    modes: {
+      base: { name: "base", cost: 1, rtp: 0.96, isBonusBuy: false, isFeature: false },
+      bonus: { name: "bonus", cost: 70, rtp: 0.96, isBonusBuy: true, isFeature: false },
+    },
+    math: new PublishedMath({
+      lookupTablePath: () => lookupTable,
+      books: { read: async (_, bookId) => ({ events: [{ bookId }] }) },
+      random: () => 0.5,
+    }),
+  })
+  const setForce = (sessionID: string, force: unknown) =>
+    t.request<{ force: unknown } & ErrorBody>(
+      `/lgs/sessions/${sessionID}/force`,
+      { force },
+      "PUT",
+    )
+  return { ...t, setForce }
 }
 
 describe("EngineLgs round flow", () => {
@@ -500,34 +533,6 @@ describe("LGS management routes", () => {
 })
 
 describe("LGS forced outcomes", () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lgs-force-"))
-  const lookupTable = path.join(dir, "lookUpTable_base_0.csv")
-  fs.writeFileSync(lookupTable, ["1,10,0", "2,10,250", "3,0,800", "4,10,100"].join("\n"))
-  afterAll(() => fs.rmSync(dir, { recursive: true, force: true }))
-
-  function published() {
-    const t = setup()
-    t.lgs.registerGame({
-      id: "published",
-      name: "Published",
-      modes: {
-        base: { name: "base", cost: 1, rtp: 0.96, isBonusBuy: false, isFeature: false },
-      },
-      math: new PublishedMath({
-        lookupTablePath: () => lookupTable,
-        books: { read: async (_, bookId) => ({ events: [{ bookId }] }) },
-        random: () => 0.5,
-      }),
-    })
-    const setForce = (sessionID: string, force: unknown) =>
-      t.request<{ force: unknown } & ErrorBody>(
-        `/lgs/sessions/${sessionID}/force`,
-        { force },
-        "PUT",
-      )
-    return { ...t, setForce }
-  }
-
   it("plays the forced book until the force is cleared", async () => {
     const t = published()
     const { sessionID } = await t.authenticated({ gameId: "published" })
@@ -548,7 +553,10 @@ describe("LGS forced outcomes", () => {
 
     expect((await t.setForce(sessionID, null)).json).toEqual({ force: null })
     const drawn = await t.play(sessionID)
-    expect(drawn.json.round).toMatchObject({ payoutMultiplier: 2.5, state: [{ bookId: 2 }] })
+    expect(drawn.json.round).toMatchObject({
+      payoutMultiplier: 2.5,
+      state: [{ bookId: 2 }],
+    })
   })
 
   it("plays the book with the closest payout, the lower one on a tie", async () => {
@@ -575,7 +583,9 @@ describe("LGS forced outcomes", () => {
     const res = await t.play(sessionID)
     expect(res.status).toBe(400)
     expect(res.json.error).toBe("ERR_VAL")
-    expect(res.json.message).toContain('Book 99 is not in the lookup table of mode "base"')
+    expect(res.json.message).toContain(
+      'Book 99 is not in the lookup table of mode "base"',
+    )
     expect((await t.balance(sessionID)).json.balance.amount).toBe(START)
   })
 
@@ -596,7 +606,11 @@ describe("LGS forced outcomes", () => {
       expect(res.status, JSON.stringify(force)).toBe(400)
       expect(res.json.error).toBe("ERR_VAL")
     }
-    const broken = await t.request<ErrorBody>(`/lgs/sessions/${sessionID}/force`, "{", "PUT")
+    const broken = await t.request<ErrorBody>(
+      `/lgs/sessions/${sessionID}/force`,
+      "{",
+      "PUT",
+    )
     expect(broken.status).toBe(400)
 
     const created = await t.request<ErrorBody>("/lgs/sessions", {
@@ -634,6 +648,162 @@ describe("LGS forced outcomes", () => {
   })
 })
 
+describe("EngineLgs bet replay", () => {
+  it("answers the book's payout, the mode's cost and the book's events", async () => {
+    const t = published()
+    for (const version of [1, 7]) {
+      const path = `/bet/replay/published/${version}/bonus/3`
+      const res = await t.request(path, undefined, "GET")
+      expect(res.status, path).toBe(200)
+      expect(res.json).toEqual({
+        payoutMultiplier: 8,
+        costMultiplier: 70,
+        state: [{ bookId: 3 }],
+      })
+    }
+  })
+
+  it.each([
+    ["an unknown game", "/bet/replay/nope/1/base/2"],
+    ["an unknown mode", "/bet/replay/published/1/turbo/2"],
+    ["a mode named after an Object property", "/bet/replay/published/1/constructor/2"],
+    ["an unknown event", "/bet/replay/published/1/base/99"],
+  ])("answers an empty 404 for %s", async (_, path) => {
+    const t = published()
+    const res = await t.request(path, undefined, "GET")
+    expect(res.status).toBe(404)
+    expect(res.text).toBe("")
+  })
+
+  it.each(["abc", "-1", "1.5", "2e0", "9007199254740993"])(
+    "answers an empty 404 for the event %s, though the scripted math has every book",
+    async (event) => {
+      const path = `/bet/replay/test/1/base/${event}`
+      const res = await setup().request(path, undefined, "GET")
+      expect(res.status).toBe(404)
+      expect(res.text).toBe("")
+    },
+  )
+
+  it("answers ERR_GEN when the mode has no lookup table", async () => {
+    const t = setup()
+    t.lgs.registerGame({
+      id: "unsimulated",
+      name: "Unsimulated",
+      modes: {
+        base: { name: "base", cost: 1, rtp: 0.96, isBonusBuy: false, isFeature: false },
+      },
+      math: new PublishedMath({
+        lookupTablePath: () => path.join(dir, "absent.csv"),
+        books: { read: async () => undefined },
+        random: () => 0.5,
+      }),
+    })
+
+    const res = await t.request<ErrorBody>(
+      "/bet/replay/unsimulated/1/base/1",
+      undefined,
+      "GET",
+    )
+    expect(res.status).toBe(500)
+    expect(res.json.error).toBe("ERR_GEN")
+  })
+})
+
+describe("LGS replays", () => {
+  it("creates replay launch parameters that point at the requested host", async () => {
+    const t = published()
+    const res = await t.app.request("http://localhost:7770/lgs/replays", {
+      method: "POST",
+      body: JSON.stringify({
+        gameId: "published",
+        mode: "bonus",
+        event: 3,
+        currency: "EUR",
+        amount: 2.5,
+        language: "de",
+        device: "mobile",
+        social: true,
+      }),
+    })
+    expect(res.status).toBe(200)
+    const created = (await res.json()) as LgsCreateReplayResponse
+
+    expect(created.launchParams).toEqual({
+      replay: true,
+      game: "published",
+      version: 1,
+      mode: "bonus",
+      event: 3,
+      rgs_url: "localhost:7770",
+      currency: "EUR",
+      amount: 2_500_000,
+      lang: "de",
+      device: "mobile",
+      social: true,
+      demo: false,
+    })
+    expect([...new URLSearchParams(created.launchQuery)]).toEqual([
+      ["replay", "true"],
+      ["game", "published"],
+      ["version", "1"],
+      ["mode", "bonus"],
+      ["event", "3"],
+      ["rgs_url", "localhost:7770"],
+      ["currency", "EUR"],
+      ["amount", "2500000"],
+      ["lang", "de"],
+      ["device", "mobile"],
+      ["social", "true"],
+      ["demo", "false"],
+    ])
+  })
+
+  it("defaults to the default bet and the LGS defaults", async () => {
+    const t = published()
+    const res = await t.request<LgsCreateReplayResponse>("/lgs/replays", {
+      gameId: "published",
+      mode: "base",
+      event: 2,
+    })
+    expect(res.status).toBe(200)
+    expect(res.json.launchParams).toMatchObject({
+      amount: 1_000_000,
+      currency: "USD",
+      lang: "en",
+      device: "desktop",
+      social: false,
+      demo: false,
+    })
+  })
+
+  it.each<[string, Record<string, unknown>, string]>([
+    [
+      "an unknown book",
+      { mode: "bonus", event: 99 },
+      'Book 99 is not in the lookup table of mode "bonus"',
+    ],
+    [
+      "an amount off the step grid",
+      { amount: 1.005 },
+      "Bet 1005000 is not a multiple of 10000",
+    ],
+    ["an unknown mode", { mode: "turbo" }, 'Mode "turbo" does not exist'],
+    ["a negative event", { event: -1 }, "event"],
+  ])("rejects %s", async (_, body, message) => {
+    const t = published()
+    const res = await t.request<ErrorBody>("/lgs/replays", {
+      gameId: "published",
+      mode: "base",
+      event: 2,
+      ...body,
+    })
+    expect(res.status).toBe(400)
+    expect(res.json.error).toBe("ERR_VAL")
+    expect(res.json.message).toContain(message)
+  })
+})
+
 describe("LGS options", () => {
   it.each<[string, Partial<EngineLgsOptions>]>([
     ["a default language outside languages", { languages: ["de"] }],
@@ -653,7 +823,13 @@ describe("LGS CORS", () => {
 
   it("allows cross-origin calls to the RGS and management routes", async () => {
     const { app } = setup()
-    for (const path of ["/wallet/play", "/bet/event", "/lgs/sessions", "/lgs"]) {
+    for (const path of [
+      "/wallet/play",
+      "/bet/event",
+      "/bet/replay/test/1/base/1",
+      "/lgs/sessions",
+      "/lgs",
+    ]) {
       const res = await app.request(path, preflight)
       expect(res.headers.get("access-control-allow-origin"), path).toBe("*")
     }

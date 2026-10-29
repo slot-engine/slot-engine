@@ -17,7 +17,7 @@ Every amount over HTTP is an integer with six decimals. `1000000` is 1.00 of the
 
 ## Endpoints
 
-Every endpoint takes a `POST` with a JSON body and answers with JSON.
+Every endpoint except [the replay endpoint](#replay) takes a `POST` with a JSON body and answers with JSON.
 A body that is not valid JSON, or that misses a field, answers with status 400 and the plain text `Bad Request`.
 
 ### POST /wallet/authenticate
@@ -144,12 +144,48 @@ Records a client-side progress marker on the open round. The event must be 1 to 
 
 The next authenticate returns the event in `round.event`, so a front end can continue a round where it left off.
 
+### GET /bet/replay/\{game\}/\{version\}/\{mode\}/\{event\} [#replay]
+
+Returns one book for [bet replay](https://stake-engine.com/docs/approval-guidelines/game-replay-requirements).
+The endpoint needs no session and no authentication. A front end in replay mode calls it with the values of its [replay launch parameters](/docs/lgs/sessions#replay-launch-parameters).
+
+```sh title="Request"
+curl http://localhost:7771/bet/replay/my-game/1/bonus/812
+```
+
+| Segment   | Description                                                                                  |
+| --------- | -------------------------------------------------------------------------------------------- |
+| `game`    | ID of a registered game.                                                                     |
+| `version` | Math version of the game. The LGS has no math versions. It accepts any value and ignores it. |
+| `mode`    | Name of a mode of the game.                                                                  |
+| `event`   | Book ID, an integer of 0 or more.                                                            |
+
+```json title="Response"
+{
+  "payoutMultiplier": 8,
+  "costMultiplier": 70,
+  "state": [{ "index": 0, "type": "reveal", "...": "..." }]
+}
+```
+
+| Field              | Description                                                                              |
+| ------------------ | ---------------------------------------------------------------------------------------- |
+| `payoutMultiplier` | Payout of the book from the lookup table, as a plain multiplier. `8` is 8x.              |
+| `costMultiplier`   | Cost multiplier of the mode.                                                             |
+| `state`            | The events of the book. A play of the same book returns the same value as `round.state`. |
+
+An unknown game, an unknown mode or an unknown book answers with status 404 and an empty body, without JSON.
+An `event` that is not an integer of 0 or more also answers with 404.
+A mode without a lookup table answers with status 500 and `ERR_GEN`, like a play.
+
 ## Round lifecycle
 
 1. `/wallet/authenticate` opens the session. When `round` is not `null`, continue that round.
 2. `/wallet/play` debits the bet and returns the outcome.
 3. `/bet/event` records progress while the client plays the outcome. Optional, repeatable.
 4. `/wallet/end-round` credits the payout. Skip it when `round.active` is `false`.
+
+A replay needs no session. A front end in replay mode calls only [the replay endpoint](#replay).
 
 ## Bet rules [#bet-rules]
 
@@ -185,5 +221,6 @@ A missing lookup table or book means the game was not simulated. Run the simulat
 - Sessions come from [`POST /lgs/sessions`](/docs/lgs/sessions), not from Engine.
 - The LGS serves plain HTTP. Set `protocol: "http"` on the official client.
 - Sessions do not expire, and there are no rate limits.
+- The replay endpoint ignores the `version` segment and serves the books of the last simulation.
 - `config.user.id` is the wallet ID.
 - Wallets, sessions and rounds live only as long as the [storage](/docs/lgs/storage). `InMemoryStorage` forgets them when the process exits.

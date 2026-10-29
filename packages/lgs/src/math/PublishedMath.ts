@@ -1,6 +1,6 @@
 import fs from "fs/promises"
 import { parseLookupTable } from "@slot-engine/core"
-import { LgsError } from "../errors"
+import { LgsError, unknownBook } from "../errors"
 import type { ForcedOutcome, GameMath, Outcome } from "."
 
 export interface BookSource {
@@ -37,11 +37,26 @@ export class PublishedMath implements GameMath {
   constructor(private readonly opts: PublishedMathOptions) {}
 
   async pick(mode: string, force?: ForcedOutcome): Promise<Outcome> {
-    const table = await this.table(mode)
-    const { bookId, payoutCents } = force
-      ? forcedRow(table, mode, force, this.opts.random)
-      : drawnRow(table, mode, this.opts.random)
+    if (force && "bookId" in force) {
+      const outcome = await this.read(mode, force.bookId)
+      if (!outcome) throw unknownBook(mode, force.bookId)
+      return outcome
+    }
 
+    const table = await this.table(mode)
+    const row = force
+      ? closestRow(table, mode, force.payoutMultiplier, this.opts.random)
+      : drawnRow(table, mode, this.opts.random)
+    return this.outcome(mode, row)
+  }
+
+  async read(mode: string, bookId: number): Promise<Outcome | undefined> {
+    const payoutCents = (await this.table(mode)).payoutByBook.get(bookId)
+    if (payoutCents === undefined) return undefined
+    return this.outcome(mode, { bookId, payoutCents })
+  }
+
+  private async outcome(mode: string, { bookId, payoutCents }: Row): Promise<Outcome> {
     const book = await this.opts.books.read(mode, bookId)
     if (!book) {
       throw new LgsError("missing-book", `Book ${bookId} of mode "${mode}" not found`)
@@ -100,29 +115,21 @@ function drawnRow(table: ModeTable, mode: string, random: () => number): Row {
   return row
 }
 
-function forcedRow(
+function closestRow(
   table: ModeTable,
   mode: string,
-  force: ForcedOutcome,
+  payoutMultiplier: number,
   random: () => number,
 ): Row {
-  if ("bookId" in force) {
-    const payoutCents = table.payoutByBook.get(force.bookId)
-    if (payoutCents === undefined) {
-      throw new LgsError(
-        "unknown-book",
-        `Book ${force.bookId} is not in the lookup table of mode "${mode}"`,
-      )
-    }
-    return { bookId: force.bookId, payoutCents }
-  }
-
-  const group = closestPayout(table.booksByPayout, Math.round(force.payoutMultiplier * 100))
+  const group = closestPayout(table.booksByPayout, Math.round(payoutMultiplier * 100))
   if (!group) {
     throw new LgsError("missing-math", `Lookup table for mode "${mode}" has no rows`)
   }
   const { bookIds, payoutCents } = group
-  return { bookId: bookIds[Math.floor(random() * bookIds.length)] ?? bookIds[0], payoutCents }
+  return {
+    bookId: bookIds[Math.floor(random() * bookIds.length)] ?? bookIds[0],
+    payoutCents,
+  }
 }
 
 /** The group whose payout is nearest to `target`; on a tie the lower payout. */

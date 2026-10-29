@@ -3,8 +3,10 @@ export {
   LgsError,
   type BalanceConfig,
   type BetConfig,
+  type CreateReplayInput,
   type CreateSessionInput,
   type LaunchParams,
+  type LgsCreateReplayResponse,
   type LgsCreateSessionResponse,
   type LgsErrorKind,
   type LgsErrorResponse,
@@ -13,6 +15,8 @@ export {
   type LgsInfoResponse,
   type LgsOptions,
   type LgsSessionResponse,
+  type ReplayOutcome,
+  type ReplayParams,
 } from "./src/lgs"
 export {
   EngineLgs,

@@ -1,11 +1,11 @@
 import { serve } from "@hono/node-server"
 import type { SlotGame } from "@slot-engine/core"
 import chalk from "chalk"
-import { Hono } from "hono"
+import { Hono, type Context } from "hono"
 import { cors } from "hono/cors"
 import z from "zod"
 import { CURRENCY_CODES, LANGUAGES, type Currency, type Language } from "../currencies"
-import { LgsError } from "../errors"
+import { LgsError, unknownBook } from "../errors"
 import { fromSlotGame, type ForcedOutcome, type LgsGame, type LgsMode } from "../math"
 import { toAmount, type Amount } from "../money"
 import {
@@ -71,6 +71,40 @@ export interface LaunchParams {
   demo: boolean
 }
 
+export interface CreateReplayInput {
+  gameId: string
+  mode: string
+  event: number
+  currency?: Currency
+  /** Bet amount in major units. Default `bets.default`. */
+  amount?: number
+  language?: string
+  device?: Device
+  social?: boolean
+  demo?: boolean
+}
+
+export interface ReplayParams {
+  replay: true
+  game: string
+  version: 1
+  mode: string
+  event: number
+  rgs_url: string
+  currency: Currency
+  amount: Amount
+  lang: string
+  device: Device
+  social: boolean
+  demo: boolean
+}
+
+export interface ReplayOutcome {
+  payoutMultiplier: number
+  costMultiplier: number
+  state: unknown[]
+}
+
 export interface BalanceConfig {
   starting: Amount
   options: Amount[]
@@ -123,6 +157,12 @@ export interface LgsForceResponse {
   force: ForcedOutcome | null
 }
 
+/** `POST /lgs/replays` */
+export interface LgsCreateReplayResponse {
+  launchParams: ReplayParams
+  launchQuery: string
+}
+
 /** Any management route that rejects a request. */
 export interface LgsErrorResponse {
   error: "ERR_VAL"
@@ -165,6 +205,18 @@ const createSessionSchema = z.object({
   demo: z.boolean().optional(),
   force: forcedOutcomeSchema.nullable().optional(),
 }) satisfies z.ZodType<CreateSessionInput>
+
+const createReplaySchema = z.object({
+  gameId: z.string(),
+  mode: z.string(),
+  event: z.number().int().nonnegative(),
+  currency: z.enum(CURRENCY_CODES).optional(),
+  amount: z.number().optional(),
+  language: z.string().optional(),
+  device: z.enum(DEVICES).optional(),
+  social: z.boolean().optional(),
+  demo: z.boolean().optional(),
+}) satisfies z.ZodType<CreateReplayInput>
 
 /**
  * A local gaming server: sessions, wallets and bets on top of a storage, with outcomes
@@ -233,10 +285,7 @@ export abstract class AbstractLgs {
     input: CreateSessionInput,
   ): Promise<{ session: Session; wallet: Wallet }> {
     const game = this.getGame(input.gameId)
-    const language = input.language ?? this.defaultLanguage
-    if (!isOneOf(this.languages, language)) {
-      throw new LgsError("invalid-session-input", `Language "${language}" is not enabled`)
-    }
+    const language = this.requireLanguage(input.language ?? this.defaultLanguage)
     const force = parseForce(input.force ?? null)
 
     const wallet = input.walletId
@@ -297,8 +346,7 @@ export abstract class AbstractLgs {
     return this.withSessionLock(sessionId, async () => {
       const { session, wallet } = await this.requireAuthenticated(sessionId)
       const game = this.getGame(session.gameId)
-      const mode = game.modes[modeName]
-      if (!mode) throw new LgsError("unknown-mode", `Mode "${modeName}" does not exist`)
+      const mode = requireMode(game, modeName)
       if (session.activeBetId !== null) {
         throw new LgsError("round-active", `Round ${session.activeBetId} is still active`)
       }
@@ -372,6 +420,44 @@ export abstract class AbstractLgs {
       await this.storage.bets.update(bet.id, { event })
       return event
     })
+  }
+
+  async replay(gameId: string, modeName: string, bookId: number): Promise<ReplayOutcome> {
+    const game = this.getGame(gameId)
+    const mode = requireMode(game, modeName)
+    const outcome = await game.math.read(mode.name, bookId)
+    if (!outcome) throw unknownBook(mode.name, bookId)
+    return {
+      payoutMultiplier: outcome.payoutCents / 100,
+      costMultiplier: mode.cost,
+      state: outcome.events,
+    }
+  }
+
+  /** Validates like a play and reads the book once, so a bad replay fails before launch. */
+  async createReplay(input: CreateReplayInput, rgsUrl: string): Promise<ReplayParams> {
+    const game = this.getGame(input.gameId)
+    const mode = requireMode(game, input.mode)
+    const currency = this.requireCurrency(input.currency ?? this.defaultCurrency)
+    const lang = this.requireLanguage(input.language ?? this.defaultLanguage)
+    const amount = input.amount === undefined ? this.bets.default : toAmount(input.amount)
+    this.validateBetAmount(amount, mode)
+    await this.replay(game.id, mode.name, input.event)
+
+    return {
+      replay: true,
+      game: game.id,
+      version: 1,
+      mode: mode.name,
+      event: input.event,
+      rgs_url: rgsUrl,
+      currency,
+      amount,
+      lang,
+      device: input.device ?? "desktop",
+      social: input.social ?? false,
+      demo: input.demo ?? false,
+    }
   }
 
   /** Engine's bet rules: within min/max, on the step grid, and within the mode's max bet. */
@@ -451,8 +537,7 @@ export abstract class AbstractLgs {
 
       try {
         const { session, wallet } = await this.createSession(input.data)
-        const rgsUrl = c.req.header("host") ?? new URL(c.req.url).host
-        const launchParams = this.launchParams(session, rgsUrl)
+        const launchParams = this.launchParams(session, requestHost(c))
         return c.json<LgsCreateSessionResponse>(
           {
             sessionID: session.id,
@@ -496,6 +581,29 @@ export abstract class AbstractLgs {
           return c.json(UNKNOWN_SESSION, 404)
         }
         throw error
+      }
+    })
+
+    app.post("/lgs/replays", async (c) => {
+      const input = createReplaySchema.safeParse(
+        await c.req.json().catch(() => undefined),
+      )
+      if (!input.success) {
+        return c.json<LgsErrorResponse>(
+          { error: "ERR_VAL", message: z.prettifyError(input.error) },
+          400,
+        )
+      }
+
+      try {
+        const launchParams = await this.createReplay(input.data, requestHost(c))
+        return c.json<LgsCreateReplayResponse>({
+          launchParams,
+          launchQuery: toQuery(launchParams),
+        })
+      } catch (error) {
+        if (!(error instanceof LgsError)) throw error
+        return c.json<LgsErrorResponse>({ error: "ERR_VAL", message: error.message }, 400)
       }
     })
 
@@ -589,7 +697,10 @@ export abstract class AbstractLgs {
 
   private async findLastBet(session: Session) {
     const bets = await this.storage.bets.find((bet) => bet.sessionId === session.id)
-    return bets.reduce<Bet | null>((last, bet) => (last && last.id > bet.id ? last : bet), null)
+    return bets.reduce<Bet | null>(
+      (last, bet) => (last && last.id > bet.id ? last : bet),
+      null,
+    )
   }
 
   private async requireActiveBet(session: Session) {
@@ -602,9 +713,7 @@ export abstract class AbstractLgs {
     currency = this.defaultCurrency,
     balance,
   }: CreateSessionInput) {
-    if (!this.currencies.includes(currency)) {
-      throw new LgsError("invalid-session-input", `Currency "${currency}" is not enabled`)
-    }
+    this.requireCurrency(currency)
     const amount = balance === undefined ? this.balance.starting : toAmount(balance)
     if (amount < 0) {
       throw new LgsError("invalid-session-input", "Balance must not be negative")
@@ -627,6 +736,20 @@ export abstract class AbstractLgs {
       throw new LgsError("invalid-session-input", "balance applies to new wallets only")
     }
     return wallet
+  }
+
+  private requireCurrency(currency: Currency) {
+    if (!this.currencies.includes(currency)) {
+      throw new LgsError("invalid-session-input", `Currency "${currency}" is not enabled`)
+    }
+    return currency
+  }
+
+  private requireLanguage(language: string) {
+    if (!isOneOf(this.languages, language)) {
+      throw new LgsError("invalid-session-input", `Language "${language}" is not enabled`)
+    }
+    return language
   }
 
   private assertValidConfig() {
@@ -670,11 +793,21 @@ function parseForce(force: ForcedOutcome | null) {
   return parsed.data
 }
 
+function requireMode(game: LgsGame, modeName: string) {
+  const mode = Object.hasOwn(game.modes, modeName) ? game.modes[modeName] : undefined
+  if (!mode) throw new LgsError("unknown-mode", `Mode "${modeName}" does not exist`)
+  return mode
+}
+
 function isOneOf<T extends string>(values: readonly T[], value: string): value is T {
   return (values as readonly string[]).includes(value)
 }
 
-function toQuery(params: LaunchParams) {
+function requestHost(c: Context) {
+  return c.req.header("host") ?? new URL(c.req.url).host
+}
+
+function toQuery(params: LaunchParams | ReplayParams) {
   const entries = Object.entries(params).map(([key, value]) => [key, String(value)])
   return new URLSearchParams(entries).toString()
 }

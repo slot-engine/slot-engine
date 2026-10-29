@@ -1,6 +1,6 @@
 ---
-title: Sessions
-description: Create sessions, inspect the LGS and launch a front end.
+title: Sessions and replays
+description: Create sessions and replays, inspect the LGS and launch a front end.
 icon: KeyRound
 ---
 
@@ -20,6 +20,7 @@ Every response is JSON, and every amount is an integer with six decimals.
 | `POST /lgs/sessions`          | `LgsCreateSessionResponse` |
 | `GET /lgs/sessions/:id`       | `LgsSessionResponse`       |
 | `PUT /lgs/sessions/:id/force` | `LgsForceResponse`         |
+| `POST /lgs/replays`           | `LgsCreateReplayResponse`  |
 
 A management endpoint that rejects a request answers with an `LgsErrorResponse`, `{ "error": "ERR_VAL", "message": "..." }`.
 
@@ -235,6 +236,83 @@ The official Engine client builds `https://` + `rgs_url` unless you set the prot
 ```ts
 const client = RGSClient({ url: window.location.href, protocol: "http" })
 ```
+
+## Replays [#replays]
+
+A replay opens a front end in [replay mode](https://stake-engine.com/docs/approval-guidelines/game-replay-requirements). The front end plays one book without a session.
+The LGS stores nothing for a replay. `POST /lgs/replays` checks the replay and builds its launch parameters.
+
+### POST /lgs/replays
+
+| Field      | Type                                | Default           | Description                                                                                       | Required |
+| ---------- | ----------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------- | -------- |
+| `gameId`   | `string`                            |                   | ID of a registered game.                                                                          | yes      |
+| `mode`     | `string`                            |                   | Mode of the book.                                                                                 | yes      |
+| `event`    | `number`                            |                   | Book ID, an integer of 0 or more. The lookup table of the mode must list it.                      | yes      |
+| `currency` | `Currency`                          | `defaultCurrency` | Must be one of the enabled currencies.                                                            |          |
+| `amount`   | `number`                            | `bets.default`    | Base bet in major units. Must follow the [bet rules](/docs/lgs/engine-rgs#bet-rules) of the mode. |          |
+| `language` | `Language`                          | `defaultLanguage` | Must be one of the enabled languages.                                                             |          |
+| `device`   | `"desktop" \| "mobile" \| "tablet"` | `"desktop"`       | Passed through to the launch parameters.                                                          |          |
+| `social`   | `boolean`                           | `false`           | Passed through to the launch parameters.                                                          |          |
+| `demo`     | `boolean`                           | `false`           | Passed through to the launch parameters.                                                          |          |
+
+```sh
+curl -X POST http://localhost:7771/lgs/replays \
+  -H "content-type: application/json" \
+  -d '{"gameId":"my-game","mode":"bonus","event":812}'
+```
+
+The response has status 200 and contains the launch parameters and the same parameters as a query string:
+
+```json
+{
+  "launchParams": {
+    "replay": true,
+    "game": "my-game",
+    "version": 1,
+    "mode": "bonus",
+    "event": 812,
+    "rgs_url": "localhost:7771",
+    "currency": "USD",
+    "amount": 1000000,
+    "lang": "en",
+    "device": "desktop",
+    "social": false,
+    "demo": false
+  },
+  "launchQuery": "replay=true&game=my-game&version=1&mode=bonus&event=812&rgs_url=localhost%3A7771&currency=USD&amount=1000000&lang=en&device=desktop&social=false&demo=false"
+}
+```
+
+`rgs_url` is the `Host` header of the request, as for sessions.
+
+Invalid input answers with status 400.
+So do an unknown game, an unknown mode, a book that the lookup table of the mode does not list, a disabled currency or language, and an amount that breaks the bet rules:
+
+```json
+{ "error": "ERR_VAL", "message": "Book 99 is not in the lookup table of mode \"bonus\"" }
+```
+
+### Replay launch parameters
+
+The replay launch parameters use the names of Engine's replay URL.
+
+| Parameter  | Example          | Description                                                |
+| ---------- | ---------------- | ---------------------------------------------------------- |
+| `replay`   | `true`           | Always `true`. Puts the front end in replay mode.          |
+| `game`     | `my-game`        | ID of the game.                                            |
+| `version`  | `1`              | Always `1`. The LGS has no math versions.                  |
+| `mode`     | `bonus`          | Mode of the book.                                          |
+| `event`    | `812`            | Book ID.                                                   |
+| `rgs_url`  | `localhost:7771` | Host of the RGS, without protocol.                         |
+| `currency` | `USD`            | Currency of the amounts.                                   |
+| `amount`   | `1000000`        | Base bet, an integer with six decimals. `1000000` is 1.00. |
+| `lang`     | `en`             | Language.                                                  |
+| `device`   | `desktop`        | `desktop`, `mobile` or `tablet`.                           |
+| `social`   | `false`          | Whether the replay shows as a social casino round.         |
+| `demo`     | `false`          | Whether the replay was created as a demo.                  |
+
+The front end fetches the book from [`GET /bet/replay/{game}/{version}/{mode}/{event}`](/docs/lgs/engine-rgs#replay) on `rgs_url`.
 
 ## Share a wallet between sessions
 

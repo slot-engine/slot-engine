@@ -79,6 +79,12 @@ const ENGINE_ERRORS: Record<LgsErrorKind, EngineError> = {
   },
 }
 
+const REPLAY_NOT_FOUND = new Set<LgsErrorKind>([
+  "unknown-game",
+  "unknown-mode",
+  "unknown-book",
+])
+
 const sessionBody = z.object({ sessionID: z.string() })
 const authenticateBody = sessionBody.extend({ language: z.string().optional() })
 const playBody = sessionBody.extend({ mode: z.string(), amount: z.number().int() })
@@ -144,6 +150,21 @@ export class EngineLgs extends AbstractLgs {
         event: await this.recordEvent(sessionID, event),
       })),
     )
+
+    app.get("/bet/replay/:game/:version/:mode/:event", async (c) => {
+      const { game, mode, event } = c.req.param()
+      const bookId = Number(event)
+      if (!/^\d+$/.test(event) || !Number.isSafeInteger(bookId)) return c.body(null, 404)
+
+      try {
+        return c.json(await this.replay(game, mode, bookId))
+      } catch (error) {
+        if (error instanceof LgsError && REPLAY_NOT_FOUND.has(error.kind)) {
+          return c.body(null, 404)
+        }
+        return engineError(c, error)
+      }
+    })
 
     return app
   }

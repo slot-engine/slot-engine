@@ -12,6 +12,8 @@ export type ForcedOutcome = { bookId: number } | { payoutMultiplier: number }
 export interface GameMath {
   /** Without `force`: a weighted draw. With `force`: that book, or a book with the closest payout. */
   pick(mode: string, force?: ForcedOutcome): Promise<Outcome>
+  /** The outcome of one book, or undefined when the lookup table of the mode has no row for it. */
+  read(mode: string, bookId: number): Promise<Outcome | undefined>
 }
 
 export interface LgsMode {

@@ -57,21 +57,24 @@ The subclass runs standalone with `start()` and inside the panel through the `lg
 
 ## Operations
 
-The domain operations take a session ID and return storage records. Every operation of one wallet runs after the previous one has finished.
+The session operations take a session ID and return storage records. Every operation of one wallet runs after the previous one has finished.
+`replay` and `createReplay` need no session and touch no storage.
 
-| Operation                            | Description                                                                                     |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `authenticate(sessionId, language?)` | Marks the session as authenticated. Returns the session, the wallet and the open bet or `null`. |
-| `getBalance(sessionId)`              | Returns the wallet.                                                                             |
-| `placeBet(sessionId, mode, amount)`  | Validates the bet, draws an outcome, debits the cost. Returns the wallet and the new bet.       |
-| `settleRound(sessionId)`             | Credits the payout of the open bet and closes it. Returns the wallet and the bet.               |
-| `recordEvent(sessionId, event)`      | Stores a 1 to 32 byte event on the open bet. Returns the event.                                 |
-| `createSession(input)`               | Creates a session, and a wallet unless `walletId` is set. The management endpoint calls this.   |
-| `setForce(sessionId, force)`         | Sets or clears the session's [forced outcome](/docs/lgs/sessions#force). Returns the session.   |
-| `getGame(id)`, `listGames()`         | Registered games with their modes and math.                                                     |
-| `validateBetAmount(amount, mode)`    | The [bet rules](/docs/lgs/engine-rgs#bet-rules). Throws `invalid-bet`.                          |
-| `modeMaxBet(mode)`                   | The largest base bet of a mode.                                                                 |
-| `launchParams(session, rgsUrl)`      | The launch parameters of a session.                                                             |
+| Operation                            | Description                                                                                                                      |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `authenticate(sessionId, language?)` | Marks the session as authenticated. Returns the session, the wallet and the open bet or `null`.                                  |
+| `getBalance(sessionId)`              | Returns the wallet.                                                                                                              |
+| `placeBet(sessionId, mode, amount)`  | Validates the bet, draws an outcome, debits the cost. Returns the wallet and the new bet.                                        |
+| `settleRound(sessionId)`             | Credits the payout of the open bet and closes it. Returns the wallet and the bet.                                                |
+| `recordEvent(sessionId, event)`      | Stores a 1 to 32 byte event on the open bet. Returns the event.                                                                  |
+| `createSession(input)`               | Creates a session, and a wallet unless `walletId` is set. The management endpoint calls this.                                    |
+| `setForce(sessionId, force)`         | Sets or clears the session's [forced outcome](/docs/lgs/sessions#force). Returns the session.                                    |
+| `replay(gameId, mode, bookId)`       | Reads one book for the [replay endpoint](/docs/lgs/engine-rgs#replay). Returns `payoutMultiplier`, `costMultiplier` and `state`. |
+| `createReplay(input, rgsUrl)`        | Checks a replay like a play and returns its [launch parameters](/docs/lgs/sessions#replays). The management endpoint calls this. |
+| `getGame(id)`, `listGames()`         | Registered games with their modes and math.                                                                                      |
+| `validateBetAmount(amount, mode)`    | The [bet rules](/docs/lgs/engine-rgs#bet-rules). Throws `invalid-bet`.                                                           |
+| `modeMaxBet(mode)`                   | The largest base bet of a mode.                                                                                                  |
+| `launchParams(session, rgsUrl)`      | The launch parameters of a session.                                                                                              |
 
 The configuration is available as `this.bets`, `this.balance`, `this.languages`, `this.currencies`, `this.defaultLanguage` and `this.defaultCurrency`, with amounts as six-decimal integers.
 
@@ -83,7 +86,7 @@ Every operation throws an `LgsError` with a `kind`. The subclass maps the kind t
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `unknown-session`       | No session has this ID.                                                                                                                                  |
 | `unauthenticated`       | The session has not called authenticate.                                                                                                                 |
-| `unknown-game`          | The session's game is not registered.                                                                                                                    |
+| `unknown-game`          | The game of the session or the replay is not registered.                                                                                                 |
 | `unknown-mode`          | The game has no mode with this name.                                                                                                                     |
 | `invalid-session-input` | A disabled language or currency, a negative balance, an unknown wallet, a wallet in another currency, a balance next to `walletId`, or an invalid force. |
 | `invalid-bet`           | The amount breaks a bet rule.                                                                                                                            |
@@ -92,7 +95,7 @@ Every operation throws an `LgsError` with a `kind`. The subclass maps the kind t
 | `insufficient-balance`  | The cost of the bet is above the balance.                                                                                                                |
 | `invalid-event`         | The event is empty or longer than 32 bytes.                                                                                                              |
 | `missing-math`          | The lookup table of the mode is missing or has no weight.                                                                                                |
-| `unknown-book`          | The lookup table of the played mode has no row for the forced book.                                                                                      |
+| `unknown-book`          | The lookup table of the mode has no row for the forced or the replayed book.                                                                             |
 | `missing-book`          | The drawn book is missing from the published books.                                                                                                      |
 
 `EngineLgs` keeps its mapping in one table, `ENGINE_ERRORS`, which turns each kind into an Engine error code and status.

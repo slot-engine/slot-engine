@@ -71,6 +71,27 @@ describe("PublishedMath", () => {
   })
 })
 
+describe("PublishedMath.read", () => {
+  it("returns the outcome of a book, zero weight or not", async () => {
+    expect(await math(() => 0).read("base", 3)).toEqual({
+      bookId: 3,
+      payoutCents: 500,
+      events: [{ mode: "base", bookId: 3 }],
+    })
+  })
+
+  it("returns undefined for a book outside the lookup table", async () => {
+    expect(await math(() => 0).read("base", 99)).toBeUndefined()
+  })
+
+  it("throws missing-book when a book of the lookup table cannot be read", async () => {
+    await expect(math(() => 0).read("lost", 4)).rejects.toMatchObject({
+      kind: "missing-book",
+      message: 'Book 4 of mode "lost" not found',
+    })
+  })
+})
+
 describe("PublishedMath forced outcomes", () => {
   it("returns a forced book with its events and payout, zero weight or not", async () => {
     const forced = math(() => 0)
@@ -102,10 +123,13 @@ describe("PublishedMath forced outcomes", () => {
     [7.5, 500],
     [7.51, 1000],
     [5000, 1000],
-  ])("forces the payout closest to %fx (-> %i cents, lower on a tie)", async (x, cents) => {
-    const outcome = await math(() => 0).pick("base", { payoutMultiplier: x })
-    expect(outcome.payoutCents).toBe(cents)
-  })
+  ])(
+    "forces the payout closest to %fx (-> %i cents, lower on a tie)",
+    async (x, cents) => {
+      const outcome = await math(() => 0).pick("base", { payoutMultiplier: x })
+      expect(outcome.payoutCents).toBe(cents)
+    },
+  )
 
   it("picks uniformly among the books sharing the closest payout", async () => {
     expect((await math(() => 0).pick("base", { payoutMultiplier: 0.4 })).bookId).toBe(1)

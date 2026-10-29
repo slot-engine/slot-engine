@@ -22,3 +22,10 @@ export class LgsError extends Error {
     this.name = "LgsError"
   }
 }
+
+export function unknownBook(mode: string, bookId: number): LgsError {
+  return new LgsError(
+    "unknown-book",
+    `Book ${bookId} is not in the lookup table of mode "${mode}"`,
+  )
+}

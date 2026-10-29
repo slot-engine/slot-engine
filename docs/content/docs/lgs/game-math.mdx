@@ -73,6 +73,7 @@ The LGS asks a `GameMath` for outcomes. Register a game with your own `GameMath`
 ```ts
 interface GameMath {
   pick(mode: string, force?: ForcedOutcome): Promise<Outcome>
+  read(mode: string, bookId: number): Promise<Outcome | undefined>
 }
 
 type ForcedOutcome = { bookId: number } | { payoutMultiplier: number }
@@ -88,11 +89,18 @@ interface Outcome {
 The LGS passes the force of the session as `force`, and `undefined` when the session forces nothing.
 A `GameMath` may ignore it, like the scripted example below.
 
-```ts lineNumbers title="scripted.ts"
-import { EngineLgs, InMemoryStorage, type LgsGame } from "@slot-engine/lgs"
+`read` returns the outcome of one book for [bet replay](/docs/lgs/engine-rgs#replay), and `undefined` when the lookup table of the mode has no row for the book.
 
-const outcomes = [0, 0, 250, 0, 1000]
+```ts lineNumbers title="scripted.ts"
+import { EngineLgs, InMemoryStorage, type LgsGame, type Outcome } from "@slot-engine/lgs"
+
+const payouts = [0, 0, 250, 0, 1000]
 let next = 0
+
+function outcome(bookId: number): Outcome {
+  const payoutCents = payouts[bookId] ?? 0
+  return { bookId, payoutCents, events: [{ type: "reveal", payout: payoutCents }] }
+}
 
 const scripted: LgsGame = {
   id: "scripted",
@@ -102,12 +110,10 @@ const scripted: LgsGame = {
   },
   math: {
     async pick() {
-      const payoutCents = outcomes[next++ % outcomes.length] ?? 0
-      return {
-        bookId: next,
-        payoutCents,
-        events: [{ type: "reveal", payout: payoutCents }],
-      }
+      return outcome(next++ % payouts.length)
+    },
+    async read(_mode, bookId) {
+      return bookId < payouts.length ? outcome(bookId) : undefined
     },
   },
 }
@@ -143,3 +149,4 @@ const math = new PublishedMath({
 A missing lookup table throws `missing-math`.
 A missing book throws `missing-book`, which `EngineLgs` reports as `ERR_GEN`.
 A forced book that the lookup table does not list throws `unknown-book`, reported as `ERR_VAL`.
+`read` returns `undefined` for such a book, and `EngineLgs` answers the replay with 404.
