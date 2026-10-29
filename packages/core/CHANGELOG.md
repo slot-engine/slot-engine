@@ -1,5 +1,21 @@
 # @slot-engine/core
 
+## 0.4.0
+
+### Minor Changes
+
+- Remove `scatterToFreespins`, `anticipationTriggers`, `getFreeSpinsForScatters()` and `verifyScatterCount()`. Games are responsible for handling scatter counts. See the migration guide. - Thanks @nordowl
+
+- Export BookReader util to be used in LGS package - Thanks @nordowl
+
+- Book IDs start at 0 instead of 1. Rerun simulations to re-index your books. - Thanks @nordowl
+
+### Patch Changes
+
+- `BookReader` reloads a cached chunk when the file on disk changes - Thanks @nordowl
+
+- Add payout chances (chance of hitting a payout range during play). Visible in Panel or in `stats_payouts.json` - Thanks @nordowl
+
 ## 0.3.3
 
 ### Patch Changes
