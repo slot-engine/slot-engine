@@ -23,6 +23,34 @@ panel.start()
 
 ## createPanel() Options [#options]
 
-| Property | Type         | Description                | Required |
-| -------- | ------------ | -------------------------- | -------- |
-| `games`  | `SlotGame[]` | A list of connected games. | yes      |
+| Property | Type         | Description                                                                 | Required |
+| -------- | ------------ | --------------------------------------------------------------------------- | -------- |
+| `games`  | `SlotGame[]` | A list of connected games.                                                  | yes      |
+| `lgs`    | `EngineLgs`  | A local gaming server, served on the panel port. See [Attach an LGS](#lgs). |          |
+
+## Attach an LGS [#lgs]
+
+Pass an LGS from [`@slot-engine/lgs`](/docs/lgs) to serve it on the panel port next to the panel.
+The panel registers its games with the LGS and announces it at startup.
+
+```ts lineNumbers title="index.ts"
+import { EngineLgs, InMemoryStorage } from "@slot-engine/lgs"
+import { createPanel } from "@slot-engine/panel"
+import { game as MyGame } from "../../path-to/my-game"
+
+const panel = createPanel({
+  games: [MyGame],
+  lgs: new EngineLgs({ storage: new InMemoryStorage() }),
+})
+
+panel.start()
+```
+
+```
+⚡️ Slot Engine Panel is running on http://localhost:7770
+:: 1 games loaded
+:: LGS "Engine" attached, rgs_url=localhost:7770
+```
+
+Do not set `port` on an LGS that you pass to the panel. `createPanel()` throws when the LGS has one.
+Sessions are created through `POST http://localhost:7770/lgs/sessions`, see [Sessions](/docs/lgs/sessions).

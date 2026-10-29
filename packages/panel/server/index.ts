@@ -10,6 +10,7 @@ import { syncData } from "./middleware/sync-data"
 import { startWsServer } from "../ws/server"
 import { Server } from "node:http"
 import path from "path"
+import type { LgsAdapter } from "./types"
 
 const DEFAULT_CONFIG: PanelConfig = {
   port: 7770,
@@ -38,6 +39,16 @@ export function createPanel(opts?: PanelOptions): Panel {
   app.use("/api/*", syncData)
   app.get("/api/status", ...statusHandler)
   app.route("/api/games", gamesHandler)
+
+  if (panelConfig.lgs) {
+    if (panelConfig.lgs.port !== undefined) {
+      throw new Error(
+        "An LGS attached to the panel is served on the panel's port; remove the LGS port option.",
+      )
+    }
+    panelConfig.lgs.registerGames(panelConfig.games)
+    app.route("/", panelConfig.lgs.router())
+  }
 
   // Serve frontend assets
   app.use(
@@ -73,6 +84,11 @@ export function createPanel(opts?: PanelOptions): Panel {
       `⚡️ ${chalk.cyan("Slot Engine Panel")} is running on ${chalk.cyan(`http://localhost:${panelConfig.port}`)}`,
     )
     console.log(`:: ${panelConfig.games.length} games loaded`)
+    if (panelConfig.lgs) {
+      console.log(
+        `:: LGS ${chalk.cyan(`"${panelConfig.lgs.name}"`)} attached, rgs_url=${chalk.cyan(`localhost:${panelConfig.port}`)}`,
+      )
+    }
   }
 
   return { start }
@@ -80,11 +96,14 @@ export function createPanel(opts?: PanelOptions): Panel {
 
 interface PanelOptions {
   games?: Array<SlotGame<any, any, any>>
+  /** A local gaming server served on the panel port, e.g. `EngineLgs` from `@slot-engine/lgs`. */
+  lgs?: LgsAdapter
 }
 
 export interface PanelConfig {
   port: number
   games: Array<SlotGame<any, any, any>>
+  lgs?: LgsAdapter
 }
 
 export interface Panel {

@@ -1,0 +1,257 @@
+---
+title: Sessions
+description: Create sessions, inspect the LGS and launch a front end.
+icon: KeyRound
+---
+
+---
+
+## Management endpoints
+
+Engine creates sessions in its studio. The LGS has no studio, so it serves management endpoints under `/lgs` next to the RGS endpoints.
+Every response is JSON, and every amount is an integer with six decimals.
+
+`@slot-engine/lgs` exports a type for the body of every successful response:
+
+| Endpoint                      | Response type              |
+| ----------------------------- | -------------------------- |
+| `GET /lgs`                    | `LgsInfoResponse`          |
+| `GET /lgs/games`              | `LgsGamesResponse`         |
+| `POST /lgs/sessions`          | `LgsCreateSessionResponse` |
+| `GET /lgs/sessions/:id`       | `LgsSessionResponse`       |
+| `PUT /lgs/sessions/:id/force` | `LgsForceResponse`         |
+
+A management endpoint that rejects a request answers with an `LgsErrorResponse`, `{ "error": "ERR_VAL", "message": "..." }`.
+
+```ts
+import type { LgsSessionResponse } from "@slot-engine/lgs"
+
+const res = await fetch(`http://localhost:7771/lgs/sessions/${sessionId}`)
+const { wallet, lastBet } = (await res.json()) as LgsSessionResponse
+```
+
+### GET /lgs
+
+Returns the resolved configuration of the LGS.
+
+```json
+{
+  "name": "Engine",
+  "languages": ["ar", "da", "de", "en", "..."],
+  "currencies": ["USD", "CAD", "JPY", "EUR", "..."],
+  "defaultLanguage": "en",
+  "defaultCurrency": "USD",
+  "balance": {
+    "starting": 10000000000,
+    "options": [100000000, 1000000000, 10000000000, 100000000000]
+  },
+  "bets": {
+    "min": 100000,
+    "max": 1000000000,
+    "step": 10000,
+    "default": 1000000,
+    "levels": [100000, 200000, "..."]
+  },
+  "games": [{ "id": "my-game", "name": "My Game" }]
+}
+```
+
+### GET /lgs/games
+
+Returns the registered games and their modes.
+
+```json
+{
+  "games": [
+    {
+      "id": "my-game",
+      "name": "My Game",
+      "modes": [
+        {
+          "name": "base",
+          "cost": 1,
+          "rtp": 0.96,
+          "isBonusBuy": false,
+          "isFeature": false
+        },
+        {
+          "name": "bonus",
+          "cost": 70,
+          "rtp": 0.96,
+          "isBonusBuy": true,
+          "isFeature": false
+        }
+      ]
+    }
+  ]
+}
+```
+
+### POST /lgs/sessions
+
+Creates a session and, unless you pass `walletId`, a wallet for it.
+
+| Field      | Type                                | Default            | Description                                                                               | Required |
+| ---------- | ----------------------------------- | ------------------ | ----------------------------------------------------------------------------------------- | -------- |
+| `gameId`   | `string`                            |                    | ID of a registered game.                                                                  | yes      |
+| `currency` | `Currency`                          | `defaultCurrency`  | Currency of the new wallet. Must be one of the enabled currencies.                        |          |
+| `language` | `Language`                          | `defaultLanguage`  | Language of the session. Must be one of the enabled languages.                            |          |
+| `balance`  | `number`                            | `balance.starting` | Starting balance of the new wallet, in major units. Not allowed together with `walletId`. |          |
+| `walletId` | `string`                            |                    | Reuse an existing wallet and its balance. `currency` must match the wallet when set.      |          |
+| `device`   | `"desktop" \| "mobile" \| "tablet"` | `"desktop"`        | Passed through to the launch parameters.                                                  |          |
+| `social`   | `boolean`                           | `false`            | Sets `socialCasino` in the jurisdiction flags of this session.                            |          |
+| `demo`     | `boolean`                           | `false`            | Passed through to the launch parameters.                                                  |          |
+| `force`    | `ForcedOutcome \| null`             | `null`             | Forced outcome of every play. See [`PUT /lgs/sessions/:id/force`](#force).                |          |
+
+The response has status 201 and contains the session ID, the wallet ID, the launch parameters and the same parameters as a query string:
+
+```json
+{
+  "sessionID": "wYv1...",
+  "walletId": "Qf8c...",
+  "launchParams": {
+    "sessionID": "wYv1...",
+    "rgs_url": "localhost:7771",
+    "lang": "en",
+    "currency": "USD",
+    "device": "desktop",
+    "social": false,
+    "demo": false
+  },
+  "launchQuery": "sessionID=wYv1...&rgs_url=localhost%3A7771&lang=en&currency=USD&device=desktop&social=false&demo=false"
+}
+```
+
+`rgs_url` is the `Host` header of the request. Under the panel it is `localhost:7770`, standalone it is `localhost:7771`, and a request through another host name gets that host name back.
+
+Invalid input, an unknown game, an unknown wallet or a disabled currency or language answer with status 400:
+
+```json
+{ "error": "ERR_VAL", "message": "Game \"nope\" is not registered" }
+```
+
+### GET /lgs/sessions/:id
+
+Returns the session, its wallet, the active bet and the last bet.
+`activeBet` is `null` when no round is open.
+`lastBet` is the newest bet of the session, open or settled, and `null` before the first bet.
+
+```json
+{
+  "session": {
+    "id": "wYv1...",
+    "walletId": "Qf8c...",
+    "gameId": "my-game",
+    "currency": "USD",
+    "language": "en",
+    "device": "desktop",
+    "social": false,
+    "demo": false,
+    "authenticated": true,
+    "activeBetId": 3,
+    "createdAt": 1793216082000,
+    "force": { "bookId": 812 }
+  },
+  "wallet": { "id": "Qf8c...", "currency": "USD", "amount": 9997200000 },
+  "activeBet": {
+    "id": 3,
+    "mode": "base",
+    "amount": 1000000,
+    "payout": 1200000,
+    "active": true,
+    "...": "..."
+  },
+  "lastBet": {
+    "id": 3,
+    "mode": "base",
+    "bookId": 812,
+    "payoutMultiplier": 1.2,
+    "payout": 1200000,
+    "active": true,
+    "...": "..."
+  }
+}
+```
+
+An unknown session answers with status 404 and `{ "error": "ERR_VAL", "message": "unknown session" }`.
+
+### PUT /lgs/sessions/:id/force [#force]
+
+Sets or clears the forced outcome of a session.
+Every following play of the session, in every mode, returns the forced outcome until you clear it. A round that is already open keeps its outcome.
+
+The body has one field, `force`, with a `ForcedOutcome` or `null`. `@slot-engine/lgs` exports the type:
+
+```ts
+type ForcedOutcome = { bookId: number } | { payoutMultiplier: number }
+```
+
+| `force`                       | Effect                                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------- |
+| `{ "bookId": 123 }`           | Plays book 123 of the played mode. `bookId` is an integer of 0 or more.                           |
+| `{ "payoutMultiplier": 2.5 }` | Plays a book with the payout closest to 2.5x. `payoutMultiplier` is a finite number of 0 or more. |
+| `null`                        | Clears the force. Every play draws by weight again.                                               |
+
+```sh
+curl -X PUT http://localhost:7771/lgs/sessions/wYv1.../force \
+  -H "content-type: application/json" \
+  -d '{"force":{"payoutMultiplier":2.5}}'
+```
+
+The response has status 200 and contains the stored force:
+
+```json
+{ "force": { "payoutMultiplier": 2.5 } }
+```
+
+A body outside these three shapes answers with status 400 and `ERR_VAL`, for example a `force` with both keys, with an unknown key, or with a negative value.
+An unknown session answers with status 404 and `{ "error": "ERR_VAL", "message": "unknown session" }`.
+
+`POST /lgs/sessions` takes the same `force` field, so a session can start with a force.
+[Game Math](/docs/lgs/game-math#forced-outcomes) describes how the LGS finds the forced book.
+
+## Launch parameters
+
+The launch parameters use the names of Engine's launch URL, so a front end reads them the same way in both environments.
+
+| Parameter   | Example          | Description                                          |
+| ----------- | ---------------- | ---------------------------------------------------- |
+| `sessionID` | `wYv1...`        | The session to authenticate with.                    |
+| `rgs_url`   | `localhost:7771` | Host of the RGS, without protocol.                   |
+| `lang`      | `en`             | Language of the session.                             |
+| `currency`  | `USD`            | Currency of the wallet.                              |
+| `device`    | `desktop`        | `desktop`, `mobile` or `tablet`.                     |
+| `social`    | `false`          | Whether the session was created as a social session. |
+| `demo`      | `false`          | Whether the session was created as a demo session.   |
+
+Append `launchQuery` to the URL of your front end:
+
+```
+http://localhost:3000/?sessionID=wYv1...&rgs_url=localhost%3A7771&lang=en&currency=USD&device=desktop&social=false&demo=false
+```
+
+The official Engine client builds `https://` + `rgs_url` unless you set the protocol. The LGS serves plain HTTP:
+
+```ts
+const client = RGSClient({ url: window.location.href, protocol: "http" })
+```
+
+## Share a wallet between sessions
+
+A reload of the front end keeps the session ID in the URL, so the same session continues and an open round resumes on authenticate.
+
+To test two front ends on one balance, create a second session with the `walletId` of the first:
+
+```sh
+curl -X POST http://localhost:7771/lgs/sessions \
+  -H "content-type: application/json" \
+  -d '{"gameId":"my-game","walletId":"Qf8c..."}'
+```
+
+The LGS runs the operations of one wallet one after another, so two sessions cannot both spend the same balance.
+
+## CORS
+
+The LGS allows every origin on `/lgs/*` and on the RGS routes, `/wallet/*` and `/bet/*` for `EngineLgs`.
+A front end served from another port, like a Vite dev server on 3000 or 5173, can call the LGS directly.
+Under the panel, the panel's own `/api` routes stay without CORS headers.

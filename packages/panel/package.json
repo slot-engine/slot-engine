@@ -60,6 +60,7 @@
   },
   "devDependencies": {
     "@fontsource-variable/archivo": "5.3.0",
+    "@slot-engine/lgs": "0.0.0",
     "@tabler/icons-react": "3.49.0",
     "@tailwindcss/vite": "4.3.3",
     "@types/node": "26.6.5",

@@ -4,4 +4,200 @@ description: Getting started with Slot Engine LGS
 icon: "Rocket"
 ---
 
-This library is not released yet.
+---
+
+## Introduction
+
+Slot Engine LGS is part of Slot Engine, a family of TypeScript libraries for building, simulating and testing slot games.
+
+LGS stands for local gaming server. It stands in for the RGS (remote game server) that a game front end talks to during play.
+It runs on your machine, so you can test a front end against your game's math without uploading the math to Engine.
+
+- Serves the Engine RGS endpoints with the same request and response shapes, money format and error codes
+- Draws every outcome from your game's published lookup table and books, so play matches the simulation
+- Keeps wallets, sessions and bets in a storage you choose
+- Runs on its own port, or inside [Slot Engine Panel](/docs/panel) on the panel's port
+
+<Callout>
+  The LGS is a development tool. It has no authentication, no session expiry and no
+  persistence beyond the storage you pass in.
+</Callout>
+
+## Installation & Setup
+
+Set up the LGS using the `@slot-engine/lgs` library.
+
+<Steps>
+  <Step>
+    ### Install package from npm
+
+    Set up your Node.js project and install `@slot-engine/lgs`.
+    Install it next to your game, because the LGS reads the game's build files from disk.
+
+    <Callout>
+    Slot Engine LGS requires your games to use `@slot-engine/core` >= 0.4.0.
+    </Callout>
+
+    ```bash tab="npm"
+    npm i @slot-engine/lgs
+    ```
+
+    ```bash tab="pnpm"
+    pnpm i @slot-engine/lgs
+    ```
+
+    ```bash tab="yarn"
+    yarn add @slot-engine/lgs
+    ```
+
+    ```bash tab="bun"
+    bun install @slot-engine/lgs
+    ```
+
+  </Step>
+  <Step>
+    ### Simulate your game
+
+    The LGS plays the books that your simulation wrote. Run a [simulation](/docs/core/game-tasks/simulation) for every game mode before you connect the game.
+    The LGS reads the lookup tables and books from the game's `__build__/publish_files` directory.
+
+    Your game must specify `rootDir: __dirname` so that the LGS can resolve those files.
+
+    ```ts lineNumbers title="game/index.ts"
+    export const game = createSlotGame<GameType>({
+      rootDir: __dirname, // required if connecting this game to @slot-engine/lgs
+      // ...
+    })
+    ```
+
+  </Step>
+  <Step>
+    ### Create the LGS
+
+    Create an `EngineLgs` with a storage and your games, then start it.
+    For all options, see the [configuration guide](/docs/lgs/config).
+
+    ```ts lineNumbers title="lgs.ts"
+    import { EngineLgs, InMemoryStorage } from "@slot-engine/lgs"
+    import { game as MyGame } from "../../path-to/my-game"
+
+    const lgs = new EngineLgs({
+      storage: new InMemoryStorage(),
+      games: [MyGame],
+    })
+
+    lgs.start()
+    ```
+
+    Run the file with [`tsx`](https://tsx.hirok.io/):
+
+    ```sh
+    pnpm tsx ./lgs.ts
+    ```
+
+    You should see the LGS announce itself:
+
+    ```
+    ⚡️ Slot Engine LGS (Engine) is running on http://localhost:7771
+    :: 1 games loaded
+    ```
+
+    If you use Slot Engine Panel, pass the LGS to `createPanel()` instead.
+    The panel registers its games with the LGS and serves it on the panel's port.
+
+    ```ts lineNumbers title="panel.ts"
+    import { EngineLgs, InMemoryStorage } from "@slot-engine/lgs"
+    import { createPanel } from "@slot-engine/panel"
+    import { game as MyGame } from "../../path-to/my-game"
+
+    const panel = createPanel({
+      games: [MyGame],
+      lgs: new EngineLgs({ storage: new InMemoryStorage() }),
+    })
+
+    panel.start()
+    ```
+
+    The panel's startup log then shows the attached LGS:
+
+    ```
+    ⚡️ Slot Engine Panel is running on http://localhost:7770
+    :: 1 games loaded
+    :: LGS "Engine" attached, rgs_url=localhost:7770
+    ```
+
+  </Step>
+  <Step>
+    ### Create a session
+
+    A front end needs a session ID. If you attached the LGS to the panel, the panel's [Play Game](/docs/panel/modules/play) tab creates the session and launches your front end for you.
+    To create a session by hand, post the game's ID:
+
+    ```sh
+    curl -X POST http://localhost:7771/lgs/sessions \
+      -H "content-type: application/json" \
+      -d '{"gameId":"my-game"}'
+    ```
+
+    The response contains the session, its wallet and the launch parameters for the front end:
+
+    ```json
+    {
+      "sessionID": "wYv1...",
+      "walletId": "Qf8c...",
+      "launchParams": {
+        "sessionID": "wYv1...",
+        "rgs_url": "localhost:7771",
+        "lang": "en",
+        "currency": "USD",
+        "device": "desktop",
+        "social": false,
+        "demo": false
+      },
+      "launchQuery": "sessionID=wYv1...&rgs_url=localhost%3A7771&lang=en&currency=USD&device=desktop&social=false&demo=false"
+    }
+    ```
+
+    The session starts with the configured balance, 10,000.00 by default.
+    See [Sessions](/docs/lgs/sessions) for every field you can set.
+
+  </Step>
+  <Step>
+    ### Launch your front end
+
+    Append the `launchQuery` to your front end's URL, the same way Engine launches a game:
+
+    ```
+    http://localhost:3000/?sessionID=wYv1...&rgs_url=localhost%3A7771&lang=en&currency=USD&device=desktop&social=false&demo=false
+    ```
+
+    The LGS serves plain HTTP. The official Engine client defaults to HTTPS, so set the protocol when you create it:
+
+    ```ts
+    const client = RGSClient({ url: window.location.href, protocol: "http" })
+    ```
+
+    Your front end now authenticates, plays and ends rounds against the LGS.
+    The LGS answers with your simulated books, and the wallet balance moves with every bet.
+
+  </Step>
+</Steps>
+
+## FAQ / Common Issues
+
+<Accordions>
+  <Accordion title="Play fails with ERR_GEN 'no lookup table' or 'book not found'">
+    The LGS reads `__build__/publish_files/lookUpTable_<mode>_0.csv` and the published books of each mode.
+    Run a simulation for the game and make sure the game specifies `rootDir: __dirname`.
+  </Accordion>
+  <Accordion title="The front end calls https://localhost:7771 and fails">
+    The official Engine client prefixes `rgs_url` with `https://` unless you pass `protocol: "http"`. The LGS does not serve TLS.
+  </Accordion>
+  <Accordion title="createPanel throws 'An LGS attached to the panel is served on the panel's port'">
+    Remove the `port` option from the LGS. The panel serves an attached LGS on its own port, 7770 by default.
+  </Accordion>
+  <Accordion title="The browser blocks requests with a CORS error">
+    The LGS sends CORS headers for every origin on `/lgs/*`, `/wallet/*` and `/bet/*`.
+    Check that `rgs_url` in the launch query points at the LGS and not at a different server.
+  </Accordion>
+</Accordions>

@@ -1,5 +1,4 @@
 import fs from "fs"
-import zlib from "zlib"
 import fsAsync, { glob } from "fs/promises"
 import readline from "readline"
 import path from "path"
@@ -13,7 +12,6 @@ import {
   type TagItem,
   type SimulationSummary,
   type SlotGame,
-  type WrittenBook,
 } from "@slot-engine/core"
 import { PANEL_GAME_CONFIG_FILE, SYMBOL_COLORS } from "./constants"
 import { PanelGameConfig } from "../types"
@@ -309,74 +307,6 @@ export async function readLutRows(opts: {
     rows,
     nextCursor,
   }
-}
-
-export async function getBook(opts: { game: SlotGame; mode: string; bookId: number }) {
-  const { game, mode, bookId } = opts
-  const meta = game.getMetadata()
-
-  /**
-   * 1) Get meta object to find which worker made that book
-   * 2) Load index file by worker number and find chunk number for that book
-   * 3) Load chunk file and find the book
-   */
-
-  const bookIndexMetaPath = meta.paths.booksIndexMeta(mode)
-  if (!fs.existsSync(bookIndexMetaPath)) return
-
-  const booksMeta = JSON.parse(
-    fs.readFileSync(bookIndexMetaPath, {
-      encoding: "utf-8",
-    }),
-  ) as Array<{ worker: number; chunks: number; simStart: number; simEnd: number }>
-
-  const metaObj = booksMeta.find((m) => bookId >= m.simStart && bookId <= m.simEnd)
-  if (!metaObj) return
-
-  const bookIndexPath = meta.paths.booksIndex(mode, metaObj.worker)
-  if (!fs.existsSync(bookIndexPath)) return
-
-  const stream = fs.createReadStream(bookIndexPath)
-  const rl = readline.createInterface({
-    input: stream,
-    crlfDelay: Infinity,
-  })
-
-  let chunk = 0
-
-  for await (const l of rl) {
-    const line = l.trim()
-    if (!line) continue
-
-    const [id, workerStr, chunkStr] = line.split(",")
-    if (parseInt(id!, 10) !== bookId) continue
-    chunk = parseInt(chunkStr!, 10)
-    break
-  }
-
-  stream.destroy()
-
-  const bookChunkPath = meta.paths.booksChunk(mode, metaObj.worker, chunk)
-  if (!fs.existsSync(bookChunkPath)) return
-
-  const compressedData = fs.readFileSync(bookChunkPath)
-  const decompressedData = zlib.zstdDecompressSync(compressedData)
-  const bookLines = decompressedData.toString("utf-8").split("\n")
-
-  let book: WrittenBook | undefined
-
-  for (const l of bookLines) {
-    const line = l.trim()
-    if (!line) continue
-
-    const record = JSON.parse(line) as WrittenBook
-    if (record.id === bookId) {
-      book = record
-      break
-    }
-  }
-
-  return book
 }
 
 export function getTagKeys(opts: { game: SlotGame; mode: string }) {

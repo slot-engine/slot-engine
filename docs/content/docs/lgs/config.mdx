@@ -1,0 +1,144 @@
+---
+title: Configuration
+description: Options of the EngineLgs constructor.
+icon: BookOpenText
+---
+
+---
+
+## Create an LGS
+
+Create an LGS by calling `new EngineLgs()` with an options object. `storage` is the only required option.
+
+```ts lineNumbers title="lgs.ts"
+import { EngineLgs, InMemoryStorage } from "@slot-engine/lgs"
+import { game as MyGame } from "../../path-to/my-game"
+
+const lgs = new EngineLgs({
+  storage: new InMemoryStorage(),
+  games: [MyGame],
+  port: 7771,
+  defaultCurrency: "EUR",
+  balance: { starting: 500 },
+  bets: {
+    min: 0.2,
+    max: 200,
+    step: 0.2,
+    default: 1,
+    levels: [0.2, 1, 2, 5, 10, 50, 100, 200],
+  },
+})
+
+lgs.start()
+```
+
+## EngineLgs Options [#options]
+
+Money in the options is in major units. `1` is one unit of the currency, `0.1` is ten cents.
+Over HTTP the LGS reports every amount as an integer with six decimals. See [Money](#money).
+
+| Property          | Type                                       | Default                               | Description                                                                                                      | Required |
+| ----------------- | ------------------------------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | -------- |
+| `storage`         | `AbstractStorage`                          |                                       | Where wallets, sessions and bets live. See [Storage](/docs/lgs/storage).                                         | yes      |
+| `games`           | `SlotGame[]`                               | `[]`                                  | Games to register. The panel registers its own games, so omit this when you pass the LGS to `createPanel()`.     |          |
+| `port`            | `number`                                   | `7771`                                | Port of the standalone server. Leave it unset when you pass the LGS to `createPanel()`.                          |          |
+| `languages`       | `Language[]`                               | all 17 languages                      | Languages a session can be created with.                                                                         |          |
+| `currencies`      | `Currency[]`                               | all 49 currencies                     | Currencies a wallet can be created with.                                                                         |          |
+| `defaultLanguage` | `Language`                                 | `"en"`                                | Language of a session that is created without one. Must be in `languages`.                                       |          |
+| `defaultCurrency` | `Currency`                                 | `"USD"`                               | Currency of a wallet that is created without one. Must be in `currencies`.                                       |          |
+| `balance`         | `{ starting?, options? }`                  | `10000`, `[100, 1000, 10000, 100000]` | `starting` is the balance of a new wallet when the session sets none. `options` are suggested balances for a UI. |          |
+| `bets`            | `{ min?, max?, step?, default?, levels? }` | see [Bets](#bets)                     | Bet limits reported to the client and enforced on every play.                                                    |          |
+| `random`          | `() => number`                             | `Math.random`                         | Source of randomness for the outcome draw. Pass a seeded function for repeatable play.                           |          |
+| `jurisdiction`    | `Partial<JurisdictionFlags>`               | every flag `false`                    | Flags returned to the client on authenticate. See [Jurisdiction](#jurisdiction).                                 |          |
+
+### Bets [#bets]
+
+| Property       | Default                                                                                     | Description                                                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `bets.min`     | `0.1`                                                                                       | Smallest base bet.                                                                                                             |
+| `bets.max`     | `1000`                                                                                      | Largest base bet. A mode with a cost multiplier above 1 gets a lower maximum, see [Bet rules](/docs/lgs/engine-rgs#bet-rules). |
+| `bets.step`    | `0.01`                                                                                      | Every bet must be a multiple of this.                                                                                          |
+| `bets.default` | `1`                                                                                         | Bet level the client starts on.                                                                                                |
+| `bets.levels`  | `0.1, 0.2, 0.4, 0.6, 0.8, 1, 2, 4, 6, 8, 10, 20, 40, 60, 80, 100, 200, 400, 600, 800, 1000` | Bet levels offered to the client.                                                                                              |
+
+### Validation
+
+The constructor throws `Invalid LGS options` in these cases:
+
+- `defaultLanguage` is not in `languages`, or `defaultCurrency` is not in `currencies`.
+- `bets.step` is zero or negative.
+- `bets.min` is above `bets.max`.
+- `bets.default` or an entry of `bets.levels` is outside `min` and `max`, or not a multiple of `step`.
+- `balance.starting` or an entry of `balance.options` is negative.
+
+## Languages and currencies
+
+The default languages are the 17 languages that Engine supports:
+`ar`, `da`, `de`, `en`, `es`, `fi`, `fr`, `hi`, `id`, `ja`, `ko`, `pl`, `pt`, `ru`, `tr`, `vi`, `zh`.
+The package exports them as `LANGUAGES`.
+
+The default currencies are the 49 currencies that Engine supports.
+The package exports them as `CURRENCY_CODES`, and as `CURRENCIES`, a table with the symbol and the number of decimals of each currency.
+
+```ts
+import { CURRENCIES, CURRENCY_CODES, LANGUAGES } from "@slot-engine/lgs"
+
+CURRENCIES.EUR // { symbol: "€", decimals: 2 }
+CURRENCY_CODES // ["USD", "CAD", "JPY", "EUR", ...]
+LANGUAGES // ["ar", "da", "de", ...]
+```
+
+## Jurisdiction [#jurisdiction]
+
+`EngineLgs` returns these flags in the `config.jurisdiction` object of the authenticate response.
+Every flag defaults to `false` and `minimumRoundDuration` to `0`.
+
+| Flag                   | Description                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------ |
+| `socialCasino`         | Social casino mode. Also `true` when the session was created with `social: true`.    |
+| `disabledFullscreen`   | The client hides the fullscreen button.                                              |
+| `disabledTurbo`        | The client hides turbo spins.                                                        |
+| `disabledSuperTurbo`   | The client hides super turbo spins.                                                  |
+| `disabledAutoplay`     | The client hides autoplay.                                                           |
+| `disabledSlamstop`     | The client disables slam stop.                                                       |
+| `disabledSpacebar`     | The client ignores the spacebar.                                                     |
+| `disabledBuyFeature`   | The client hides bonus buys.                                                         |
+| `displayNetPosition`   | The client shows the net position of the session.                                    |
+| `displayRTP`           | The client shows the RTP.                                                            |
+| `displaySessionTimer`  | The client shows a session timer.                                                    |
+| `minimumRoundDuration` | Minimum duration of a round, as reported to the client. The LGS does not enforce it. |
+
+## Money [#money]
+
+Over HTTP every amount is an integer with six decimals, whatever the currency: `1000000` is 1.00.
+The options and the session body take major units instead, so you write `balance: { starting: 500 }` for 500.00.
+
+The package exports the conversion:
+
+```ts
+import { MONEY_SCALE, toAmount, toMajor } from "@slot-engine/lgs"
+
+MONEY_SCALE // 1000000
+toAmount(2.5) // 2500000
+toMajor(2500000) // 2.5
+```
+
+## Standalone server
+
+`lgs.start()` listens on `port` and resolves with the port and a `close()` function.
+
+```ts
+const server = await lgs.start()
+server.port // 7771
+await server.close()
+```
+
+On start the LGS logs its address and the number of registered games:
+
+```
+⚡️ Slot Engine LGS (Engine) is running on http://localhost:7771
+:: 2 games loaded
+```
+
+To serve the LGS inside Slot Engine Panel, pass it to `createPanel()` instead of calling `start()`.
+See the [panel configuration](/docs/panel/config#options).

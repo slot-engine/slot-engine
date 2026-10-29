@@ -19,10 +19,10 @@ import {
   APIGameGetReelSetResponse,
 } from "../../types"
 import { Hono } from "hono"
+import { BookReader } from "@slot-engine/core"
 import {
   assignColorsToSymbols,
   exploreLookupTable,
-  getBook,
   getTagKeys,
   getGameById,
   getGameInfo,
@@ -284,7 +284,7 @@ app.get("/:id/explore/:mode/:bookId", async (c) => {
 
   const mode = c.req.param("mode")
 
-  const book = await getBook({ game, mode, bookId })
+  const book = await new BookReader(game).read(mode, bookId)
 
   if (!book) {
     return c.json<APIMessageResponse>({ message: "Not found" }, 404)

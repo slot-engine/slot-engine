@@ -1,13 +1,22 @@
-// Keep types in this file, because they are imported in the client
+// Keep only types in this file, because they are imported in the client
 
+import type { Hono } from "hono"
 import type {
   LookupTable,
   LookupTableSegmented,
   PayoutStatistics,
   SimulationSummary,
+  SlotGame,
   Statistics,
   WrittenBook,
 } from "@slot-engine/core/types"
+
+export interface LgsAdapter {
+  readonly name: string
+  readonly port: number | undefined
+  registerGames(games: SlotGame[]): void
+  router(): Hono
+}
 
 export interface APIMessageResponse {
   message: string
@@ -44,6 +53,7 @@ export interface APIGameInfoResponse {
 
 export interface APIStatusResponse {
   ok: boolean
+  lgs: { name: string } | null
 }
 
 export interface PanelGameConfig {

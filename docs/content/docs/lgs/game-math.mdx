@@ -1,0 +1,145 @@
+---
+title: Game Math
+description: How the LGS draws outcomes from your simulated math.
+icon: Dices
+---
+
+---
+
+## Outcomes come from the simulation
+
+The LGS does not run your game logic. It replays the books that the [simulation](/docs/core/game-tasks/simulation) wrote, the same way the RGS does after you upload the math.
+
+When you register a `SlotGame`, through the `games` option or through the panel, the LGS wraps it in a `PublishedMath`. On every play:
+
+1. It loads `__build__/publish_files/lookUpTable_<mode>_0.csv` of the mode, once per mode.
+2. It draws a row by weight with the `random` function of the [configuration](/docs/lgs/config#options). If the session forces an outcome, it picks the row by the rules of [Forced outcomes](#forced-outcomes) instead.
+3. It reads the drawn book from the published books of the mode with `BookReader` from `@slot-engine/core`. The reader keeps the last four decompressed chunks in memory.
+4. It returns the events of the book as `round.state` and computes the payout from the row.
+
+Because the draw uses the published weights, the RTP of play equals the RTP of the lookup table.
+[Optimize](/docs/core/game-tasks/optimization) the game before you judge its feel in a front end.
+
+<Callout title="Restart after a simulation">
+  The LGS caches lookup tables and book chunks after the first read. Restart the LGS after
+  you simulate or optimize the game again.
+</Callout>
+
+## Payouts
+
+The lookup table stores payouts in cents of the base bet, `250` is 2.5x. The LGS converts them:
+
+| Value                    | Computation                         |
+| ------------------------ | ----------------------------------- |
+| `round.payoutMultiplier` | `payoutCents / 100`                 |
+| `round.payout`           | `round(amount × payoutCents / 100)` |
+| `round.active`           | `payout > 0`                        |
+
+## Forced outcomes
+
+A session can force the outcome of its plays through [`PUT /lgs/sessions/:id/force`](/docs/lgs/sessions#force) or the [Play Game](/docs/panel/modules/play) tab of the panel.
+`PublishedMath` then skips the weighted draw and picks the book by one of two rules.
+Both rules look at every row of the lookup table, including rows with a weight of 0.
+
+While a force is set, play ignores the weights, so the RTP of play no longer matches the lookup table.
+
+### Force a book ID
+
+`{ "bookId": 123 }` plays book 123 of the played mode, with its events and its payout from the lookup table.
+Book IDs belong to one mode, so book 123 of `base` and book 123 of `bonus` are different books.
+If the lookup table of the played mode has no row for the book, `pick` throws `unknown-book`, and `EngineLgs` answers the bet with status 400 and `ERR_VAL`.
+
+### Force a payout multiplier
+
+`{ "payoutMultiplier": 2.5 }` plays a book with the payout closest to 2.5x. `PublishedMath` finds the book in three steps:
+
+1. It converts the multiplier to cents with `Math.round(payoutMultiplier * 100)`.
+2. It finds the payout closest to that value among all payouts in the lookup table of the mode. If a lower and a higher payout are equally close, the lower payout wins.
+3. It picks one of the books with that payout. Every book has the same chance, and the pick uses the `random` function.
+
+For a lookup table with the payouts 0x, 1.5x and 3x:
+
+| Forced multiplier | Played payout | Why                                                   |
+| ----------------- | ------------- | ----------------------------------------------------- |
+| `1.5`             | 1.5x          | Exact match.                                          |
+| `2.25`            | 1.5x          | 1.5x and 3x are equally close. The lower payout wins. |
+| `2.4`             | 3x            | 3x is closer than 1.5x.                               |
+| `100`             | 3x            | 3x is the highest payout and the closest.             |
+
+## Custom math
+
+The LGS asks a `GameMath` for outcomes. Register a game with your own `GameMath` to play without build files, for example in tests or to script a sequence of outcomes.
+
+```ts
+interface GameMath {
+  pick(mode: string, force?: ForcedOutcome): Promise<Outcome>
+}
+
+type ForcedOutcome = { bookId: number } | { payoutMultiplier: number }
+
+interface Outcome {
+  bookId: number
+  /** Payout in cents of the base bet: 100 is 1x. */
+  payoutCents: number
+  events: unknown[]
+}
+```
+
+The LGS passes the force of the session as `force`, and `undefined` when the session forces nothing.
+A `GameMath` may ignore it, like the scripted example below.
+
+```ts lineNumbers title="scripted.ts"
+import { EngineLgs, InMemoryStorage, type LgsGame } from "@slot-engine/lgs"
+
+const outcomes = [0, 0, 250, 0, 1000]
+let next = 0
+
+const scripted: LgsGame = {
+  id: "scripted",
+  name: "Scripted",
+  modes: {
+    base: { name: "base", cost: 1, rtp: 0.96, isBonusBuy: false, isFeature: false },
+  },
+  math: {
+    async pick() {
+      const payoutCents = outcomes[next++ % outcomes.length] ?? 0
+      return {
+        bookId: next,
+        payoutCents,
+        events: [{ type: "reveal", payout: payoutCents }],
+      }
+    },
+  },
+}
+
+const lgs = new EngineLgs({ storage: new InMemoryStorage() })
+lgs.registerGame(scripted)
+```
+
+`LgsMode` carries the fields of a game mode that the LGS needs: `name`, `cost`, `rtp`, `isBonusBuy` and `isFeature`.
+
+## PublishedMath
+
+`fromSlotGame(game, random)` builds the `LgsGame` of a `SlotGame` with a `PublishedMath`.
+Use `PublishedMath` directly to read the math from another location or through another book source:
+
+```ts
+import { BookReader } from "@slot-engine/core"
+import { PublishedMath } from "@slot-engine/lgs"
+
+const math = new PublishedMath({
+  lookupTablePath: (mode) => `./math/lookUpTable_${mode}_0.csv`,
+  books: new BookReader(game, { maxCachedChunks: 4 }),
+  random: Math.random,
+})
+```
+
+| Option                  | Description                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| `lookupTablePath(mode)` | Path of the published lookup table of a mode.                                   |
+| `books`                 | A `BookSource`: `read(mode, bookId)` resolves with `{ events }` or `undefined`. |
+| `random`                | Returns a number in `[0, 1)`.                                                   |
+
+A missing lookup table throws `missing-math`.
+A missing book throws `missing-book`, which `EngineLgs` reports as `ERR_GEN`.
+A forced book that the lookup table does not list throws `unknown-book`, reported as `ERR_VAL`.

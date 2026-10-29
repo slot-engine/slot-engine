@@ -1,14 +1,15 @@
 {
   "name": "@slot-engine/lgs",
   "version": "0.0.0",
-  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/slot-engine/slot-engine"
   },
   "homepage": "https://slot-engine.dev/docs/lgs",
   "scripts": {
+    "test": "vitest",
     "typecheck": "tsc --noEmit",
+    "prebuild": "pnpm typecheck",
     "build": "tsdown",
     "dev": "tsdown --watch"
   },
@@ -25,5 +26,12 @@
       "module": "./dist/index.js",
       "default": "./dist/index.js"
     }
+  },
+  "dependencies": {
+    "@hono/node-server": "2.1.5",
+    "@slot-engine/core": "0.3.3",
+    "chalk": "6.0.1",
+    "hono": "4.13.13",
+    "zod": "4.6.7"
   }
 }

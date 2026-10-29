@@ -16,7 +16,7 @@ TypeScript libraries for building slot games.
 
 ### `@slot-engine/core`
 
-Library for configuring and simulating slot games. Produces output compatible with Stake Engine / Stake RGS.
+Library for configuring and simulating slot games. Produces output compatible with Engine.
 
 [📖 Documentation](https://slot-engine.dev/docs/core)  
 
@@ -32,9 +32,9 @@ Optimize lookup tables to reach a target RTP.
 
 [📖 Documentation](https://slot-engine.dev/docs/core/game-tasks/optimization)
 
-### (soon TM) `@slot-engine/lgs`
+### `@slot-engine/lgs`
 
-Local gaming server. Test your game locally without uploading to Stake Engine and save time during development.
+Local gaming server. Test your game locally without uploading to Engine and save time during development.
 
 [📖 Documentation](https://slot-engine.dev/docs/lgs)
 

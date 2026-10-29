@@ -1,0 +1,98 @@
+---
+title: Custom LGS
+description: Mimic another RGS by extending AbstractLgs.
+icon: Blocks
+---
+
+---
+
+## What AbstractLgs owns
+
+`AbstractLgs` holds everything that does not depend on the wire format of an RGS:
+the [configuration](/docs/lgs/config), the registered games, sessions, wallets, bets, the outcome draw, the [management endpoints](/docs/lgs/sessions) and the standalone server.
+`EngineLgs` adds the HTTP routes of the Engine RGS on top. A subclass for another RGS does the same with its own routes.
+
+## Implement a subclass
+
+A subclass provides three members:
+
+| Member          | Description                                                                                                |
+| --------------- | ---------------------------------------------------------------------------------------------------------- |
+| `name`          | Name of the RGS, shown in the startup logs and in `GET /lgs`.                                              |
+| `routePrefixes` | Path patterns of the RGS routes that get CORS headers, for example `["/wallet/*", "/bet/*"]`.              |
+| `rgsRouter()`   | A [Hono](https://hono.dev) app with the RGS endpoints. `router()` merges it with the management endpoints. |
+
+```ts lineNumbers title="MyLgs.ts"
+import { AbstractLgs, LgsError, type LgsOptions } from "@slot-engine/lgs"
+import { Hono } from "hono"
+
+export class MyLgs extends AbstractLgs {
+  readonly name = "MyRgs"
+  protected readonly routePrefixes = ["/api/*"]
+
+  constructor(opts: LgsOptions) {
+    super(opts)
+  }
+
+  protected rgsRouter(): Hono {
+    const app = new Hono()
+
+    app.post("/api/spin", async (c) => {
+      const { session, mode, bet } = await c.req.json()
+      try {
+        const { wallet, bet: round } = await this.placeBet(session, mode, bet)
+        return c.json({ balance: wallet.amount, events: round.state, win: round.payout })
+      } catch (error) {
+        if (error instanceof LgsError) return c.json({ code: error.kind }, 400)
+        throw error
+      }
+    })
+
+    return app
+  }
+}
+```
+
+The subclass runs standalone with `start()` and inside the panel through the `lgs` option, like `EngineLgs`.
+
+## Operations
+
+The domain operations take a session ID and return storage records. Every operation of one wallet runs after the previous one has finished.
+
+| Operation                            | Description                                                                                     |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `authenticate(sessionId, language?)` | Marks the session as authenticated. Returns the session, the wallet and the open bet or `null`. |
+| `getBalance(sessionId)`              | Returns the wallet.                                                                             |
+| `placeBet(sessionId, mode, amount)`  | Validates the bet, draws an outcome, debits the cost. Returns the wallet and the new bet.       |
+| `settleRound(sessionId)`             | Credits the payout of the open bet and closes it. Returns the wallet and the bet.               |
+| `recordEvent(sessionId, event)`      | Stores a 1 to 32 byte event on the open bet. Returns the event.                                 |
+| `createSession(input)`               | Creates a session, and a wallet unless `walletId` is set. The management endpoint calls this.   |
+| `setForce(sessionId, force)`         | Sets or clears the session's [forced outcome](/docs/lgs/sessions#force). Returns the session.   |
+| `getGame(id)`, `listGames()`         | Registered games with their modes and math.                                                     |
+| `validateBetAmount(amount, mode)`    | The [bet rules](/docs/lgs/engine-rgs#bet-rules). Throws `invalid-bet`.                          |
+| `modeMaxBet(mode)`                   | The largest base bet of a mode.                                                                 |
+| `launchParams(session, rgsUrl)`      | The launch parameters of a session.                                                             |
+
+The configuration is available as `this.bets`, `this.balance`, `this.languages`, `this.currencies`, `this.defaultLanguage` and `this.defaultCurrency`, with amounts as six-decimal integers.
+
+## Errors
+
+Every operation throws an `LgsError` with a `kind`. The subclass maps the kind to the status and the error format of its RGS.
+
+| Kind                    | When                                                                                                                                                     |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `unknown-session`       | No session has this ID.                                                                                                                                  |
+| `unauthenticated`       | The session has not called authenticate.                                                                                                                 |
+| `unknown-game`          | The session's game is not registered.                                                                                                                    |
+| `unknown-mode`          | The game has no mode with this name.                                                                                                                     |
+| `invalid-session-input` | A disabled language or currency, a negative balance, an unknown wallet, a wallet in another currency, a balance next to `walletId`, or an invalid force. |
+| `invalid-bet`           | The amount breaks a bet rule.                                                                                                                            |
+| `round-active`          | A round is still open.                                                                                                                                   |
+| `no-active-round`       | No round is open.                                                                                                                                        |
+| `insufficient-balance`  | The cost of the bet is above the balance.                                                                                                                |
+| `invalid-event`         | The event is empty or longer than 32 bytes.                                                                                                              |
+| `missing-math`          | The lookup table of the mode is missing or has no weight.                                                                                                |
+| `unknown-book`          | The lookup table of the played mode has no row for the forced book.                                                                                      |
+| `missing-book`          | The drawn book is missing from the published books.                                                                                                      |
+
+`EngineLgs` keeps its mapping in one table, `ENGINE_ERRORS`, which turns each kind into an Engine error code and status.

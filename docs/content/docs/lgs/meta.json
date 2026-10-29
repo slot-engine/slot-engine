@@ -3,6 +3,15 @@
   "root": true,
   "pages": [
     "---Introduction---",
-    "index"
+    "index",
+    "---Configuration---",
+    "config",
+    "---Usage---",
+    "sessions",
+    "engine-rgs",
+    "---Extending---",
+    "game-math",
+    "storage",
+    "custom-lgs"
   ]
 }

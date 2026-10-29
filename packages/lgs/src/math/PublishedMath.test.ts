@@ -1,0 +1,114 @@
+import fs from "fs"
+import os from "os"
+import path from "path"
+import { afterAll, describe, expect, it } from "vitest"
+import { LgsError } from "../errors"
+import { PublishedMath, type BookSource } from "./PublishedMath"
+
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lgs-math-"))
+fs.writeFileSync(
+  path.join(dir, "lookUpTable_base_0.csv"),
+  ["1,0,0", "2,10,0", "3,0,500", "4,30,150", "5,60,1000"].join("\n"),
+)
+fs.writeFileSync(path.join(dir, "lookUpTable_empty_0.csv"), "1,0,0\n")
+
+afterAll(() => fs.rmSync(dir, { recursive: true, force: true }))
+
+const books: BookSource = {
+  async read(mode, bookId) {
+    return bookId === 4 && mode === "lost" ? undefined : { events: [{ mode, bookId }] }
+  },
+}
+
+function math(random: () => number) {
+  return new PublishedMath({
+    lookupTablePath: (mode) =>
+      path.join(dir, `lookUpTable_${mode === "lost" ? "base" : mode}_0.csv`),
+    books,
+    random,
+  })
+}
+
+describe("PublishedMath", () => {
+  it.each([
+    [0, 2, 0],
+    [0.0999, 2, 0],
+    [0.1, 4, 150],
+    [0.3999, 4, 150],
+    [0.4, 5, 1000],
+    [0.9999, 5, 1000],
+  ])(
+    "draws row by weight (random %f -> book %i)",
+    async (random, bookId, payoutCents) => {
+      const outcome = await math(() => random).pick("base")
+      expect(outcome).toEqual({ bookId, payoutCents, events: [{ mode: "base", bookId }] })
+    },
+  )
+
+  it("never picks zero-weight rows", async () => {
+    let i = 0
+    const sweep = math(() => i / 1000)
+    const picked = new Set<number>()
+    for (; i < 1000; i++) picked.add((await sweep.pick("base")).bookId)
+    expect([...picked].sort()).toEqual([2, 4, 5])
+  })
+
+  it("throws missing-math without a lookup table or weighted rows", async () => {
+    for (const mode of ["absent", "empty"]) {
+      const error = await math(() => 0.5)
+        .pick(mode)
+        .catch((e: unknown) => e)
+      expect(error).toBeInstanceOf(LgsError)
+      expect((error as LgsError).kind).toBe("missing-math")
+    }
+  })
+
+  it("throws missing-book when the drawn book cannot be read", async () => {
+    const error = await math(() => 0.2)
+      .pick("lost")
+      .catch((e: unknown) => e)
+    expect((error as LgsError).kind).toBe("missing-book")
+  })
+})
+
+describe("PublishedMath forced outcomes", () => {
+  it("returns a forced book with its events and payout, zero weight or not", async () => {
+    const forced = math(() => 0)
+    expect(await forced.pick("base", { bookId: 3 })).toEqual({
+      bookId: 3,
+      payoutCents: 500,
+      events: [{ mode: "base", bookId: 3 }],
+    })
+    expect(await forced.pick("base", { bookId: 1 })).toMatchObject({ payoutCents: 0 })
+  })
+
+  it("throws unknown-book for a forced book outside the lookup table", async () => {
+    const error = await math(() => 0)
+      .pick("base", { bookId: 99 })
+      .catch((e: unknown) => e)
+    expect(error).toBeInstanceOf(LgsError)
+    expect((error as LgsError).kind).toBe("unknown-book")
+    expect((error as LgsError).message).toBe(
+      'Book 99 is not in the lookup table of mode "base"',
+    )
+  })
+
+  it.each([
+    [0, 0],
+    [1.5, 150],
+    [2.345, 150],
+    [3.25, 150],
+    [3.26, 500],
+    [7.5, 500],
+    [7.51, 1000],
+    [5000, 1000],
+  ])("forces the payout closest to %fx (-> %i cents, lower on a tie)", async (x, cents) => {
+    const outcome = await math(() => 0).pick("base", { payoutMultiplier: x })
+    expect(outcome.payoutCents).toBe(cents)
+  })
+
+  it("picks uniformly among the books sharing the closest payout", async () => {
+    expect((await math(() => 0).pick("base", { payoutMultiplier: 0.4 })).bookId).toBe(1)
+    expect((await math(() => 0.6).pick("base", { payoutMultiplier: 0.4 })).bookId).toBe(2)
+  })
+})

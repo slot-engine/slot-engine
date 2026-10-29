@@ -1,0 +1,156 @@
+---
+title: Storage
+description: Where wallets, sessions and bets live, and how to write your own storage.
+icon: Database
+---
+
+---
+
+## AbstractStorage
+
+An LGS keeps its state in an `AbstractStorage`. The storage holds three repositories, one per record type:
+
+```ts
+abstract class AbstractStorage {
+  abstract readonly wallets: Repository<Wallet, string>
+  abstract readonly sessions: Repository<Session, string>
+  abstract readonly bets: Repository<Bet, number>
+}
+```
+
+A repository is a small CRUD interface. Every method is async, so a file, SQLite or Redis storage fits without changes to the LGS.
+
+```ts
+interface Repository<T extends { id: Id }, Id extends string | number> {
+  get(id: Id): Promise<T | undefined>
+  /** The repository assigns the id. */
+  create(data: Omit<T, "id">): Promise<T>
+  /** Throws if no record has this id. */
+  update(id: Id, patch: Partial<Omit<T, "id">>): Promise<T>
+  delete(id: Id): Promise<void>
+  find(predicate: (item: T) => boolean): Promise<T[]>
+}
+```
+
+## Records
+
+### Wallet
+
+| Field      | Type       | Description                                 |
+| ---------- | ---------- | ------------------------------------------- |
+| `id`       | `string`   | Returned to the client as `config.user.id`. |
+| `currency` | `Currency` | Currency of the balance.                    |
+| `amount`   | `Amount`   | Balance as an integer with six decimals.    |
+
+### Session
+
+| Field           | Type                                | Description                                               |
+| --------------- | ----------------------------------- | --------------------------------------------------------- |
+| `id`            | `string`                            | The `sessionID` of the client.                            |
+| `walletId`      | `string`                            | The wallet the session plays on.                          |
+| `gameId`        | `string`                            | The registered game.                                      |
+| `currency`      | `Currency`                          | Currency of the wallet, copied for the launch parameters. |
+| `language`      | `string`                            | Language, updated by authenticate.                        |
+| `device`        | `"desktop" \| "mobile" \| "tablet"` | Device from the session body.                             |
+| `social`        | `boolean`                           | Social session.                                           |
+| `demo`          | `boolean`                           | Demo session.                                             |
+| `authenticated` | `boolean`                           | `true` after the first authenticate.                      |
+| `activeBetId`   | `number \| null`                    | The open round, if any.                                   |
+| `createdAt`     | `number`                            | Unix time in milliseconds.                                |
+| `force`         | `ForcedOutcome \| null`             | Forced outcome of every play, `null` for a weighted draw. |
+
+### Bet
+
+| Field              | Type             | Description                                                       |
+| ------------------ | ---------------- | ----------------------------------------------------------------- |
+| `id`               | `number`         | The `betID` of the client.                                        |
+| `sessionId`        | `string`         | The session that placed the bet.                                  |
+| `walletId`         | `string`         | The wallet that was debited.                                      |
+| `gameId`           | `string`         | The game.                                                         |
+| `mode`             | `string`         | The game mode.                                                    |
+| `amount`           | `Amount`         | The base bet.                                                     |
+| `cost`             | `Amount`         | Debited from the wallet: `amount × cost multiplier`.              |
+| `payoutMultiplier` | `number`         | Plain multiplier, `2.5` is 2.5x.                                  |
+| `payout`           | `Amount`         | `amount × payoutMultiplier`, rounded to an integer.               |
+| `bookId`           | `number`         | The drawn book in the lookup table.                               |
+| `state`            | `unknown[]`      | The events of the book.                                           |
+| `event`            | `string \| null` | The last recorded client event.                                   |
+| `active`           | `boolean`        | `true` until end-round. `false` from the start for a payout of 0. |
+| `createdAt`        | `number`         | Unix time in milliseconds.                                        |
+| `settledAt`        | `number \| null` | Unix time in milliseconds of end-round.                           |
+
+## InMemoryStorage
+
+`InMemoryStorage` keeps every record in a `Map`. Wallets and sessions get random IDs, bets count from 1.
+The records are gone when the process exits.
+
+```ts
+import { EngineLgs, InMemoryStorage } from "@slot-engine/lgs"
+
+const lgs = new EngineLgs({ storage: new InMemoryStorage() })
+```
+
+## Implement a storage
+
+Extend `AbstractStorage` and provide the three repositories.
+The example keeps the records in memory with your own IDs, which is the smallest useful storage. Replace the `Map` with your database calls.
+
+```ts lineNumbers title="MyStorage.ts"
+import {
+  AbstractStorage,
+  type Bet,
+  type Repository,
+  type Session,
+  type Wallet,
+} from "@slot-engine/lgs"
+
+class MapRepository<T extends { id: Id }, Id extends string | number>
+  implements Repository<T, Id>
+{
+  private readonly items = new Map<Id, T>()
+
+  constructor(private readonly nextId: () => Id) {}
+
+  async get(id: Id) {
+    return this.items.get(id)
+  }
+
+  async create(data: Omit<T, "id">) {
+    const item = { ...data, id: this.nextId() } as T
+    this.items.set(item.id, item)
+    return item
+  }
+
+  async update(id: Id, patch: Partial<Omit<T, "id">>) {
+    const existing = this.items.get(id)
+    if (!existing) throw new Error(`No record with id ${id}`)
+    const updated = { ...existing, ...patch, id }
+    this.items.set(id, updated)
+    return updated
+  }
+
+  async delete(id: Id) {
+    this.items.delete(id)
+  }
+
+  async find(predicate: (item: T) => boolean) {
+    return [...this.items.values()].filter(predicate)
+  }
+}
+
+let nextBetId = 0
+
+export class MyStorage extends AbstractStorage {
+  readonly wallets = new MapRepository<Wallet, string>(() => crypto.randomUUID())
+  readonly sessions = new MapRepository<Session, string>(() => crypto.randomUUID())
+  readonly bets = new MapRepository<Bet, number>(() => ++nextBetId)
+}
+```
+
+A storage must follow these rules:
+
+- `create` assigns the ID and returns the complete record.
+- `update` returns the updated record and throws when the ID is unknown.
+- `get` returns `undefined` for an unknown ID instead of throwing.
+
+The LGS runs the operations of one wallet one after another, so a repository needs no locking of its own.
