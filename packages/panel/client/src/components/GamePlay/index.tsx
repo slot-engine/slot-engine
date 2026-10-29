@@ -4,14 +4,17 @@ import { useDebouncedCallback, useLocalStorage } from "@mantine/hooks"
 import { IconExternalLink, IconPlayerPlay, IconRefresh } from "@tabler/icons-react"
 import type { ForcedOutcome, LgsInfoResponse } from "@slot-engine/lgs"
 import { useGameContext } from "@/context/GameContext"
-import { createSession, lgsInfo, setForce } from "@/lib/lgs"
+import { createReplay, createSession, lgsInfo, setForce } from "@/lib/lgs"
 import { query } from "@/lib/queries"
 import { Button } from "../Button"
 import { ErrorDisplay } from "../Error"
 import { Skeleton } from "../Skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../Tabs"
 import { ForceOutcome } from "./ForceOutcome"
 import { NO_FORCE, toForce, type ForceFields } from "./force"
 import { NoLgs } from "./NoLgs"
+import { ReplayBook } from "./ReplayBook"
+import { initialReplayFields, type ReplayFields, type ReplayRequest } from "./replay"
 import { SessionInfo } from "./SessionInfo"
 import { SettingsBar } from "./SettingsBar"
 import { launchSrc, parseGameUrl, resolveSettings, type PlaySettings } from "./settings"
@@ -19,8 +22,12 @@ import { launchSrc, parseGameUrl, resolveSettings, type PlaySettings } from "./s
 type PlayState =
   | { status: "idle" }
   | { status: "launching" }
-  | { status: "playing"; sessionId: string; src: string }
+  | { status: "playing"; launchId: number; sessionId: string; src: string }
+  | ({ status: "replaying"; launchId: number; src: string } & ReplayRequest)
   | { status: "error"; message: string }
+
+const INVALID_URL =
+  "Enter the http:// or https:// URL of your game, e.g. http://localhost:3000"
 
 export const GamePlay = () => {
   const { gameId } = useGameContext()
@@ -44,6 +51,7 @@ interface PlayerProps {
 }
 
 const Player = ({ gameId, info }: PlayerProps) => {
+  const { game } = useGameContext()
   const [stored, setStored] = useLocalStorage<unknown>({
     key: `panel.play.${gameId}`,
     defaultValue: {},
@@ -54,17 +62,17 @@ const Player = ({ gameId, info }: PlayerProps) => {
   const [play, setPlay] = useState<PlayState>({ status: "idle" })
   const [forceFields, setForceFields] = useState<ForceFields>(NO_FORCE)
   const force = toForce(forceFields)
+  const [replayFields, setReplayFields] = useState<ReplayFields>(() =>
+    initialReplayFields(game.modes, info),
+  )
   const latestLaunch = useRef(0)
 
   async function launch(next: PlaySettings) {
     const id = ++latestLaunch.current
+    replayMutation.reset()
     const gameUrl = parseGameUrl(next.url)
     if (!gameUrl) {
-      setPlay({
-        status: "error",
-        message:
-          "Enter the http:// or https:// URL of your game, e.g. http://localhost:3000",
-      })
+      setPlay({ status: "error", message: INVALID_URL })
       return
     }
 
@@ -81,6 +89,7 @@ const Player = ({ gameId, info }: PlayerProps) => {
       if (id !== latestLaunch.current) return
       setPlay({
         status: "playing",
+        launchId: id,
         sessionId: sessionID,
         src: launchSrc(gameUrl, launchQuery),
       })
@@ -93,6 +102,46 @@ const Player = ({ gameId, info }: PlayerProps) => {
     }
   }
 
+  const replayMutation = useMutation({
+    mutationFn: async (args: {
+      launchId: number
+      settings: PlaySettings
+      request: ReplayRequest
+    }): Promise<PlayState> => {
+      const { launchId, settings, request } = args
+      const gameUrl = parseGameUrl(settings.url)
+      if (!gameUrl) throw new Error(INVALID_URL)
+      const { launchQuery } = await createReplay({
+        gameId,
+        mode: request.mode,
+        event: request.event,
+        amount: request.amount ?? undefined,
+        currency: settings.currency,
+        language: settings.language,
+        social: settings.social,
+        device: "desktop",
+      })
+      return {
+        ...request,
+        status: "replaying",
+        launchId,
+        src: launchSrc(gameUrl, launchQuery),
+      }
+    },
+  })
+
+  function replay(next: PlaySettings, request: ReplayRequest) {
+    const id = ++latestLaunch.current
+    replayMutation.mutate(
+      { launchId: id, settings: next, request },
+      {
+        onSuccess: (replaying) => {
+          if (id === latestLaunch.current) setPlay(replaying)
+        },
+      },
+    )
+  }
+
   const relaunchSoon = useDebouncedCallback(() => launch(settings), 500)
 
   function launchFromUrl() {
@@ -102,17 +151,28 @@ const Player = ({ gameId, info }: PlayerProps) => {
     void launch(next)
   }
 
+  function replayFromUrl(request: ReplayRequest) {
+    const next = { ...settings, url: url.trim() }
+    setStored(next)
+    relaunchSoon.cancel()
+    replay(next, request)
+  }
+
   function changeSettings(patch: Partial<PlaySettings>) {
     const next = { ...settings, ...patch }
     setStored(next)
     if (play.status === "idle") return
     relaunchSoon.cancel()
-    void launch(next)
+    if (play.status === "replaying") {
+      replay(next, { mode: play.mode, event: play.event, amount: play.amount })
+    } else {
+      void launch(next)
+    }
   }
 
   function changeBalance(balance: number) {
     setStored({ ...settings, balance })
-    if (play.status !== "idle") relaunchSoon()
+    if (play.status !== "idle" && play.status !== "replaying") relaunchSoon()
   }
 
   const forceMutation = useMutation({
@@ -149,7 +209,7 @@ const Player = ({ gameId, info }: PlayerProps) => {
           {play.status === "playing" ? <IconRefresh /> : <IconPlayerPlay />}
           {play.status === "playing" ? "Reload" : "Launch"}
         </Button>
-        {play.status === "playing" && (
+        {"src" in play && (
           <a
             className="flex items-center gap-1 px-2 text-sm text-ui-500 hover:text-ui-100 underline"
             href={play.src}
@@ -175,17 +235,31 @@ const Player = ({ gameId, info }: PlayerProps) => {
       </div>
 
       <aside className="col-start-2 row-span-3 row-start-1 px-4 py-8 border-l border-ui-700 overflow-y-auto">
-        <ForceOutcome
-          fields={forceFields}
-          error={forceMutation.error}
-          onChange={changeForce}
-        />
+        <Tabs defaultValue="force">
+          <TabsList>
+            <TabsTrigger value="force">Force outcome</TabsTrigger>
+            <TabsTrigger value="replay">Replay</TabsTrigger>
+          </TabsList>
+          <TabsContent value="force" className="pt-4">
+            <ForceOutcome
+              fields={forceFields}
+              error={forceMutation.error}
+              onChange={changeForce}
+            />
+          </TabsContent>
+          <TabsContent value="replay" className="pt-4">
+            <ReplayBook
+              info={info}
+              fields={replayFields}
+              pending={replayMutation.isPending || play.status === "launching"}
+              error={replayMutation.error}
+              onChange={setReplayFields}
+              onReplay={replayFromUrl}
+            />
+          </TabsContent>
+        </Tabs>
         <h5 className="pb-2 mt-8 mb-2 border-b border-ui-700">Session</h5>
-        {play.status === "playing" ? (
-          <SessionInfo sessionId={play.sessionId} />
-        ) : (
-          <div className="text-sm text-ui-500">Launch the game to start a session.</div>
-        )}
+        <SessionDetails play={play} />
       </aside>
     </div>
   )
@@ -202,9 +276,10 @@ const Stage = ({ play }: { play: PlayState }) => {
     case "launching":
       return <Skeleton className="h-full rounded-none" />
     case "playing":
+    case "replaying":
       return (
         <iframe
-          key={play.src}
+          key={play.launchId}
           title="Game"
           src={play.src}
           allow="autoplay; fullscreen"
@@ -216,6 +291,23 @@ const Stage = ({ play }: { play: PlayState }) => {
         <div className="h-full flex items-center justify-center p-8 text-center text-red-500">
           {play.message}
         </div>
+      )
+  }
+}
+
+const SessionDetails = ({ play }: { play: PlayState }) => {
+  switch (play.status) {
+    case "playing":
+      return <SessionInfo sessionId={play.sessionId} />
+    case "replaying":
+      return (
+        <div className="text-sm text-ui-500">
+          Replay of book {play.event} in mode {play.mode}. No session.
+        </div>
+      )
+    default:
+      return (
+        <div className="text-sm text-ui-500">Launch the game to start a session.</div>
       )
   }
 }

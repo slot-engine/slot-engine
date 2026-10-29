@@ -1,6 +1,6 @@
 ---
 title: Play Game
-description: Play your game's front end against the LGS and force outcomes.
+description: Play your game's front end against the LGS, force outcomes and replay books.
 icon: Play
 ---
 
@@ -10,7 +10,7 @@ icon: Play
 
 The Play Game module opens your game's front end inside the panel and connects it to the [LGS](/docs/lgs) that is attached to the panel.
 It creates a session, opens the front end in an iframe with the launch parameters of the session, and shows the balance and the last round next to the game.
-To see how the front end shows a specific book or win, force the outcome instead of spinning until it comes up.
+To see how the front end shows a specific book or win, force the outcome instead of spinning until it comes up, or replay the book without a session.
 
 ## Requirements
 
@@ -54,7 +54,9 @@ If you change a setting while the game runs, the panel creates a new session wit
 
 ## Force outcomes
 
-The **Force outcome** sidebar makes the LGS play an outcome that you choose instead of a weighted draw.
+The sidebar has two tabs, **Force outcome** and **Replay**. The fields of both tabs keep their values when you switch tabs.
+
+The **Force outcome** tab makes the LGS play an outcome that you choose instead of a weighted draw.
 
 | Field             | Effect                                                                                              |
 | ----------------- | --------------------------------------------------------------------------------------------------- |
@@ -71,6 +73,43 @@ The force also carries over to every new session, so a settings change or **Relo
 Book IDs belong to one mode. If the lookup table of the mode that you play has no row for the forced book, the bet fails with `ERR_VAL` and the message `unknown forced book`.
 The LGS also plays books with a weight of 0, so you can force a book that a weighted draw never picks.
 For the rules that find the closest payout, see [Forced outcomes](/docs/lgs/game-math#forced-outcomes).
+
+## Replay a book
+
+Engine requires every game to support [bet replay](https://stake-engine.com/docs/approval-guidelines/game-replay-requirements).
+In replay mode, the front end loads one book from the RGS and plays it without a session, so anyone with the link can watch the round.
+The **Replay** tab opens your front end in replay mode.
+
+1. Open the **Replay** tab of the sidebar.
+2. Select the **Mode** of the book.
+3. Enter the **Book ID**.
+4. Optional: change the **Bet amount**.
+5. Click **Replay**.
+
+| Field      | Description                                                                                                                                                            |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mode       | Mode of the book. Lists the modes of the game. The first mode is the default.                                                                                          |
+| Book ID    | ID of the book in the lookup table of the mode. **Replay** stays disabled until you enter one.                                                                         |
+| Bet amount | Base bet in major units: `1` is 1.00. The default is `bets.default` of the LGS configuration. Must follow the [bet rules](/docs/lgs/engine-rgs#bet-rules) of the mode. |
+
+The panel requests the replay from [`POST /lgs/replays`](/docs/lgs/sessions#replays) with the currency, the language and the social setting of the bottom bar.
+Then it opens the URL of your front end with the replay launch parameters appended:
+
+```
+http://localhost:3000/?replay=true&game=my-game&version=1&mode=bonus&event=812&rgs_url=localhost%3A7770&currency=USD&amount=1000000&lang=en&device=desktop&social=false&demo=false
+```
+
+The front end reads `replay=true` and fetches the book from [`GET /bet/replay/{game}/{version}/{mode}/{event}`](/docs/lgs/engine-rgs#replay).
+The response holds the payout multiplier of the book, the cost multiplier of the mode and the events of the book.
+
+No session exists in replay mode. The **Session** box names the book and the mode of the replay, and the force does not apply.
+If the request fails, for example because the lookup table of the mode has no row for the book, the error shows below the **Replay** button and the game stays as it was.
+
+While a replay is open:
+
+- A change of the currency, the language or the social setting requests the same replay again with the new setting. A change of the starting balance does nothing.
+- **Replay** loads the book again, also when the fields did not change.
+- **Launch** leaves replay mode and starts a session.
 
 ## Session
 

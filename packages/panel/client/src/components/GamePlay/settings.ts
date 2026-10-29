@@ -9,7 +9,7 @@ export interface PlaySettings {
   social: boolean
 }
 
-const AMOUNT_SCALE = 1_000_000
+export const AMOUNT_SCALE = 1_000_000
 
 /** Fills in what localStorage lacks, or holds and the LGS no longer offers, from its defaults. */
 export function resolveSettings(stored: unknown, info: LgsInfoResponse): PlaySettings {

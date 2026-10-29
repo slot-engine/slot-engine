@@ -12,7 +12,6 @@ interface ForceOutcomeProps {
 export const ForceOutcome = ({ fields, error, onChange }: ForceOutcomeProps) => {
   return (
     <div>
-      <h5 className="pb-2 mb-2 border-b border-ui-700">Force outcome</h5>
       <NumberInput
         label="Book ID"
         placeholder="Any"

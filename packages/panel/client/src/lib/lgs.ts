@@ -1,6 +1,8 @@
 import type {
+  CreateReplayInput,
   CreateSessionInput,
   ForcedOutcome,
+  LgsCreateReplayResponse,
   LgsCreateSessionResponse,
   LgsErrorResponse,
   LgsForceResponse,
@@ -31,6 +33,9 @@ export const lgsInfo = () => request<LgsInfoResponse>("/lgs")
 
 export const createSession = (input: CreateSessionInput) =>
   request<LgsCreateSessionResponse>("/lgs/sessions", json("POST", input))
+
+export const createReplay = (input: CreateReplayInput) =>
+  request<LgsCreateReplayResponse>("/lgs/replays", json("POST", input))
 
 export const getSession = (id: string) =>
   request<LgsSessionResponse>(`/lgs/sessions/${encodeURIComponent(id)}`)
