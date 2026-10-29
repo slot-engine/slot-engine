@@ -252,22 +252,6 @@ export const game = createSlotGame<GameType>({
   gameModes,
   symbols,
   padSymbols: 1,
-  scatterToFreespins: {
-    [SPIN_TYPE.BASE_GAME]: {
-      3: 10,
-      4: 12,
-      5: 15,
-      6: 20,
-      7: 30,
-    },
-    [SPIN_TYPE.FREE_SPINS]: {
-      3: 10,
-      4: 12,
-      5: 15,
-      6: 20,
-      7: 30,
-    },
-  },
   userState,
   hooks: {
     onHandleGameFlow,

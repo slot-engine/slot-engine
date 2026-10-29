@@ -51,19 +51,6 @@ export class GameService<
   }
 
   /**
-   * Retrieves the number of free spins awarded for a given spin type and scatter count.
-   */
-  getFreeSpinsForScatters(spinType: SpinType, scatterCount: number) {
-    const freespinsConfig = this.ctx().config.scatterToFreespins[spinType]
-    if (!freespinsConfig) {
-      throw new Error(
-        `No free spins configuration found for spin type "${spinType}". Please check your game configuration.`,
-      )
-    }
-    return freespinsConfig[scatterCount] || 0
-  }
-
-  /**
    * Retrieves a result set by its criteria within a specific game mode.
    */
   getResultSetByCriteria(mode: string, criteria: string) {
@@ -94,33 +81,6 @@ export class GameService<
    */
   getCurrentGameMode() {
     return this.ctx().config.gameModes[this.ctx().state.currentGameMode]!
-  }
-
-  /**
-   * Ensures the requested number of scatters is valid based on the game configuration.\
-   * Returns a valid number of scatters.
-   */
-  verifyScatterCount(numScatters: number) {
-    const scatterCounts =
-      this.ctx().config.scatterToFreespins[this.ctx().state.currentSpinType]
-    if (!scatterCounts) {
-      throw new Error(
-        `No scatter counts defined for spin type "${this.ctx().state.currentSpinType}". Please check your game configuration.`,
-      )
-    }
-    const validCounts = Object.keys(scatterCounts).map((key) => parseInt(key, 10))
-    if (validCounts.length === 0) {
-      throw new Error(
-        `No scatter counts defined for spin type "${this.ctx().state.currentSpinType}". Please check your game configuration.`,
-      )
-    }
-    if (numScatters < Math.min(...validCounts)) {
-      return Math.min(...validCounts)
-    }
-    if (numScatters > Math.max(...validCounts)) {
-      return Math.max(...validCounts)
-    }
-    return numScatters
   }
 
   /**

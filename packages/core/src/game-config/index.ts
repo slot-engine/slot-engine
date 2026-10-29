@@ -27,26 +27,6 @@ export interface GameConfigOptions<
    */
   symbols: TSymbols
   /**
-   * A mapping from spin type to scatter counts to the number of free spins awarded.
-   *
-   * @example
-   * ```ts
-   * scatterToFreespins: {
-   *   [SPIN_TYPE.BASE_GAME]: {
-   *     3: 10,
-   *     4: 12,
-   *     5: 15,
-   *   },
-   *   [SPIN_TYPE.FREE_SPINS]: {
-   *     3: 6,
-   *     4: 8,
-   *     5: 10,
-   *   },
-   * },
-   * ```
-   */
-  scatterToFreespins: Record<string, Record<number, number>>
-  /**
    * If set, this will pad the board with symbols on the top and bottom of the reels.\
    * Useful for teasing symbols right above or below the active board.
    *
@@ -86,12 +66,6 @@ export function createGameConfig<
     symbols.set(key, value as TSymbols[keyof TSymbols])
   }
 
-  const getAnticipationTrigger = (spinType: string) => {
-    return (
-      Math.min(...Object.keys(opts.scatterToFreespins[spinType] || {}).map(Number)) - 1
-    )
-  }
-
   const rootDir = opts.rootDir || process.cwd()
   const outputDir = "__build__"
   const basePath = path.join(rootDir, outputDir)
@@ -102,10 +76,6 @@ export function createGameConfig<
       userState: opts.userState || ({} as TUserState),
       ...opts,
       symbols,
-      anticipationTriggers: {
-        [SPIN_TYPE.BASE_GAME]: getAnticipationTrigger(SPIN_TYPE.BASE_GAME),
-        [SPIN_TYPE.FREE_SPINS]: getAnticipationTrigger(SPIN_TYPE.FREE_SPINS),
-      },
     },
     metadata: {
       outputDir,
@@ -127,10 +97,6 @@ export type GameConfig<
    * A map of all symbols.
    */
   symbols: Map<keyof TSymbols & string, TSymbols[keyof TSymbols]>
-  /**
-   * A mapping of spin types to the number of scatter symbols required to trigger anticipation.
-   */
-  anticipationTriggers: Record<(typeof SPIN_TYPE)[keyof typeof SPIN_TYPE], number>
 }
 
 export type GameMetadata = {

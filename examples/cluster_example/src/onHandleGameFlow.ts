@@ -4,6 +4,7 @@ import {
   GameContext,
   Reels,
   SPIN_TYPE,
+  SpinType,
 } from "@slot-engine/core"
 import { GameModesType, SymbolsType, UserStateType } from ".."
 
@@ -106,7 +107,7 @@ function drawBoard(ctx: Context) {
       const scatInvalid = ctx.services.board.isSymbolOnAnyReelMultipleTimes(scatter)
       const [scatCount] = ctx.services.board.countSymbolsOnBoard(scatter)
 
-      if (scatCount > ctx.config.anticipationTriggers[ctx.state.currentSpinType]) {
+      if (scatCount > anticipationTrigger(ctx.state.currentSpinType)) {
         continue
       }
 
@@ -130,7 +131,7 @@ function handleAnticipation(ctx: Context) {
   let count = 0
 
   for (const [i, reel] of ctx.services.board.getBoardReels().entries()) {
-    if (count >= ctx.config.anticipationTriggers[ctx.state.currentSpinType]) {
+    if (count >= anticipationTrigger(ctx.state.currentSpinType)) {
       ctx.services.board.setAnticipationForReel(i, true)
     }
     if (scatCount[i]! > 0) {
@@ -229,10 +230,7 @@ function checkFreespins(ctx: Context) {
   const scatter = ctx.config.symbols.get("S")!
   const [scatCount] = ctx.services.board.countSymbolsOnBoard(scatter)
 
-  const freespinsAwarded = ctx.services.game.getFreeSpinsForScatters(
-    ctx.state.currentSpinType,
-    scatCount,
-  )
+  const freespinsAwarded = freespinsForScatters(ctx.state.currentSpinType, scatCount)
 
   // no freespins, return early
   if (freespinsAwarded <= 0) return
@@ -409,4 +407,17 @@ function processWins(wins: WinCombination[], ctx: Context) {
 
 function getSymIdsFromReels(reels: Reels) {
   return reels.map((reel) => reel.map((s) => s.id))
+}
+
+const FREESPINS_BY_SCATTERS: Record<SpinType, Record<number, number>> = {
+  [SPIN_TYPE.BASE_GAME]: { 3: 10, 4: 12, 5: 15, 6: 20, 7: 30 },
+  [SPIN_TYPE.FREE_SPINS]: { 3: 10, 4: 12, 5: 15, 6: 20, 7: 30 },
+}
+
+function freespinsForScatters(spinType: SpinType, scatters: number) {
+  return FREESPINS_BY_SCATTERS[spinType][scatters] ?? 0
+}
+
+function anticipationTrigger(spinType: SpinType) {
+  return Math.min(...Object.keys(FREESPINS_BY_SCATTERS[spinType]).map(Number)) - 1
 }

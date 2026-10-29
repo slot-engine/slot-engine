@@ -104,7 +104,6 @@ export function createTestContext(opts?: Partial<GameConfigOptions>) {
     name: "",
     gameModes: {},
     symbols: {},
-    scatterToFreespins: {},
     maxWinX: 10000,
     hooks: {
       onHandleGameFlow() {},

@@ -4,6 +4,7 @@ import {
   LinesWinType,
   Reels,
   SPIN_TYPE,
+  SpinType,
 } from "@slot-engine/core"
 import { GameModesType, SymbolsType, UserStateType } from ".."
 
@@ -37,8 +38,6 @@ function drawBoard(ctx: Context) {
       getScatterWeights(ctx.state.currentResultSet.criteria),
     ),
   )
-  // sanity check to ensure scatter count is valid. you may omit this
-  numScatters = ctx.services.game.verifyScatterCount(numScatters)
 
   if (
     // If super free spins are forced via the result set, draw board with one super scatter
@@ -93,7 +92,7 @@ function drawBoard(ctx: Context) {
 
       // skip boards that would trigger FS
       if (
-        scatters > ctx.config.anticipationTriggers[ctx.state.currentSpinType] ||
+        scatters > anticipationTrigger(ctx.state.currentSpinType) ||
         superScatCount > 1
       ) {
         continue
@@ -131,7 +130,7 @@ function handleAnticipation(ctx: Context) {
   let count = 0
 
   for (const [i, reel] of ctx.services.board.getBoardReels().entries()) {
-    if (count >= ctx.config.anticipationTriggers[ctx.state.currentSpinType]) {
+    if (count >= anticipationTrigger(ctx.state.currentSpinType)) {
       ctx.services.board.setAnticipationForReel(i, true)
     }
     if (scatCount[i]! > 0 || superScatCount[i]! > 0) {
@@ -191,10 +190,7 @@ function checkFreespins(ctx: Context) {
 
   const scatters = scatCount + superScatCount
 
-  const freespinsAwarded = ctx.services.game.getFreeSpinsForScatters(
-    ctx.state.currentSpinType,
-    scatters,
-  )
+  const freespinsAwarded = freespinsForScatters(ctx.state.currentSpinType, scatters)
 
   // no freespins, return early
   if (freespinsAwarded <= 0) return
@@ -400,4 +396,17 @@ function handleRevealEvent(ctx: Context) {
       anticipation: ctx.services.board.getAnticipation(),
     },
   })
+}
+
+const FREESPINS_BY_SCATTERS: Record<SpinType, Record<number, number>> = {
+  [SPIN_TYPE.BASE_GAME]: { 3: 10, 4: 12, 5: 15 },
+  [SPIN_TYPE.FREE_SPINS]: { 3: 6, 4: 8, 5: 10 },
+}
+
+function freespinsForScatters(spinType: SpinType, scatters: number) {
+  return FREESPINS_BY_SCATTERS[spinType][scatters] ?? 0
+}
+
+function anticipationTrigger(spinType: SpinType) {
+  return Math.min(...Object.keys(FREESPINS_BY_SCATTERS[spinType]).map(Number)) - 1
 }

@@ -22,22 +22,6 @@ description: Service providing common utility functions.
 
 Retrieves a reel set by its ID within a specific game mode.
 
-### getFreeSpinsForScatters()
-
-| Method                                        | Type                                 |
-| --------------------------------------------- | ------------------------------------ |
-| `ctx.services.game.getFreeSpinsForScatters()` | `(spinType, scatterCount) => number` |
-
-#### Parameters [!toc]
-
-| Parameter      | Type       |
-| -------------- | ---------- |
-| `spinType`     | `SpinType` |
-| `scatterCount` | `number`   |
-
-Retrieves the number of free spins awarded for a given spin type and scatter count
-based on the `scatterToFreespins` configuration.
-
 ### getResultSetByCriteria()
 
 | Method                                       | Type                            |
@@ -68,21 +52,6 @@ Returns all symbols as an array.
 | `ctx.services.game.getCurrentGameMode()` | `() => GameMode` |
 
 Gets the configuration for the current [game mode](/docs/core/config/game-modes).
-
-### verifyScatterCount()
-
-| Method                                   | Type                      |
-| ---------------------------------------- | ------------------------- |
-| `ctx.services.game.verifyScatterCount()` | `(numScatters) => number` |
-
-#### Parameters [!toc]
-
-| Parameter     | Type     |
-| ------------- | -------- |
-| `numScatters` | `number` |
-
-Ensures the requested number of scatters is valid based on the game configuration.
-Returns a valid number of scatters.
 
 ### awardFreespins()
 

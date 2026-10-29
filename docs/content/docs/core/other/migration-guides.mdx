@@ -14,6 +14,38 @@ You will need to **re-run simulations** to regenerate your files.
 The books themselves stay the same and are only renumbered. Book `k` was book `k + 1` before.
 If your code maps a book ID to a lookup table row with `id - 1`, drop the offset.
 
+### Define scatter rules in your game
+
+`scatterToFreespins`, `ctx.config.anticipationTriggers`, `ctx.services.game.getFreeSpinsForScatters()`
+and `ctx.services.game.verifyScatterCount()` were removed. Games are now responsible to handle scatter counts.
+
+Example replacement:
+
+```ts
+import { SPIN_TYPE, SpinType } from "@slot-engine/core"
+
+const FREESPINS_BY_SCATTERS: Record<SpinType, Record<number, number>> = {
+  [SPIN_TYPE.BASE_GAME]: { 3: 10, 4: 12, 5: 15 },
+  [SPIN_TYPE.FREE_SPINS]: { 3: 6, 4: 8, 5: 10 },
+}
+
+function freespinsForScatters(spinType: SpinType, scatters: number) {
+  return FREESPINS_BY_SCATTERS[spinType][scatters] ?? 0
+}
+
+function anticipationTrigger(spinType: SpinType) {
+  return Math.min(...Object.keys(FREESPINS_BY_SCATTERS[spinType]).map(Number)) - 1
+}
+```
+
+```ts
+ctx.config.anticipationTriggers[ctx.state.currentSpinType] // [!code --]
+anticipationTrigger(ctx.state.currentSpinType) // [!code ++]
+
+ctx.services.game.getFreeSpinsForScatters(ctx.state.currentSpinType, scatters) // [!code --]
+freespinsForScatters(ctx.state.currentSpinType, scatters) // [!code ++]
+```
+
 ## Upgrade from 0.2.x to 0.3.x
 
 ### Replace `record` API with `tag` API
