@@ -20,6 +20,27 @@ const faq: Array<{ question: string; answer: Segment[] }> = [
     ],
   },
   {
+    question: "Can I extend Slot Engine with my own features?",
+    answer: [
+      "Yes. Slot Engine ships the building blocks, and you write the entire game flow yourself, so you decide how every feature works. ",
+      { text: "Custom game state", href: "/docs/core/config/custom-state" },
+      " covers almost any mechanic. Slot Engine also exports its base types and helpers, so you can extend them, for example to write your own ",
+      { code: "WinType" },
+      " for a win evaluation the built-in ones don't cover.",
+    ],
+  },
+  {
+    question: "Can I build a slot game without prior experience?",
+    answer: [
+      "Slot Engine gives you a tested toolkit and ",
+      {
+        text: "example games",
+        href: "https://github.com/slot-engine/slot-engine/tree/main/examples",
+      },
+      ", which makes your first slot game easier to start. Without coding experience, expect a learning curve, but an AI assistant can help you implement your game. Slot Engine covers only the math and backend, so you need to build the game client yourself.",
+    ],
+  },
+  {
     question: "Can AI build a slot game with Slot Engine?",
     answer: [
       "Yes. The complete documentation is available as one plain text file at ",
