@@ -350,7 +350,7 @@ export abstract class AbstractLgs {
       if (session.activeBetId !== null) {
         throw new LgsError("round-active", `Round ${session.activeBetId} is still active`)
       }
-      this.validateBetAmount(amount, mode)
+      this.validateBetAmount(amount)
 
       const cost = Math.round(amount * mode.cost)
       if (cost > wallet.amount) {
@@ -441,7 +441,7 @@ export abstract class AbstractLgs {
     const currency = this.requireCurrency(input.currency ?? this.defaultCurrency)
     const lang = this.requireLanguage(input.language ?? this.defaultLanguage)
     const amount = input.amount === undefined ? this.bets.default : toAmount(input.amount)
-    this.validateBetAmount(amount, mode)
+    this.validateBetAmount(amount)
     await this.replay(game.id, mode.name, input.event)
 
     return {
@@ -460,28 +460,16 @@ export abstract class AbstractLgs {
     }
   }
 
-  /** Engine's bet rules: within min/max, on the step grid, and within the mode's max bet. */
-  validateBetAmount(amount: Amount, mode: LgsMode): void {
+  /** Engine's bet rules: the base bet is within min/max and on the step grid, in every mode. */
+  validateBetAmount(amount: Amount): void {
     const { min, max, step } = this.bets
-    const modeMax = this.modeMaxBet(mode)
     const rules: Array<[ok: boolean, message: string]> = [
       [amount >= min, `Bet ${amount} is below the minimum ${min}`],
       [amount <= max, `Bet ${amount} is above the maximum ${max}`],
       [amount % step === 0, `Bet ${amount} is not a multiple of ${step}`],
-      [
-        amount <= modeMax,
-        `Bet ${amount} is above the maximum ${modeMax} of mode "${mode.name}"`,
-      ],
     ]
     const broken = rules.find(([ok]) => !ok)
     if (broken) throw new LgsError("invalid-bet", broken[1])
-  }
-
-  /** The largest base bet on the step grid whose cost stays within the maximum bet. */
-  modeMaxBet(mode: LgsMode): Amount {
-    const { max, step } = this.bets
-    const affordable = Math.floor(max / mode.cost)
-    return Math.min(max, affordable - (affordable % step))
   }
 
   launchParams(session: Session, rgsUrl: string): LaunchParams {

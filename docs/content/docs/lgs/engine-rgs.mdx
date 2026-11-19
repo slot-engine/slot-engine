@@ -41,7 +41,7 @@ Marks the session as authenticated. Every other endpoint requires this call firs
     "betLevels": [100000, 200000, 400000, "..."],
     "gameModes": [
       { "mode": "base", "costMultiplier": 1, "maxBet": 1000000000 },
-      { "mode": "bonus", "costMultiplier": 70, "maxBet": 14280000 }
+      { "mode": "bonus", "costMultiplier": 70, "maxBet": 1000000000 }
     ],
     "user": { "id": "Qf8c..." },
     "jurisdiction": {
@@ -63,7 +63,7 @@ Marks the session as authenticated. Every other endpoint requires this call firs
 | `config.stepBet`         | `bets.step`.                                                                                           |
 | `config.defaultBetLevel` | `bets.default`.                                                                                        |
 | `config.betLevels`       | `bets.levels`.                                                                                         |
-| `config.gameModes`       | One entry per game mode with its cost multiplier and the maximum base bet of that mode.                |
+| `config.gameModes`       | One entry per game mode with its cost multiplier and `bets.max` as its maximum base bet.               |
 | `config.user.id`         | The wallet ID.                                                                                         |
 | `config.jurisdiction`    | The [jurisdiction flags](/docs/lgs/config#jurisdiction). `socialCasino` is `true` for social sessions. |
 | `round`                  | The open round, or `null`. A front end uses it to resume a round after a reload.                       |
@@ -192,11 +192,10 @@ A replay needs no session. A front end in replay mode calls only [the replay end
 A play request passes when the amount:
 
 - is at least `bets.min` and at most `bets.max`,
-- is a multiple of `bets.step`,
-- is at most the maximum of the mode.
+- is a multiple of `bets.step`.
 
-The maximum of a mode is the largest multiple of `bets.step` whose cost stays within `bets.max`.
-With the default limits, a bonus mode with a cost multiplier of 70 allows base bets up to 14.28, reported as `maxBet: 14280000` in `config.gameModes`.
+The limits apply to the base bet in every mode, not to its cost.
+With the default limits, a bonus mode with a cost multiplier of 70 allows base bets up to 1,000, which cost 70,000.
 
 A valid amount still fails with `ERR_IPB` when `amount × costMultiplier` is above the wallet balance.
 

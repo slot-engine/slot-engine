@@ -72,8 +72,7 @@ The session operations take a session ID and return storage records. Every opera
 | `replay(gameId, mode, bookId)`       | Reads one book for the [replay endpoint](/docs/lgs/engine-rgs#replay). Returns `payoutMultiplier`, `costMultiplier` and `state`. |
 | `createReplay(input, rgsUrl)`        | Checks a replay like a play and returns its [launch parameters](/docs/lgs/sessions#replays). The management endpoint calls this. |
 | `getGame(id)`, `listGames()`         | Registered games with their modes and math.                                                                                      |
-| `validateBetAmount(amount, mode)`    | The [bet rules](/docs/lgs/engine-rgs#bet-rules). Throws `invalid-bet`.                                                           |
-| `modeMaxBet(mode)`                   | The largest base bet of a mode.                                                                                                  |
+| `validateBetAmount(amount)`          | The [bet rules](/docs/lgs/engine-rgs#bet-rules). Throws `invalid-bet`.                                                           |
 | `launchParams(session, rgsUrl)`      | The launch parameters of a session.                                                                                              |
 
 The configuration is available as `this.bets`, `this.balance`, `this.languages`, `this.currencies`, `this.defaultLanguage` and `this.defaultCurrency`, with amounts as six-decimal integers.

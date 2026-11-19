@@ -179,7 +179,7 @@ export class EngineLgs extends AbstractLgs {
       gameModes: Object.values(game.modes).map((mode) => ({
         mode: mode.name,
         costMultiplier: mode.cost,
-        maxBet: this.modeMaxBet(mode),
+        maxBet: this.bets.max,
       })),
       user: { id: wallet.id },
       jurisdiction: {

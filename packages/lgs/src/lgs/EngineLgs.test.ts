@@ -182,7 +182,7 @@ describe("EngineLgs round flow", () => {
       ],
       gameModes: [
         { mode: "base", costMultiplier: 1, maxBet: 1_000_000_000 },
-        { mode: "bonus", costMultiplier: 70, maxBet: 14_280_000 },
+        { mode: "bonus", costMultiplier: 70, maxBet: 1_000_000_000 },
       ],
       user: { id: walletId },
       jurisdiction: {
@@ -290,7 +290,7 @@ describe("EngineLgs errors", () => {
     ["off the step grid", 1_000_001, "base"],
     ["below the minimum", 90_000, "base"],
     ["above the maximum", 1_000_010_000, "base"],
-    ["above the mode max bet", 14_290_000, "bonus"],
+    ["above the maximum in a costly mode", 1_000_010_000, "bonus"],
     ["of an unknown mode", BET, "turbo"],
   ])("rejects a bet %s", async (_, amount, mode) => {
     const t = setup()
@@ -301,6 +301,16 @@ describe("EngineLgs errors", () => {
     expect(res.status).toBe(400)
     expect(res.json.error).toBe("ERR_VAL")
     expect((await t.balance(sessionID)).json.balance.amount).toBe(START)
+  })
+
+  it("accepts the maximum base bet in a mode whose cost exceeds the maximum", async () => {
+    const t = setup()
+    const { sessionID } = await t.authenticated({ balance: 100_000 })
+    t.queue.push(outcome(0))
+
+    const res = await t.play(sessionID, 1_000_000_000, "bonus")
+    expect(res.status).toBe(200)
+    expect(res.json.balance.amount).toBe(30_000_000_000)
   })
 
   it("answers ERR_IPB when the balance cannot cover the cost, and ERR_VAL first for a bad amount", async () => {
