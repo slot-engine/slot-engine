@@ -1,5 +1,11 @@
 # @slot-engine/lgs
 
+## 0.1.1
+
+### Patch Changes
+
+- Fix max bet calculation in LGS - Thanks @nordowl
+
 ## 0.1.0
 
 ### Minor Changes
