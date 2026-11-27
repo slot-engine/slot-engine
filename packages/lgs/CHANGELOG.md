@@ -1,5 +1,11 @@
 # @slot-engine/lgs
 
+## 0.1.2
+
+### Patch Changes
+
+- Add the missing Engine currencies to LGS - Thanks @nordowl
+
 ## 0.1.1
 
 ### Patch Changes
